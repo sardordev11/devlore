@@ -8,7 +8,7 @@ Dashboard UI Phase 3
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
