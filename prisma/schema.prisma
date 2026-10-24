@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: connection URL lives in prisma.config.ts
+}
+
+// ─────────────────────────────────────────────
+// Auth (Auth.js / NextAuth v5 adapter models)
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String? // null for OAuth-only users
+
+  // Billing
+  isPro                Boolean @default(false)
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+
+  accounts    Account[]
+  sessions    Session[]
+  items       Item[]
+  itemTypes   ItemType[]
+  collections Collection[]
+  tags        Tag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ─────────────────────────────────────────────
+// App models
+// ─────────────────────────────────────────────
+
+enum ContentType {
+  TEXT
+  FILE
+  URL
+}
+
+model ItemType {
+  id          String      @id @default(cuid())
+  name        String // "snippet", "prompt", ...
+  slug        String // "snippets" -> used in /items/[slug]
+  icon        String // Lucide icon name, e.g. "Code"
+  color       String // hex, e.g. "#3b82f6"
+  contentType ContentType
+  isSystem    Boolean     @default(false)
+  isProOnly   Boolean     @default(false)
+
+  userId String? // null for system types
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items              Item[]
+  defaultCollections Collection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, slug])
+}
+
+model Item {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  contentType ContentType
+
+  // TEXT
+  content  String? @db.Text
+  language String? // optional, for code highlighting
+
+  // FILE (Cloudflare R2)
+  fileUrl  String?
+  fileName String?
+  fileSize Int? // bytes
+  mimeType String?
+
+  // URL
+  url String?
+
+  isFavorite Boolean   @default(false)
+  isPinned   Boolean   @default(false)
+  lastUsedAt DateTime? // powers "Recently used"
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Restrict: a type can't be deleted while items still use it
+  typeId String
+  type   ItemType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+
+  tags        Tag[] // implicit many-to-many
+  collections ItemCollection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, typeId])
+  @@index([userId, isPinned])
+  @@index([userId, isFavorite])
+  @@index([userId, lastUsedAt])
+  @@index([typeId])
+}
+
+model Collection {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  isFavorite  Boolean @default(false)
+
+  // Type used for styling / new items when the collection is empty
+  defaultTypeId String?
+  defaultType   ItemType? @relation(fields: [defaultTypeId], references: [id], onDelete: SetNull)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items ItemCollection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, isFavorite])
+  @@index([defaultTypeId])
+}
+
+model ItemCollection {
+  itemId       String
+  collectionId String
+  addedAt      DateTime @default(now())
+
+  item       Item       @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, collectionId])
+  @@index([collectionId])
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items Item[]
+
+  @@unique([userId, name])
+}
