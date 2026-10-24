@@ -6,46 +6,50 @@ import {
   PinIcon,
   StarIcon,
 } from "lucide-react";
+import { connection } from "next/server";
 
 import { CollectionCard } from "@/components/dashboard/CollectionCard";
 import { DashboardSection } from "@/components/dashboard/DashboardSection";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { StatCard } from "@/components/dashboard/StatCard";
-import {
-  dashboardStats,
-  pinnedItems,
-  recentCollections,
-  recentItems,
-} from "@/lib/dashboard";
+import { dashboardStats, pinnedItems, recentItems } from "@/lib/dashboard";
+import { getCollectionStats, getRecentCollections } from "@/lib/db/collections";
 
-const STATS = [
-  {
-    label: "Total Items",
-    value: dashboardStats.items,
-    icon: CodeIcon,
-    iconClassName: "bg-blue-500/20 text-blue-400 shadow-blue-500/30",
-  },
-  {
-    label: "Collections",
-    value: dashboardStats.collections,
-    icon: FolderOpenIcon,
-    iconClassName: "bg-violet-500/20 text-violet-400 shadow-violet-500/30",
-  },
-  {
-    label: "Favorite Items",
-    value: dashboardStats.favoriteItems,
-    icon: StarIcon,
-    iconClassName: "bg-orange-500/20 text-orange-400 shadow-orange-500/30",
-  },
-  {
-    label: "Favorite Collections",
-    value: dashboardStats.favoriteCollections,
-    icon: HeartIcon,
-    iconClassName: "bg-pink-500/20 text-pink-400 shadow-pink-500/30",
-  },
-];
+export default async function DashboardPage() {
+  // User data must be fetched per request, not prerendered at build time.
+  await connection();
+  const [recentCollections, collectionStats] = await Promise.all([
+    getRecentCollections(),
+    getCollectionStats(),
+  ]);
 
-export default function DashboardPage() {
+  const STATS = [
+    {
+      label: "Total Items",
+      value: dashboardStats.items,
+      icon: CodeIcon,
+      iconClassName: "bg-blue-500/20 text-blue-400 shadow-blue-500/30",
+    },
+    {
+      label: "Collections",
+      value: collectionStats.collections,
+      icon: FolderOpenIcon,
+      iconClassName: "bg-violet-500/20 text-violet-400 shadow-violet-500/30",
+    },
+    {
+      label: "Favorite Items",
+      value: dashboardStats.favoriteItems,
+      icon: StarIcon,
+      iconClassName: "bg-orange-500/20 text-orange-400 shadow-orange-500/30",
+    },
+    {
+      label: "Favorite Collections",
+      value: collectionStats.favoriteCollections,
+      icon: HeartIcon,
+      iconClassName: "bg-pink-500/20 text-pink-400 shadow-pink-500/30",
+    },
+  ];
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
       <header>

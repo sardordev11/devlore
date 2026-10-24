@@ -2,19 +2,16 @@ import { StarIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { getItemType } from "@/lib/dashboard";
-import type { MockCollection } from "@/lib/mock-data";
+import type { CollectionSummary } from "@/lib/db/collections";
 import { getTypeIcon } from "@/lib/type-icons";
 
 interface CollectionCardProps {
-  collection: MockCollection;
+  collection: CollectionSummary;
 }
 
 export function CollectionCard({ collection }: CollectionCardProps) {
-  const types = collection.typeIds
-    .map(getItemType)
-    .filter((type) => type !== undefined);
-  // typeIds are ordered by item count, so the first one is the dominant type.
+  const { types } = collection;
+  // Types are ordered by item count, so the first one is the dominant type.
   const accentColor = types[0]?.color;
 
   return (
@@ -35,11 +32,13 @@ export function CollectionCard({ collection }: CollectionCardProps) {
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {collection.itemCount} items
+            {collection.itemCount} {collection.itemCount === 1 ? "item" : "items"}
           </p>
-          <p className="mt-2 line-clamp-2 text-muted-foreground">
-            {collection.description}
-          </p>
+          {collection.description && (
+            <p className="mt-2 line-clamp-2 text-muted-foreground">
+              {collection.description}
+            </p>
+          )}
           <div className="mt-auto flex items-center gap-2 pt-3">
             {types.map((type) => {
               const Icon = getTypeIcon(type.icon);
