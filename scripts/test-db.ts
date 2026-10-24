@@ -1,6 +1,7 @@
 // Run with: npm run db:test
-// Checks the connection, prints table counts and runs a create/read/delete
-// round trip. All test data hangs off a temporary user and is removed at the end.
+// Checks the connection, prints table counts, verifies the seeded demo data
+// (npm run db:seed) and runs a create/read/delete round trip. All round-trip
+// data hangs off a temporary user and is removed at the end.
 import "dotenv/config";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -26,6 +27,74 @@ async function printCounts() {
     prisma.tag.count(),
   ]);
   console.table({ users, itemTypes, items, collections, tags });
+}
+
+const DEMO_EMAIL = "demo@devlore.io";
+const EXPECTED = { systemTypes: 7, collections: 5, items: 18 } as const;
+
+async function printSystemTypes() {
+  const types = await prisma.itemType.findMany({
+    where: { isSystem: true },
+    orderBy: { name: "asc" },
+    include: { _count: { select: { items: true } } },
+  });
+
+  console.log("\nSystem item types");
+  console.table(
+    types.map(({ name, slug, icon, color, contentType, isProOnly, _count }) => ({
+      name,
+      slug,
+      icon,
+      color,
+      contentType,
+      isProOnly,
+      items: _count.items,
+    })),
+  );
+
+  if (types.length !== EXPECTED.systemTypes) {
+    throw new Error(`Expected ${EXPECTED.systemTypes} system types, found ${types.length}`);
+  }
+}
+
+async function printDemoData() {
+  const user = await prisma.user.findUnique({
+    where: { email: DEMO_EMAIL },
+    include: {
+      collections: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          items: {
+            orderBy: { addedAt: "asc" },
+            include: { item: { include: { type: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (!user) throw new Error(`Demo user ${DEMO_EMAIL} not found, run npm run db:seed`);
+
+  console.log(`\nDemo user: ${user.name} <${user.email}>`);
+  console.log(`  isPro: ${user.isPro}, verified: ${user.emailVerified?.toISOString()}`);
+  console.log(`  password hash set: ${Boolean(user.passwordHash)}`);
+
+  for (const collection of user.collections) {
+    console.log(`\n📁 ${collection.name} (${collection.items.length}) — ${collection.description}`);
+    for (const { item } of collection.items) {
+      const lines = `${item.content?.split("\n").length} lines`;
+      const detail = item.url ?? (item.language ? `${item.language}, ${lines}` : lines);
+      console.log(`   [${item.type.name}] ${item.title} — ${detail}`);
+    }
+  }
+
+  const itemCount = await prisma.item.count({ where: { userId: user.id } });
+  if (user.collections.length !== EXPECTED.collections || itemCount !== EXPECTED.items) {
+    throw new Error(
+      `Expected ${EXPECTED.collections} collections / ${EXPECTED.items} items, ` +
+        `found ${user.collections.length} / ${itemCount}`,
+    );
+  }
+  console.log(`\n✓ Demo data: ${user.collections.length} collections, ${itemCount} items\n`);
 }
 
 async function roundTrip() {
@@ -78,6 +147,8 @@ async function roundTrip() {
 async function main() {
   await checkConnection();
   await printCounts();
+  await printSystemTypes();
+  await printDemoData();
   await roundTrip();
   console.log("✓ Database test passed");
 }

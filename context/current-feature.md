@@ -2,33 +2,44 @@
 
 <!-- Feature Name -->
 
-Prisma + Neon PostgreSQL Setup
+Seed Data
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Set up Prisma 7 ORM with Neon PostgreSQL (serverless)
-- Create the initial schema from the data models in @context/project-overview.md (this will evolve)
-- Include the NextAuth models (Account, Session, VerificationToken)
-- Add appropriate indexes and cascade deletes
-- Create and apply the initial migration
+- Create `prisma/seed.ts` to populate the database with sample data for development and demos (overwrite any existing seed file)
+- Demo user:
+  - Email `demo@devlore.io`, name `Demo User`
+  - Password `12345678`, hashed with `bcryptjs` (12 rounds)
+  - `isPro: false`, `emailVerified` set to the current date
+- 7 system item types (`isSystem: true`, `userId: null`): snippet, prompt, command, note, file, image, link, with the Lucide icon names and colors from the spec
+- 5 collections owned by the demo user, each with its items:
+  - **React Patterns** (_Reusable React patterns and hooks_): 3 TypeScript snippets (custom hooks like useDebounce / useLocalStorage, component patterns like context providers / compound components, utility functions)
+  - **AI Workflows** (_AI prompts and workflow automations_): 3 prompts (code review, documentation generation, refactoring assistance)
+  - **DevOps** (_Infrastructure and deployment resources_): 1 snippet (Docker / CI/CD config), 1 command (deployment script), 2 links (real documentation URLs)
+  - **Terminal Commands** (_Useful shell commands for everyday development_): 4 commands (git operations, Docker, process management, package manager utilities)
+  - **Design Resources** (_UI/UX resources and references_): 4 links with real URLs (CSS/Tailwind reference, component library, design system, icon library)
+- Make the seed idempotent so it can be re-run safely (upsert the user and system types; clear and recreate the demo user's items and collections)
+- Register the seed command in `prisma.config.ts` and add a `db:seed` npm script
 
 ## Notes
 
 <!-- Any extra notes -->
 
-- Use Prisma 7, which has breaking changes. Read the upgrade guide first: https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7
-- Setup guide: https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/prisma-postgres
-- `DATABASE_URL` points to the Neon development branch; production uses a separate branch
-- ALWAYS create migrations (`prisma migrate dev`), never `prisma db push` unless specified
-- References: @context/features/database-spec.md, @context/project-overview.md
+- Full spec: @context/features/seed-spec.md
+- System types also need `slug`, `contentType` and `isProOnly` (schema requires them); take these from the System Type Seed in @context/project-overview.md
+- Set each item's `contentType` and `language` (snippets/commands) to match its type; link items use `url`
+- Item content should be realistic, usable code/prompts/commands, not placeholder text
+- Install `bcryptjs` as a dependency
+- Reuse the Prisma client setup (Neon driver adapter) from the existing app code / `scripts/test-db.ts`
+- No schema changes expected; if any are needed, use `prisma migrate dev`, never `db push`
 
 ## History
 
