@@ -1,53 +1,37 @@
-import { ChevronDownIcon, FolderIcon, StarIcon } from "lucide-react";
+import { Suspense } from "react";
 
-import { SidebarNavItem } from "@/components/dashboard/SidebarNavItem";
+import { SidebarNav } from "@/components/dashboard/SidebarNav";
 import { SidebarUser } from "@/components/dashboard/SidebarUser";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarSeparator,
+  SidebarMenuItem,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { collections, currentUser, items, itemTypes } from "@/lib/mock-data";
-import { getTypeIcon } from "@/lib/type-icons";
+import { Skeleton } from "@/components/ui/skeleton";
+import { currentUser } from "@/lib/mock-data";
 
-const RECENT_COLLECTIONS_LIMIT = 5;
+// Fixed widths: SidebarMenuSkeleton's random width can't be prerendered.
+const SKELETON_WIDTHS = ["w-3/5", "w-1/2", "w-3/4", "w-2/5", "w-3/5", "w-1/2", "w-2/3"];
 
-// Latest lastUsedAt among a collection's items, as an ISO string ("" if none).
-function getLastUsedAt(collectionId: string) {
-  return items
-    .filter((item) => item.collectionIds.includes(collectionId))
-    .reduce(
-      (latest, item) =>
-        item.lastUsedAt && item.lastUsedAt > latest ? item.lastUsedAt : latest,
-      "",
-    );
+function SidebarNavSkeleton() {
+  return (
+    <SidebarGroup>
+      <SidebarMenu>
+        {SKELETON_WIDTHS.map((width, i) => (
+          <SidebarMenuItem key={i} className="flex h-8 items-center gap-2 px-2">
+            <Skeleton className="size-4 rounded-md" />
+            <Skeleton className={`h-4 ${width} group-data-[collapsible=icon]:hidden`} />
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
 }
-
-const favoriteCollections = collections.filter((c) => c.isFavorite);
-
-const recentCollections = collections
-  .filter((c) => !c.isFavorite)
-  .sort((a, b) => getLastUsedAt(b.id).localeCompare(getLastUsedAt(a.id)))
-  .slice(0, RECENT_COLLECTIONS_LIMIT);
-
-const SUBHEADING_CLASS =
-  "px-2 pt-2 pb-1 text-xs font-medium tracking-wide text-sidebar-foreground/50 uppercase group-data-[collapsible=icon]:hidden";
-
-const GROUP_LABEL_CLASS = "tracking-wide uppercase";
-
-const CHEVRON_CLASS = "ml-auto transition-transform in-data-panel-open:rotate-180";
 
 export function AppSidebar() {
   return (
@@ -61,83 +45,9 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <Collapsible defaultOpen>
-          <SidebarGroup>
-            <SidebarGroupLabel
-              render={<CollapsibleTrigger />}
-              className={GROUP_LABEL_CLASS}
-            >
-              Types
-              <ChevronDownIcon className={CHEVRON_CLASS} />
-            </SidebarGroupLabel>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {itemTypes.map((type) => {
-                    const Icon = getTypeIcon(type.icon);
-                    const label =
-                      type.slug.charAt(0).toUpperCase() + type.slug.slice(1);
-                    return (
-                      <SidebarNavItem
-                        key={type.id}
-                        href={`/items/${type.slug}`}
-                        label={label}
-                        // Type colors are dynamic data, so they can't be static Tailwind classes.
-                        icon={<Icon style={{ color: type.color }} />}
-                        badge={type.itemCount}
-                      />
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
-
-        <SidebarSeparator />
-
-        <Collapsible defaultOpen>
-          <SidebarGroup>
-            <SidebarGroupLabel
-              render={<CollapsibleTrigger />}
-              className={GROUP_LABEL_CLASS}
-            >
-              Collections
-              <ChevronDownIcon className={CHEVRON_CLASS} />
-            </SidebarGroupLabel>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <p className={SUBHEADING_CLASS}>Favorites</p>
-                <SidebarMenu>
-                  {favoriteCollections.map((collection) => (
-                    <SidebarNavItem
-                      key={collection.id}
-                      href={`/collections/${collection.id}`}
-                      label={collection.name}
-                      icon={<FolderIcon />}
-                      badge={
-                        <StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
-                      }
-                    />
-                  ))}
-                </SidebarMenu>
-
-                <p className={SUBHEADING_CLASS}>Recent</p>
-                <SidebarMenu>
-                  {recentCollections.map((collection) => (
-                    <SidebarNavItem
-                      key={collection.id}
-                      href={`/collections/${collection.id}`}
-                      label={collection.name}
-                      icon={<FolderIcon />}
-                      badge={collection.itemCount}
-                    />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+        <Suspense fallback={<SidebarNavSkeleton />}>
+          <SidebarNav />
+        </Suspense>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">

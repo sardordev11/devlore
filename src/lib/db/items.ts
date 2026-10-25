@@ -28,6 +28,15 @@ export interface ItemStats {
   favoriteItems: number;
 }
 
+export interface SidebarItemType {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  color: string;
+  itemCount: number;
+}
+
 const ITEM_SUMMARY_SELECT = {
   id: true,
   title: true,
@@ -81,4 +90,25 @@ export async function getItemStats(): Promise<ItemStats> {
   ]);
 
   return { items, favoriteItems };
+}
+
+export async function getSidebarItemTypes(): Promise<SidebarItemType[]> {
+  const types = await prisma.itemType.findMany({
+    where: { isSystem: true },
+    // Seeded in display order.
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      icon: true,
+      color: true,
+      _count: { select: { items: { where: demoUserFilter() } } },
+    },
+  });
+
+  return types.map(({ _count, ...type }) => ({
+    ...type,
+    itemCount: _count.items,
+  }));
 }

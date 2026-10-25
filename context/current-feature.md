@@ -2,7 +2,7 @@
 
 <!-- Feature Name -->
 
-Dashboard Items
+Stats & Sidebar
 
 ## Status
 
@@ -14,21 +14,19 @@ Completed
 
 <!-- Goals & requirements -->
 
-- Replace the mock pinned and recent item data in the dashboard main area with real data from the Neon database via Prisma (instead of `src/lib/mock-data.ts`)
-- Create `src/lib/db/items.ts` with the data fetching functions
-- Fetch items directly in the server component
-- Derive each item card's icon and border color from the item type
-- Display item type tags and everything else currently on the cards
-- Hide the pinned section entirely when there are no pinned items
-- Update the collection stats display
-- Keep the current design
+- Show the stats in the main area from the database instead of `src/lib/mock-data.ts`, keeping the current design/layout
+- Show the system item types in the sidebar with their icons, linking to `/items/[typename]`
+- Show the actual collection data from the database in the sidebar
+- Add a "View all collections" link under the collections list that goes to `/collections`
+- Keep the star icons for favorite collections; for recent collections, show a colored circle based on the most-used item type in that collection
+- Add the database functions to `src/lib/db/items.ts`, using `src/lib/db/collections.ts` for reference
 
 ## Notes
 
 <!-- Any extra notes -->
 
-- Full spec: @context/features/dashboard-items-spec.md
-- Reference @context/screenshots/dashboard-ui-main.png if needed; layout and design already exist
+- Full spec: @context/features/stats-sidebar-spec.md
+- Reference: @src/lib/db/collections.ts
 
 ## History
 
@@ -42,3 +40,4 @@ Completed
 - **Seed Data** — `prisma/seed.ts` with the demo user (bcryptjs-hashed password), 7 system item types, 5 collections with realistic snippets, prompts, commands and links, idempotent re-runs, seed registered in `prisma.config.ts` and `db:seed` npm script (Completed)
 - **Dashboard Collections** — `src/lib/db/collections.ts`, 6 recent collections fetched from the database in the server component, card border color from the most-used type, type icons per collection, updated collection stats (Completed)
 - **Dashboard Items** — `src/lib/db/items.ts`, pinned items (hidden when none) and 10 recent items fetched from the database in the server component, item card icon and border color from the item type, tags and dates, Total Items and Favorite Items stats from the database, shared demo-user filter in `src/lib/db/demo-user.ts` (Completed)
+- **Stats & Sidebar** — sidebar types and collections fetched from the database (`getSidebarItemTypes` in `src/lib/db/items.ts`, `getSidebarCollections` in `src/lib/db/collections.ts`), type links to `/items/[slug]` with icons and counts, favorite collections with stars, recent collections with a colored circle from the most-used type, "View all collections" link to `/collections`, async `SidebarNav` in a Suspense boundary with a skeleton fallback (Completed)
