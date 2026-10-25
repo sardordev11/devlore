@@ -12,21 +12,25 @@ import { CollectionCard } from "@/components/dashboard/CollectionCard";
 import { DashboardSection } from "@/components/dashboard/DashboardSection";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { dashboardStats, pinnedItems, recentItems } from "@/lib/dashboard";
 import { getCollectionStats, getRecentCollections } from "@/lib/db/collections";
+import { getItemStats, getPinnedItems, getRecentItems } from "@/lib/db/items";
 
 export default async function DashboardPage() {
   // User data must be fetched per request, not prerendered at build time.
   await connection();
-  const [recentCollections, collectionStats] = await Promise.all([
-    getRecentCollections(),
-    getCollectionStats(),
-  ]);
+  const [recentCollections, collectionStats, pinnedItems, recentItems, itemStats] =
+    await Promise.all([
+      getRecentCollections(),
+      getCollectionStats(),
+      getPinnedItems(),
+      getRecentItems(),
+      getItemStats(),
+    ]);
 
   const STATS = [
     {
       label: "Total Items",
-      value: dashboardStats.items,
+      value: itemStats.items,
       icon: CodeIcon,
       iconClassName: "bg-blue-500/20 text-blue-400 shadow-blue-500/30",
     },
@@ -38,7 +42,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Favorite Items",
-      value: dashboardStats.favoriteItems,
+      value: itemStats.favoriteItems,
       icon: StarIcon,
       iconClassName: "bg-orange-500/20 text-orange-400 shadow-orange-500/30",
     },

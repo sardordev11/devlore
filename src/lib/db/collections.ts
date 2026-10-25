@@ -1,9 +1,7 @@
 import "server-only";
 
+import { demoUserFilter } from "@/lib/db/demo-user";
 import { prisma } from "@/lib/prisma";
-
-// No auth yet, so dashboard data is scoped to the seeded demo user.
-const DEMO_USER_EMAIL = "demo@devlore.io";
 
 export interface CollectionType {
   id: string;
@@ -26,10 +24,6 @@ export interface CollectionSummary {
 export interface CollectionStats {
   collections: number;
   favoriteCollections: number;
-}
-
-function demoUserFilter() {
-  return { user: { email: DEMO_USER_EMAIL } };
 }
 
 export async function getRecentCollections(
