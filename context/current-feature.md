@@ -1,30 +1,20 @@
 # Current Feature
 
-Code Scan Fixes
+<!-- Feature Name -->
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- **Collection type counts in the database (High #1)** — stop loading every item row of every collection just to count types. Fetch collections with `_count.items`, then get per-collection type counts in one grouped SQL query for all fetched collection ids, and merge them in `toCollectionSummary`
-- **Sidebar user from the database (Medium #4)** — add `getDemoUser()` to `src/lib/db/demo-user.ts`, use it in `AppSidebar` instead of `currentUser` from `mock-data`, and type `SidebarUser` with a DB-backed user type instead of `MockUser`
-- **Quick wins (low risk)**
-  - Low #6: `getItemStats` and `getCollectionStats` use one `groupBy` on `isFavorite` each instead of two `count` queries
-  - Low #7: expose `accentColor` on `CollectionSummary` so `CollectionCard` and `SidebarNav` stop relying on `types[0]`
-  - Low #8: drop the unneeded `export` on `ItemSummaryType`
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Out of scope: inline styles (#2) and the dashboard stats refactor (#5), which are larger changes
-- Medium #3 (approved): deleted the unused `src/lib/dashboard.ts` and `src/lib/mock-data.ts`. Older specs in `context/features/` still mention `mock-data.ts` as history
 
 ## History
 
@@ -40,3 +30,4 @@ In Progress
 - **Dashboard Items** — `src/lib/db/items.ts`, pinned items (hidden when none) and 10 recent items fetched from the database in the server component, item card icon and border color from the item type, tags and dates, Total Items and Favorite Items stats from the database, shared demo-user filter in `src/lib/db/demo-user.ts` (Completed)
 - **Stats & Sidebar** — sidebar types and collections fetched from the database (`getSidebarItemTypes` in `src/lib/db/items.ts`, `getSidebarCollections` in `src/lib/db/collections.ts`), type links to `/items/[slug]` with icons and counts, favorite collections with stars, recent collections with a colored circle from the most-used type, "View all collections" link to `/collections`, async `SidebarNav` in a Suspense boundary with a skeleton fallback (Completed)
 - **Add Pro Badge to Sidebar** — subtle outline shadcn `Badge` reading "PRO" next to the File and Image types, driven by `ItemType.isProOnly` from `getSidebarItemTypes`, hidden when the sidebar collapses to icons, sidebar labels truncate explicitly so long names still get "…" (Completed)
+- **Code Scan Fixes** — collection type counts from one grouped SQL query instead of loading every item row (`_count.items` plus a `$queryRaw` shared by sidebar favorites and recents), sidebar user from the database via `getDemoUser()` in `src/lib/db/demo-user.ts` with a Suspense skeleton, single `groupBy` for item and collection stats, `accentColor` on `CollectionSummary`, unused `src/lib/dashboard.ts` and `src/lib/mock-data.ts` removed (Completed)
