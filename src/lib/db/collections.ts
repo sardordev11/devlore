@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { demoUserFilter } from "@/lib/db/demo-user";
 import { prisma } from "@/lib/prisma";
 
@@ -18,6 +18,8 @@ export interface CollectionSummary {
   description: string | null;
   isFavorite: boolean;
   itemCount: number;
+  // Color of the dominant type, used for card borders and sidebar dots.
+  accentColor: string | null;
   // Ordered by item count, so the first one is the dominant type.
   types: CollectionType[];
 }
@@ -38,27 +40,49 @@ const TYPE_SELECT = {
 
 const COLLECTION_SUMMARY_INCLUDE = {
   defaultType: TYPE_SELECT,
-  items: { select: { item: { select: { type: TYPE_SELECT } } } },
+  _count: { select: { items: true } },
 } satisfies Prisma.CollectionInclude;
 
 type CollectionRow = Prisma.CollectionGetPayload<{
   include: typeof COLLECTION_SUMMARY_INCLUDE;
 }>;
 
-function toCollectionSummary(collection: CollectionRow): CollectionSummary {
-  const typesById = new Map<string, CollectionType>();
-  for (const { item } of collection.items) {
-    const existing = typesById.get(item.type.id);
-    if (existing) {
-      existing.itemCount += 1;
-    } else {
-      typesById.set(item.type.id, { ...item.type, itemCount: 1 });
-    }
+interface CollectionTypeCountRow extends CollectionType {
+  collectionId: string;
+}
+
+// Per-collection type counts in one grouped query, ordered by item count.
+async function getCollectionTypes(
+  collectionIds: string[],
+): Promise<Map<string, CollectionType[]>> {
+  const typesByCollection = new Map<string, CollectionType[]>();
+  if (collectionIds.length === 0) return typesByCollection;
+
+  const rows = await prisma.$queryRaw<CollectionTypeCountRow[]>`
+    SELECT ic."collectionId", t."id", t."name", t."icon", t."color",
+      COUNT(*)::int AS "itemCount"
+    FROM "ItemCollection" ic
+    JOIN "Item" i ON i."id" = ic."itemId"
+    JOIN "ItemType" t ON t."id" = i."typeId"
+    WHERE ic."collectionId" IN (${Prisma.join(collectionIds)})
+    GROUP BY ic."collectionId", t."id"
+    ORDER BY "itemCount" DESC, t."name" ASC
+  `;
+
+  for (const { collectionId, ...type } of rows) {
+    const types = typesByCollection.get(collectionId) ?? [];
+    types.push(type);
+    typesByCollection.set(collectionId, types);
   }
 
-  const types = [...typesById.values()].sort(
-    (a, b) => b.itemCount - a.itemCount,
-  );
+  return typesByCollection;
+}
+
+function toCollectionSummary(
+  collection: CollectionRow,
+  typesByCollection: Map<string, CollectionType[]>,
+): CollectionSummary {
+  const types = typesByCollection.get(collection.id) ?? [];
   // Empty collections fall back to their default type for styling.
   if (types.length === 0 && collection.defaultType) {
     types.push({ ...collection.defaultType, itemCount: 0 });
@@ -69,9 +93,24 @@ function toCollectionSummary(collection: CollectionRow): CollectionSummary {
     name: collection.name,
     description: collection.description,
     isFavorite: collection.isFavorite,
-    itemCount: collection.items.length,
+    itemCount: collection._count.items,
+    accentColor: types[0]?.color ?? null,
     types,
   };
+}
+
+async function toCollectionSummaries(
+  ...groups: CollectionRow[][]
+): Promise<CollectionSummary[][]> {
+  const typesByCollection = await getCollectionTypes(
+    groups.flat().map((collection) => collection.id),
+  );
+
+  return groups.map((collections) =>
+    collections.map((collection) =>
+      toCollectionSummary(collection, typesByCollection),
+    ),
+  );
 }
 
 export async function getRecentCollections(
@@ -84,14 +123,15 @@ export async function getRecentCollections(
     include: COLLECTION_SUMMARY_INCLUDE,
   });
 
-  return collections.map(toCollectionSummary);
+  const [recents] = await toCollectionSummaries(collections);
+  return recents;
 }
 
 export async function getSidebarCollections(
   recentLimit = 5,
 ): Promise<SidebarCollections> {
   const where = demoUserFilter();
-  const [favorites, recents] = await Promise.all([
+  const [favoriteRows, recentRows] = await Promise.all([
     prisma.collection.findMany({
       where: { ...where, isFavorite: true },
       orderBy: { name: "asc" },
@@ -105,18 +145,23 @@ export async function getSidebarCollections(
     }),
   ]);
 
-  return {
-    favorites: favorites.map(toCollectionSummary),
-    recents: recents.map(toCollectionSummary),
-  };
+  const [favorites, recents] = await toCollectionSummaries(
+    favoriteRows,
+    recentRows,
+  );
+  return { favorites, recents };
 }
 
 export async function getCollectionStats(): Promise<CollectionStats> {
-  const where = demoUserFilter();
-  const [collections, favoriteCollections] = await Promise.all([
-    prisma.collection.count({ where }),
-    prisma.collection.count({ where: { ...where, isFavorite: true } }),
-  ]);
+  const groups = await prisma.collection.groupBy({
+    by: ["isFavorite"],
+    where: demoUserFilter(),
+    _count: { _all: true },
+  });
 
-  return { collections, favoriteCollections };
+  return {
+    collections: groups.reduce((sum, group) => sum + group._count._all, 0),
+    favoriteCollections:
+      groups.find((group) => group.isFavorite)?._count._all ?? 0,
+  };
 }

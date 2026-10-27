@@ -4,7 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { demoUserFilter } from "@/lib/db/demo-user";
 import { prisma } from "@/lib/prisma";
 
-export interface ItemSummaryType {
+interface ItemSummaryType {
   id: string;
   name: string;
   icon: string;
@@ -84,13 +84,16 @@ export async function getRecentItems(limit = 10): Promise<ItemSummary[]> {
 }
 
 export async function getItemStats(): Promise<ItemStats> {
-  const where = demoUserFilter();
-  const [items, favoriteItems] = await Promise.all([
-    prisma.item.count({ where }),
-    prisma.item.count({ where: { ...where, isFavorite: true } }),
-  ]);
+  const groups = await prisma.item.groupBy({
+    by: ["isFavorite"],
+    where: demoUserFilter(),
+    _count: { _all: true },
+  });
 
-  return { items, favoriteItems };
+  return {
+    items: groups.reduce((sum, group) => sum + group._count._all, 0),
+    favoriteItems: groups.find((group) => group.isFavorite)?._count._all ?? 0,
+  };
 }
 
 export async function getSidebarItemTypes(): Promise<SidebarItemType[]> {

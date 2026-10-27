@@ -1,20 +1,30 @@
 # Current Feature
 
-<!-- Feature Name -->
+Code Scan Fixes
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- **Collection type counts in the database (High #1)** — stop loading every item row of every collection just to count types. Fetch collections with `_count.items`, then get per-collection type counts in one grouped SQL query for all fetched collection ids, and merge them in `toCollectionSummary`
+- **Sidebar user from the database (Medium #4)** — add `getDemoUser()` to `src/lib/db/demo-user.ts`, use it in `AppSidebar` instead of `currentUser` from `mock-data`, and type `SidebarUser` with a DB-backed user type instead of `MockUser`
+- **Quick wins (low risk)**
+  - Low #6: `getItemStats` and `getCollectionStats` use one `groupBy` on `isFavorite` each instead of two `count` queries
+  - Low #7: expose `accentColor` on `CollectionSummary` so `CollectionCard` and `SidebarNav` stop relying on `types[0]`
+  - Low #8: drop the unneeded `export` on `ItemSummaryType`
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Out of scope: inline styles (#2) and the dashboard stats refactor (#5), which are larger changes
+- Medium #3 (approved): deleted the unused `src/lib/dashboard.ts` and `src/lib/mock-data.ts`. Older specs in `context/features/` still mention `mock-data.ts` as history
 
 ## History
 

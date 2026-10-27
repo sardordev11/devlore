@@ -111,11 +111,10 @@ export async function SidebarNav() {
                         key={collection.id}
                         href={`/collections/${collection.id}`}
                         label={collection.name}
-                        // Types are ordered by item count, so the first one is the dominant type.
                         icon={
                           <span
                             className="m-1 size-2 shrink-0 rounded-full bg-muted-foreground"
-                            style={{ backgroundColor: collection.types[0]?.color }}
+                            style={{ backgroundColor: collection.accentColor ?? undefined }}
                           />
                         }
                         badge={collection.itemCount}

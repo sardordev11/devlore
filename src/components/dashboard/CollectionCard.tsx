@@ -10,9 +10,7 @@ interface CollectionCardProps {
 }
 
 export function CollectionCard({ collection }: CollectionCardProps) {
-  const { types } = collection;
-  // Types are ordered by item count, so the first one is the dominant type.
-  const accentColor = types[0]?.color;
+  const { types, accentColor } = collection;
 
   return (
     <Link
@@ -22,7 +20,7 @@ export function CollectionCard({ collection }: CollectionCardProps) {
       <Card
         className="h-full border-l-2 transition-colors group-hover/collection:bg-muted/40"
         // Type colors are dynamic data, so they can't be static Tailwind classes.
-        style={{ borderLeftColor: accentColor }}
+        style={{ borderLeftColor: accentColor ?? undefined }}
       >
         <CardContent className="flex h-full flex-col gap-1">
           <div className="flex items-center gap-1.5">

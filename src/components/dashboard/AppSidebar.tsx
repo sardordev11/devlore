@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { SidebarNav } from "@/components/dashboard/SidebarNav";
@@ -13,7 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { currentUser } from "@/lib/mock-data";
+import { getDemoUser } from "@/lib/db/demo-user";
 
 // Fixed widths: SidebarMenuSkeleton's random width can't be prerendered.
 const SKELETON_WIDTHS = ["w-3/5", "w-1/2", "w-3/4", "w-2/5", "w-3/5", "w-1/2", "w-2/3"];
@@ -30,6 +31,25 @@ function SidebarNavSkeleton() {
         ))}
       </SidebarMenu>
     </SidebarGroup>
+  );
+}
+
+async function SidebarUserSection() {
+  // User data must be fetched per request, not prerendered at build time.
+  await connection();
+  const user = await getDemoUser();
+  return user ? <SidebarUser user={user} /> : null;
+}
+
+function SidebarUserSkeleton() {
+  return (
+    <div className="flex h-12 items-center gap-2 px-2">
+      <Skeleton className="size-8 shrink-0 rounded-full" />
+      <div className="grid flex-1 gap-1 group-data-[collapsible=icon]:hidden">
+        <Skeleton className="h-3.5 w-1/2" />
+        <Skeleton className="h-3 w-3/4" />
+      </div>
+    </div>
   );
 }
 
@@ -51,7 +71,9 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarUser user={currentUser} />
+        <Suspense fallback={<SidebarUserSkeleton />}>
+          <SidebarUserSection />
+        </Suspense>
       </SidebarFooter>
     </Sidebar>
   );

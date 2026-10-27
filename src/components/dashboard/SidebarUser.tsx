@@ -10,10 +10,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import type { MockUser } from "@/lib/mock-data";
+import type { DemoUser } from "@/lib/db/demo-user";
 
 interface SidebarUserProps {
-  user: MockUser;
+  user: DemoUser;
 }
 
 function getInitials(name: string) {
@@ -27,6 +27,7 @@ function getInitials(name: string) {
 
 export function SidebarUser({ user }: SidebarUserProps) {
   const { setOpenMobile } = useSidebar();
+  const displayName = user.name ?? user.email;
 
   return (
     <SidebarMenu>
@@ -38,11 +39,11 @@ export function SidebarUser({ user }: SidebarUserProps) {
           onClick={() => setOpenMobile(false)}
         >
           <Avatar>
-            {user.image && <AvatarImage src={user.image} alt={user.name} />}
-            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+            {user.image && <AvatarImage src={user.image} alt={displayName} />}
+            <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
           </Avatar>
           <div className="grid flex-1 leading-tight">
-            <span className="truncate font-medium">{user.name}</span>
+            <span className="truncate font-medium">{displayName}</span>
             <span className="truncate text-xs text-muted-foreground">
               {user.email}
             </span>
