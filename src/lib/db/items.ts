@@ -34,6 +34,7 @@ export interface SidebarItemType {
   slug: string;
   icon: string;
   color: string;
+  isProOnly: boolean;
   itemCount: number;
 }
 
@@ -103,6 +104,7 @@ export async function getSidebarItemTypes(): Promise<SidebarItemType[]> {
       slug: true,
       icon: true,
       color: true,
+      isProOnly: true,
       _count: { select: { items: { where: demoUserFilter() } } },
     },
   });

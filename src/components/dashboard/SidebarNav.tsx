@@ -60,6 +60,7 @@ export async function SidebarNav() {
                       // Type colors are dynamic data, so they can't be static Tailwind classes.
                       icon={<Icon style={{ color: type.color }} />}
                       badge={type.itemCount}
+                      isPro={type.isProOnly}
                     />
                   );
                 })}
