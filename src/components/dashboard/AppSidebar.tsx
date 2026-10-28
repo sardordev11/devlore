@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDemoUser } from "@/lib/db/demo-user";
+import { auth } from "@/auth";
 
 // Fixed widths: SidebarMenuSkeleton's random width can't be prerendered.
 const SKELETON_WIDTHS = ["w-3/5", "w-1/2", "w-3/4", "w-2/5", "w-3/5", "w-1/2", "w-2/3"];
@@ -37,8 +37,8 @@ function SidebarNavSkeleton() {
 async function SidebarUserSection() {
   // User data must be fetched per request, not prerendered at build time.
   await connection();
-  const user = await getDemoUser();
-  return user ? <SidebarUser user={user} /> : null;
+  const session = await auth();
+  return session?.user ? <SidebarUser user={session.user} /> : null;
 }
 
 function SidebarUserSkeleton() {

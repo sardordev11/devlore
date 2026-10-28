@@ -5,6 +5,7 @@ import type { NextAuthConfig } from "next-auth";
 // Edge-compatible config: no adapter, so the proxy can import it.
 // Credentials is a placeholder here; auth.ts overrides it with the real check.
 export default {
+  pages: { signIn: "/sign-in" },
   providers: [
     GitHub,
     Credentials({
