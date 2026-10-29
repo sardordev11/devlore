@@ -16,6 +16,7 @@ type FieldErrors = Partial<
 
 interface RegisterResponse {
   success: boolean;
+  data?: { requiresVerification: boolean };
   error?: string;
 }
 
@@ -50,7 +51,11 @@ export function SignUpForm() {
           setFormError(result.error ?? "Registration failed");
           return;
         }
-        toast.success("Check your email to verify your account");
+        toast.success(
+          result.data?.requiresVerification === false
+            ? "Account created successfully!"
+            : "Check your email to verify your account",
+        );
         router.push("/sign-in");
       } catch {
         setFormError("Something went wrong. Please try again.");

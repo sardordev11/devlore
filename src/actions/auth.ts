@@ -4,7 +4,11 @@ import { AuthError, CredentialsSignin } from "next-auth";
 import { EMAIL_NOT_VERIFIED, signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { resendVerificationSchema, signInSchema } from "@/lib/validations/auth";
-import { isInResendCooldown, sendVerificationLink } from "@/lib/verification";
+import {
+  EMAIL_VERIFICATION_ENABLED,
+  isInResendCooldown,
+  sendVerificationLink,
+} from "@/lib/verification";
 
 const DEFAULT_REDIRECT = "/dashboard";
 
@@ -71,6 +75,8 @@ export async function resendVerificationEmail(
   if (!parsed.success) {
     return { success: false, error: "Enter a valid email address" };
   }
+
+  if (!EMAIL_VERIFICATION_ENABLED) return { success: true };
 
   const { email } = parsed.data;
   try {

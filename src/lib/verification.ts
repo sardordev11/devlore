@@ -7,6 +7,10 @@ const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const APP_URL = process.env.AUTH_URL ?? "http://localhost:3000";
 
+// On unless explicitly "false", so a missing env var never drops the check
+export const EMAIL_VERIFICATION_ENABLED =
+  process.env.EMAIL_VERIFICATION_ENABLED !== "false";
+
 export type VerifyResult = "verified" | "expired" | "invalid";
 
 // Only the hash is stored, so a leaked database can't be used to verify accounts

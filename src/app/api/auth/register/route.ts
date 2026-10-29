@@ -3,7 +3,10 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
-import { sendVerificationLink } from "@/lib/verification";
+import {
+  EMAIL_VERIFICATION_ENABLED,
+  sendVerificationLink,
+} from "@/lib/verification";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -38,19 +41,33 @@ export async function POST(request: Request) {
     if (existing) return emailTaken;
 
     const passwordHash = await bcrypt.hash(password, 12);
+    // With verification off, users are marked verified so re-enabling it won't lock them out
     const user = await prisma.user.create({
-      data: { name, email, passwordHash },
+      data: {
+        name,
+        email,
+        passwordHash,
+        emailVerified: EMAIL_VERIFICATION_ENABLED ? null : new Date(),
+      },
       select: { id: true, name: true, email: true },
     });
 
     // The account exists either way; a failed send can be retried via resend
-    try {
-      await sendVerificationLink(user.email);
-    } catch (error) {
-      console.error("Verification email failed:", error);
+    if (EMAIL_VERIFICATION_ENABLED) {
+      try {
+        await sendVerificationLink(user.email);
+      } catch (error) {
+        console.error("Verification email failed:", error);
+      }
     }
 
-    return NextResponse.json({ success: true, data: user }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: { ...user, requiresVerification: EMAIL_VERIFICATION_ENABLED },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     // A concurrent registration won the race for the unique email
     if (

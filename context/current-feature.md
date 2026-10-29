@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Email Verification Toggle
 
 <!-- Feature Name -->
 
@@ -6,15 +6,32 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Single server-side flag `EMAIL_VERIFICATION_ENABLED` exported from `src/lib/verification.ts` (or a small `src/lib/flags.ts`), read from `process.env.EMAIL_VERIFICATION_ENABLED`
+- Verification stays **on by default**; only the exact value `"false"` turns it off, so a missing env var never silently drops the check in production
+- When disabled:
+  - `POST /api/auth/register` skips `sendVerificationLink`, sets `emailVerified` to now, and returns `requiresVerification: false` in `data`
+  - Credentials sign-in in `src/auth.ts` skips the `emailVerified` check, so new users can sign in right away
+  - `resendVerificationEmail` action returns early without sending
+  - Sign-up toast reads "Account created successfully!" instead of "Check your email to verify your account"
+- When enabled, behavior is identical to today
+- `.env.example` documents the new variable; local `.env` sets it to `false` until a domain is linked to Resend
+- `npm run build` passes
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Why an env var: Resend only delivers to the account owner's address without a verified domain, so sign-up is effectively blocked for everyone else. An env var flips per environment (local / Vercel preview / production) with no code change or deploy of new code, matching the existing `ENFORCE_PLAN_LIMITS` pattern in the spec. A DB/admin setting would be overkill for a temporary switch.
+- Decision: users created while disabled get `emailVerified` set at sign-up, so they're grandfathered in if the flag is turned back on. Trade-off: those addresses were never actually checked.
+- The sign-in check is still skipped while disabled, so users who registered earlier and never verified aren't locked out.
+- The `/api/auth/verify-email` route and `/verify-email` page stay as-is; old links still work.
+- GitHub OAuth is unaffected.
 
 ## History
 

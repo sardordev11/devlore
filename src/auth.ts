@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signInSchema } from "@/lib/validations/auth";
+import { EMAIL_VERIFICATION_ENABLED } from "@/lib/verification";
 import authConfig from "@/auth.config";
 
 export const EMAIL_NOT_VERIFIED = "email_not_verified";
@@ -36,7 +37,9 @@ const providers = authConfig.providers.map((provider) =>
             user.passwordHash,
           );
           if (!valid) return null;
-          if (!user.emailVerified) throw new EmailNotVerified();
+          if (EMAIL_VERIFICATION_ENABLED && !user.emailVerified) {
+            throw new EmailNotVerified();
+          }
 
           return {
             id: user.id,
