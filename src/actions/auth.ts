@@ -1,14 +1,17 @@
 "use server";
 
-import { AuthError } from "next-auth";
-import { signIn, signOut } from "@/auth";
-import { signInSchema } from "@/lib/validations/auth";
+import { AuthError, CredentialsSignin } from "next-auth";
+import { EMAIL_NOT_VERIFIED, signIn, signOut } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { resendVerificationSchema, signInSchema } from "@/lib/validations/auth";
+import { isInResendCooldown, sendVerificationLink } from "@/lib/verification";
 
 const DEFAULT_REDIRECT = "/dashboard";
 
 interface ActionResult {
   success: boolean;
   error?: string;
+  needsVerification?: boolean;
 }
 
 // Only same-site paths, so a crafted callbackUrl can't redirect off-site
@@ -37,6 +40,16 @@ export async function signInWithCredentials(
     return { success: true };
   } catch (error) {
     // signIn throws a redirect on success, which must be rethrown
+    if (
+      error instanceof CredentialsSignin &&
+      error.code === EMAIL_NOT_VERIFIED
+    ) {
+      return {
+        success: false,
+        needsVerification: true,
+        error: "Please verify your email before signing in.",
+      };
+    }
     if (error instanceof AuthError) {
       return {
         success: false,
@@ -47,6 +60,32 @@ export async function signInWithCredentials(
       };
     }
     throw error;
+  }
+}
+
+// Same response whether or not the account exists, so emails can't be probed
+export async function resendVerificationEmail(
+  input: unknown,
+): Promise<ActionResult> {
+  const parsed = resendVerificationSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Enter a valid email address" };
+  }
+
+  const { email } = parsed.data;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { emailVerified: true, passwordHash: true },
+    });
+    const canResend =
+      user?.passwordHash && !user.emailVerified && !(await isInResendCooldown(email));
+    if (canResend) await sendVerificationLink(email);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Resend verification failed:", error);
+    return { success: false, error: "Couldn't send the email. Please try again." };
   }
 }
 

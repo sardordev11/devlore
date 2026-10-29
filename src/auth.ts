@@ -1,10 +1,17 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signInSchema } from "@/lib/validations/auth";
 import authConfig from "@/auth.config";
+
+export const EMAIL_NOT_VERIFIED = "email_not_verified";
+
+// Thrown only after the password checks out, so it doesn't reveal accounts
+class EmailNotVerified extends CredentialsSignin {
+  code = EMAIL_NOT_VERIFIED;
+}
 
 // Replace the edge-safe Credentials placeholder with the real bcrypt check
 const providers = authConfig.providers.map((provider) =>
@@ -29,6 +36,7 @@ const providers = authConfig.providers.map((provider) =>
             user.passwordHash,
           );
           if (!valid) return null;
+          if (!user.emailVerified) throw new EmailNotVerified();
 
           return {
             id: user.id,

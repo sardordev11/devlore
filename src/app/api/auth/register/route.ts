@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
+import { sendVerificationLink } from "@/lib/verification";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -41,6 +42,13 @@ export async function POST(request: Request) {
       data: { name, email, passwordHash },
       select: { id: true, name: true, email: true },
     });
+
+    // The account exists either way; a failed send can be retried via resend
+    try {
+      await sendVerificationLink(user.email);
+    } catch (error) {
+      console.error("Verification email failed:", error);
+    }
 
     return NextResponse.json({ success: true, data: user }, { status: 201 });
   } catch (error) {

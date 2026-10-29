@@ -8,6 +8,7 @@ import { z } from "zod";
 import { signInWithCredentials } from "@/actions/auth";
 import { AuthField } from "@/components/auth/AuthField";
 import { GitHubSignInButton } from "@/components/auth/GitHubSignInButton";
+import { ResendVerificationButton } from "@/components/auth/ResendVerificationButton";
 import { Button } from "@/components/ui/button";
 import { signInSchema } from "@/lib/validations/auth";
 
@@ -25,11 +26,13 @@ function getAuthErrorMessage(code: string | null) {
 export function SignInForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? undefined;
+  const justVerified = searchParams.get("verified") === "1";
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState(() =>
     getAuthErrorMessage(searchParams.get("error")),
   );
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -44,14 +47,26 @@ export function SignInForm() {
 
     setFieldErrors({});
     setFormError(null);
+    setUnverifiedEmail(null);
     startTransition(async () => {
       const result = await signInWithCredentials(parsed.data, callbackUrl);
-      if (!result.success) setFormError(result.error ?? "Sign in failed");
+      if (result.success) return;
+      setFormError(result.error ?? "Sign in failed");
+      if (result.needsVerification) setUnverifiedEmail(parsed.data.email);
     });
   }
 
   return (
     <div className="grid gap-6">
+      {justVerified && !formError && (
+        <p
+          role="status"
+          className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400"
+        >
+          Email verified. You can sign in now.
+        </p>
+      )}
+
       {formError && (
         <p
           role="alert"
@@ -60,6 +75,8 @@ export function SignInForm() {
           {formError}
         </p>
       )}
+
+      {unverifiedEmail && <ResendVerificationButton email={unverifiedEmail} />}
 
       <form onSubmit={handleSubmit} noValidate className="grid gap-4">
         <AuthField

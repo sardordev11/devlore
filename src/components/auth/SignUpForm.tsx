@@ -50,7 +50,7 @@ export function SignUpForm() {
           setFormError(result.error ?? "Registration failed");
           return;
         }
-        toast.success("Account created successfully!");
+        toast.success("Check your email to verify your account");
         router.push("/sign-in");
       } catch {
         setFormError("Something went wrong. Please try again.");
