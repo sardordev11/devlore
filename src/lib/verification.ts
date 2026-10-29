@@ -1,7 +1,6 @@
-import { createHash, randomBytes } from "node:crypto";
-
 import { sendVerificationEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { createToken, hashToken, PASSWORD_RESET_PREFIX } from "@/lib/tokens";
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -13,14 +12,9 @@ export const EMAIL_VERIFICATION_ENABLED =
 
 export type VerifyResult = "verified" | "expired" | "invalid";
 
-// Only the hash is stored, so a leaked database can't be used to verify accounts
-function hashToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
-}
-
 // Replaces any earlier token for this email and sends a fresh link
 export async function sendVerificationLink(email: string) {
-  const token = randomBytes(32).toString("base64url");
+  const token = createToken();
 
   await prisma.$transaction([
     prisma.verificationToken.deleteMany({ where: { identifier: email } }),
@@ -52,8 +46,12 @@ export async function isInResendCooldown(email: string) {
 }
 
 export async function verifyEmailToken(token: string): Promise<VerifyResult> {
+  // Password reset tokens live in the same table and must not verify here
   const record = await prisma.verificationToken.findFirst({
-    where: { token: hashToken(token) },
+    where: {
+      token: hashToken(token),
+      NOT: { identifier: { startsWith: PASSWORD_RESET_PREFIX } },
+    },
   });
   if (!record) return "invalid";
 

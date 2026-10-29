@@ -27,6 +27,7 @@ export function SignInForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? undefined;
   const justVerified = searchParams.get("verified") === "1";
+  const justReset = searchParams.get("reset") === "1";
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState(() =>
@@ -58,12 +59,14 @@ export function SignInForm() {
 
   return (
     <div className="grid gap-6">
-      {justVerified && !formError && (
+      {(justVerified || justReset) && !formError && (
         <p
           role="status"
           className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400"
         >
-          Email verified. You can sign in now.
+          {justReset
+            ? "Password updated. You can sign in now."
+            : "Email verified. You can sign in now."}
         </p>
       )}
 
@@ -87,13 +90,21 @@ export function SignInForm() {
           placeholder="you@example.com"
           errors={fieldErrors.email}
         />
-        <AuthField
-          name="password"
-          label="Password"
-          type="password"
-          autoComplete="current-password"
-          errors={fieldErrors.password}
-        />
+        <div className="grid gap-2">
+          <AuthField
+            name="password"
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            errors={fieldErrors.password}
+          />
+          <Link
+            href="/forgot-password"
+            className="justify-self-end text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? "Signing in…" : "Sign in"}
         </Button>

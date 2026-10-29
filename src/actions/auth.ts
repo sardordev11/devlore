@@ -2,8 +2,18 @@
 
 import { AuthError, CredentialsSignin } from "next-auth";
 import { EMAIL_NOT_VERIFIED, signIn, signOut } from "@/auth";
+import {
+  isInResetCooldown,
+  resetPasswordWithToken,
+  sendPasswordResetLink,
+} from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
-import { resendVerificationSchema, signInSchema } from "@/lib/validations/auth";
+import {
+  forgotPasswordSchema,
+  resendVerificationSchema,
+  resetPasswordSchema,
+  signInSchema,
+} from "@/lib/validations/auth";
 import {
   EMAIL_VERIFICATION_ENABLED,
   isInResendCooldown,
@@ -16,6 +26,7 @@ interface ActionResult {
   success: boolean;
   error?: string;
   needsVerification?: boolean;
+  invalidToken?: boolean;
 }
 
 // Only same-site paths, so a crafted callbackUrl can't redirect off-site
@@ -92,6 +103,59 @@ export async function resendVerificationEmail(
   } catch (error) {
     console.error("Resend verification failed:", error);
     return { success: false, error: "Couldn't send the email. Please try again." };
+  }
+}
+
+// Same response whether or not the account exists, so emails can't be probed.
+// OAuth-only users have no password to reset, so they get no email.
+export async function requestPasswordReset(
+  input: unknown,
+): Promise<ActionResult> {
+  const parsed = forgotPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Enter a valid email address" };
+  }
+
+  const { email } = parsed.data;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { passwordHash: true },
+    });
+    if (user?.passwordHash && !(await isInResetCooldown(email))) {
+      await sendPasswordResetLink(email);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Password reset request failed:", error);
+    return { success: false, error: "Couldn't send the email. Please try again." };
+  }
+}
+
+export async function resetPassword(input: unknown): Promise<ActionResult> {
+  const parsed = resetPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Enter a valid new password" };
+  }
+
+  try {
+    const result = await resetPasswordWithToken(
+      parsed.data.token,
+      parsed.data.password,
+    );
+    if (result === "invalid") {
+      return {
+        success: false,
+        invalidToken: true,
+        error: "This reset link has expired or was already used.",
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Password reset failed:", error);
+    return { success: false, error: "Couldn't reset your password. Please try again." };
   }
 }
 

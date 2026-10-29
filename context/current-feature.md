@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Forgot Password
 
 <!-- Feature Name -->
 
@@ -6,15 +6,34 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- "Forgot password?" link on `/sign-in` next to the password field, pointing to `/forgot-password`
+- `/forgot-password` page in the `(auth)` route group: email form (Zod-validated), submits to a `requestPasswordReset` server action
+- `requestPasswordReset` always returns the same success message ("If an account exists, we've sent a reset link") so emails can't be enumerated; only sends for existing users with a `passwordHash` (OAuth-only users have no password to reset)
+- Reset tokens stored in the existing `VerificationToken` model: random token, only its SHA-256 hash stored, 1h expiry, earlier reset tokens for that email replaced, 60s resend cooldown
+- Reset email sent via Resend through a new `sendPasswordResetEmail` helper in `src/lib/email.ts`, linking to `/reset-password?token=...`
+- `/reset-password` page: new password + confirm password form (reuse the existing password rules, 8–72 chars, must match), invalid/expired token state with a link back to `/forgot-password`
+- `resetPassword` server action: validates the token, bcrypt-hashes the new password (12 rounds), updates `User.passwordHash`, deletes all reset tokens for that email, all in one transaction
+- On success, redirect to `/sign-in?reset=1` with a success banner ("Password updated. You can sign in now.")
+- Actions return `{ success, data, error }`; user-friendly errors displayed in the forms
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- **No schema changes.** `VerificationToken` is shared with email verification, so reset tokens use a namespaced identifier (`password-reset:<email>`). Otherwise `sendVerificationLink`'s `deleteMany({ identifier: email })` would wipe reset tokens and vice versa
+- `verifyEmailToken` currently looks tokens up by hash alone; scope it to non-reset identifiers so a reset token can't be consumed at `/api/auth/verify-email`, and scope the reset lookup to the `password-reset:` prefix
+- Put the reset token logic in `src/lib/password-reset.ts`, mirroring `src/lib/verification.ts` (share `hashToken` rather than duplicating it)
+- Reset schemas (`forgotPasswordSchema`, `resetPasswordSchema`) go in `src/lib/validations/auth.ts`, reusing `emailSchema` and the existing password rules
+- Proxy: no change needed. `src/proxy.ts` only matches `/dashboard/*`, so `/forgot-password` and `/reset-password` are already public, same as `/sign-in`
+- Token helpers (`createToken`, `hashToken`, `PASSWORD_RESET_PREFIX`) live in `src/lib/tokens.ts`, shared by `verification.ts` and `password-reset.ts`
+- Resetting a password should also mark the email verified (`emailVerified` set if null), since the user proved inbox ownership
+- Password reset works regardless of `EMAIL_VERIFICATION_ENABLED`
 
 ## History
 
