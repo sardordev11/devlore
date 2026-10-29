@@ -36,6 +36,21 @@ export const resendVerificationSchema = z.object({ email: emailSchema });
 
 export const forgotPasswordSchema = z.object({ email: emailSchema });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine(passwordsMatch.check, passwordsMatch.params);
+
+// Typed by the user to confirm account deletion
+export const DELETE_CONFIRMATION = "delete";
+
+export function isDeleteConfirmed(value: unknown) {
+  return typeof value === "string" && value.trim() === DELETE_CONFIRMATION;
+}
+
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Reset link is invalid"),
