@@ -1,4 +1,4 @@
-# Current Feature: Email Verification Toggle
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,32 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Single server-side flag `EMAIL_VERIFICATION_ENABLED` exported from `src/lib/verification.ts` (or a small `src/lib/flags.ts`), read from `process.env.EMAIL_VERIFICATION_ENABLED`
-- Verification stays **on by default**; only the exact value `"false"` turns it off, so a missing env var never silently drops the check in production
-- When disabled:
-  - `POST /api/auth/register` skips `sendVerificationLink`, sets `emailVerified` to now, and returns `requiresVerification: false` in `data`
-  - Credentials sign-in in `src/auth.ts` skips the `emailVerified` check, so new users can sign in right away
-  - `resendVerificationEmail` action returns early without sending
-  - Sign-up toast reads "Account created successfully!" instead of "Check your email to verify your account"
-- When enabled, behavior is identical to today
-- `.env.example` documents the new variable; local `.env` sets it to `false` until a domain is linked to Resend
-- `npm run build` passes
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Why an env var: Resend only delivers to the account owner's address without a verified domain, so sign-up is effectively blocked for everyone else. An env var flips per environment (local / Vercel preview / production) with no code change or deploy of new code, matching the existing `ENFORCE_PLAN_LIMITS` pattern in the spec. A DB/admin setting would be overkill for a temporary switch.
-- Decision: users created while disabled get `emailVerified` set at sign-up, so they're grandfathered in if the flag is turned back on. Trade-off: those addresses were never actually checked.
-- The sign-in check is still skipped while disabled, so users who registered earlier and never verified aren't locked out.
-- The `/api/auth/verify-email` route and `/verify-email` page stay as-is; old links still work.
-- GitHub OAuth is unaffected.
 
 ## History
 
@@ -52,3 +35,4 @@ In Progress
 - **Auth Phase 2** — Credentials (email/password) provider alongside GitHub, edge-safe placeholder in `src/auth.config.ts` overridden in `src/auth.ts` with a bcrypt check against `User.passwordHash`, `POST /api/auth/register` (Zod validation, password match, 409 on duplicate email including concurrent `P2002`, bcrypt hash with 12 rounds, `{ success, data, error }` responses), shared Zod schemas in `src/lib/validations/auth.ts` (emails trimmed and lowercased, passwords 8–72 chars), `zod` added (Completed)
 - **Auth Phase 3** — custom `/sign-in` (email/password + GitHub, Zod validation, error display, NextAuth `?error=` messages) and `/sign-up` (posts to `/api/auth/register`, "Account created successfully!" Sonner toast at top center, redirect to sign-in) in a `(auth)` route group, server actions in `src/actions/auth.ts` (credentials and GitHub sign-in with same-site `callbackUrl` only, sign-out), `pages.signIn` and the proxy redirect pointing to `/sign-in`, reusable `UserAvatar` (GitHub image or initials), sidebar user from the session with a Profile / Sign out menu, unused `getDemoUser()` removed, shadcn label, dropdown-menu and sonner added (Completed)
 - **Email Verification** — `resend` with a mail helper in `src/lib/email.ts` (`EMAIL_FROM` override, `onboarding@resend.dev` default), `POST /api/auth/register` emails a 24h verification link (random token, only its SHA-256 hash stored in `VerificationToken`, earlier tokens replaced) via `src/lib/verification.ts`, `GET /api/auth/verify-email` sets `emailVerified` and redirects to `/sign-in?verified=1` (success banner) or `/verify-email?error=` (expired/invalid page with a resend form), credentials sign-in blocked until verified via a custom `CredentialsSignin` code with a "Resend verification email" button, `resendVerificationEmail` server action with a 60s cooldown and the same response for unknown emails, sign-up toast now "Check your email to verify your account", shared `emailSchema` in `src/lib/validations/auth.ts`, plus `scripts/delete-users.ts` (`db:delete-users`, dry run unless `--confirm`) to remove all non-demo users (Completed)
+- **Email Verification Toggle** — `EMAIL_VERIFICATION_ENABLED` flag in `src/lib/verification.ts` (on unless the env var is exactly `"false"`); when off, `POST /api/auth/register` skips the email, sets `emailVerified` at sign-up and returns `requiresVerification: false`, credentials sign-in skips the verification check, `resendVerificationEmail` is a no-op, and the sign-up toast reads "Account created successfully!"; documented in `.env.example` (Completed)
