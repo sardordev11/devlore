@@ -1,4 +1,4 @@
-# Current Feature: Forgot Password
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,34 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- "Forgot password?" link on `/sign-in` next to the password field, pointing to `/forgot-password`
-- `/forgot-password` page in the `(auth)` route group: email form (Zod-validated), submits to a `requestPasswordReset` server action
-- `requestPasswordReset` always returns the same success message ("If an account exists, we've sent a reset link") so emails can't be enumerated; only sends for existing users with a `passwordHash` (OAuth-only users have no password to reset)
-- Reset tokens stored in the existing `VerificationToken` model: random token, only its SHA-256 hash stored, 1h expiry, earlier reset tokens for that email replaced, 60s resend cooldown
-- Reset email sent via Resend through a new `sendPasswordResetEmail` helper in `src/lib/email.ts`, linking to `/reset-password?token=...`
-- `/reset-password` page: new password + confirm password form (reuse the existing password rules, 8–72 chars, must match), invalid/expired token state with a link back to `/forgot-password`
-- `resetPassword` server action: validates the token, bcrypt-hashes the new password (12 rounds), updates `User.passwordHash`, deletes all reset tokens for that email, all in one transaction
-- On success, redirect to `/sign-in?reset=1` with a success banner ("Password updated. You can sign in now.")
-- Actions return `{ success, data, error }`; user-friendly errors displayed in the forms
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- **No schema changes.** `VerificationToken` is shared with email verification, so reset tokens use a namespaced identifier (`password-reset:<email>`). Otherwise `sendVerificationLink`'s `deleteMany({ identifier: email })` would wipe reset tokens and vice versa
-- `verifyEmailToken` currently looks tokens up by hash alone; scope it to non-reset identifiers so a reset token can't be consumed at `/api/auth/verify-email`, and scope the reset lookup to the `password-reset:` prefix
-- Put the reset token logic in `src/lib/password-reset.ts`, mirroring `src/lib/verification.ts` (share `hashToken` rather than duplicating it)
-- Reset schemas (`forgotPasswordSchema`, `resetPasswordSchema`) go in `src/lib/validations/auth.ts`, reusing `emailSchema` and the existing password rules
-- Proxy: no change needed. `src/proxy.ts` only matches `/dashboard/*`, so `/forgot-password` and `/reset-password` are already public, same as `/sign-in`
-- Token helpers (`createToken`, `hashToken`, `PASSWORD_RESET_PREFIX`) live in `src/lib/tokens.ts`, shared by `verification.ts` and `password-reset.ts`
-- Resetting a password should also mark the email verified (`emailVerified` set if null), since the user proved inbox ownership
-- Password reset works regardless of `EMAIL_VERIFICATION_ENABLED`
 
 ## History
 
@@ -55,3 +36,4 @@ In Progress
 - **Auth Phase 3** — custom `/sign-in` (email/password + GitHub, Zod validation, error display, NextAuth `?error=` messages) and `/sign-up` (posts to `/api/auth/register`, "Account created successfully!" Sonner toast at top center, redirect to sign-in) in a `(auth)` route group, server actions in `src/actions/auth.ts` (credentials and GitHub sign-in with same-site `callbackUrl` only, sign-out), `pages.signIn` and the proxy redirect pointing to `/sign-in`, reusable `UserAvatar` (GitHub image or initials), sidebar user from the session with a Profile / Sign out menu, unused `getDemoUser()` removed, shadcn label, dropdown-menu and sonner added (Completed)
 - **Email Verification** — `resend` with a mail helper in `src/lib/email.ts` (`EMAIL_FROM` override, `onboarding@resend.dev` default), `POST /api/auth/register` emails a 24h verification link (random token, only its SHA-256 hash stored in `VerificationToken`, earlier tokens replaced) via `src/lib/verification.ts`, `GET /api/auth/verify-email` sets `emailVerified` and redirects to `/sign-in?verified=1` (success banner) or `/verify-email?error=` (expired/invalid page with a resend form), credentials sign-in blocked until verified via a custom `CredentialsSignin` code with a "Resend verification email" button, `resendVerificationEmail` server action with a 60s cooldown and the same response for unknown emails, sign-up toast now "Check your email to verify your account", shared `emailSchema` in `src/lib/validations/auth.ts`, plus `scripts/delete-users.ts` (`db:delete-users`, dry run unless `--confirm`) to remove all non-demo users (Completed)
 - **Email Verification Toggle** — `EMAIL_VERIFICATION_ENABLED` flag in `src/lib/verification.ts` (on unless the env var is exactly `"false"`); when off, `POST /api/auth/register` skips the email, sets `emailVerified` at sign-up and returns `requiresVerification: false`, credentials sign-in skips the verification check, `resendVerificationEmail` is a no-op, and the sign-up toast reads "Account created successfully!"; documented in `.env.example` (Completed)
+- **Forgot Password** — "Forgot password?" link on `/sign-in`, `/forgot-password` page with a `requestPasswordReset` server action (same response for unknown emails, only users with a `passwordHash`, 60s cooldown) that emails a 1h reset link via `sendPasswordResetEmail` in `src/lib/email.ts`, reset tokens in `VerificationToken` under a `password-reset:<email>` identifier (hash only, earlier tokens replaced) via `src/lib/password-reset.ts`, shared `createToken`/`hashToken`/`PASSWORD_RESET_PREFIX` in `src/lib/tokens.ts` with `verifyEmailToken` now ignoring reset tokens, `/reset-password` page checking the token at request time (`connection()` for Cache Components) with an invalid/expired state, `resetPassword` server action consuming the token, bcrypt-hashing the new password and setting `emailVerified` in one transaction, redirect to `/sign-in?reset=1` with a success banner, shared `passwordSchema` plus `forgotPasswordSchema`/`resetPasswordSchema` in `src/lib/validations/auth.ts` (Completed)
