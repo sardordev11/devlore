@@ -562,11 +562,18 @@ sequenceDiagram
 ```bash
 # Database
 DATABASE_URL=
+DIRECT_URL=                  # optional, Prisma CLI direct connection
 
 # Auth
 AUTH_SECRET=
+AUTH_URL=                    # base URL for email links
 AUTH_GITHUB_ID=
 AUTH_GITHUB_SECRET=
+
+# Email (Resend)
+RESEND_API_KEY=
+EMAIL_FROM=                  # optional, sender on a verified domain
+EMAIL_VERIFICATION_ENABLED=  # on unless "false"
 
 # Cloudflare R2
 R2_ACCOUNT_ID=
