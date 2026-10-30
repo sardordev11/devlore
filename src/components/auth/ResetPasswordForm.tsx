@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type SubmitEvent } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { resetPassword } from "@/actions/auth";
@@ -41,6 +42,10 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       const result = await resetPassword(parsed.data);
       if (result.success) {
         router.push("/sign-in?reset=1");
+        return;
+      }
+      if (result.rateLimited) {
+        toast.error(result.error);
         return;
       }
       setFormError(result.error ?? "Couldn't reset your password");

@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Rate Limiting for Auth
 
 <!-- Feature Name -->
 
@@ -12,9 +12,30 @@ Completed
 
 <!-- Goals & requirements -->
 
+- Rate limit the auth flows to stop brute force, credential stuffing and abuse of the endpoints that send email
+- Use Upstash Redis with `@upstash/ratelimit` (serverless-friendly), sliding window algorithm
+- Reusable `src/lib/rate-limit.ts` utility with the Upstash client, returning `{ success, remaining, reset }`
+- Get the IP from `x-forwarded-for` (Vercel) or the request, and combine IP + email where the spec says so
+- Limits:
+  - Login (credentials): 5 attempts / 15 min, keyed by IP + email
+  - Register (`POST /api/auth/register`): 3 attempts / 1 hour, keyed by IP
+  - Forgot password: 3 attempts / 1 hour, keyed by IP
+  - Reset password: 5 attempts / 15 min, keyed by IP
+  - Resend verification: 3 attempts / 15 min, keyed by IP + email
+- API routes return 429 with `{ error: "Too many attempts. Please try again in X minutes." }` and a `Retry-After` header
+- The frontend shows a friendly error in a toast
+- Fail open (allow the request) if Upstash is unavailable or not configured
+- Document `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.example`
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- The spec lists every endpoint as an `/api/auth/*` route, but only `register` is an API route in this codebase. Login (`signInWithCredentials`), forgot password (`requestPasswordReset`), reset password (`resetPassword`) and resend verification (`resendVerificationEmail`) are server actions in `src/actions/auth.ts`. Rate limit them inside the actions, read the IP via `headers()`, and return the same "Too many attempts…" message through the `{ success, data, error }` pattern (no 429 status or `Retry-After` from a server action).
+- Login is limited in the Credentials `authorize` in `src/auth.ts`, so it covers both `signInWithCredentials` and direct POSTs to `/api/auth/callback/credentials`. NextAuth forwards the request headers to `authorize` and rethrows the `LoginRateLimited` error to the action, which turns it into the rate-limited result.
+- `requestPasswordReset` and `resendVerificationEmail` already have a 60s per-email cooldown. Keep it alongside the new IP limits.
+- Upstash free tier: 10k requests/day, enough for auth limiting.
+- Rate limiting middleware can come later for a cleaner setup.
 
 ## History
 

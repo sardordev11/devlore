@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition, type SubmitEvent } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { requestPasswordReset } from "@/actions/auth";
@@ -31,6 +32,8 @@ export function ForgotPasswordForm() {
       const result = await requestPasswordReset(parsed.data);
       if (result.success) {
         setSent(true);
+      } else if (result.rateLimited) {
+        toast.error(result.error);
       } else {
         setFormError(result.error ?? "Couldn't send the email");
       }

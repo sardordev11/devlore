@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useTransition, type SubmitEvent } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { signInWithCredentials } from "@/actions/auth";
@@ -52,6 +53,10 @@ export function SignInForm() {
     startTransition(async () => {
       const result = await signInWithCredentials(parsed.data, callbackUrl);
       if (result.success) return;
+      if (result.rateLimited) {
+        toast.error(result.error);
+        return;
+      }
       setFormError(result.error ?? "Sign in failed");
       if (result.needsVerification) setUnverifiedEmail(parsed.data.email);
     });

@@ -47,6 +47,10 @@ export function SignUpForm() {
         });
         const result: RegisterResponse = await response.json();
 
+        if (response.status === 429) {
+          toast.error(result.error ?? "Too many attempts. Please try again later.");
+          return;
+        }
         if (!response.ok || !result.success) {
           setFormError(result.error ?? "Registration failed");
           return;

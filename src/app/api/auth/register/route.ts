@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitMessage,
+  retryAfterSeconds,
+} from "@/lib/rate-limit";
 import { registerSchema } from "@/lib/validations/auth";
 import {
   EMAIL_VERIFICATION_ENABLED,
@@ -9,6 +15,17 @@ import {
 } from "@/lib/verification";
 
 export async function POST(request: Request) {
+  const limit = await checkRateLimit("register", getClientIp(request.headers));
+  if (!limit.success) {
+    return NextResponse.json(
+      { success: false, error: rateLimitMessage(limit.reset) },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfterSeconds(limit.reset)) },
+      },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
