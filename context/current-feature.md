@@ -1,4 +1,4 @@
-# Current Feature: Rate Limiting for Auth
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -12,30 +12,9 @@ Completed
 
 <!-- Goals & requirements -->
 
-- Rate limit the auth flows to stop brute force, credential stuffing and abuse of the endpoints that send email
-- Use Upstash Redis with `@upstash/ratelimit` (serverless-friendly), sliding window algorithm
-- Reusable `src/lib/rate-limit.ts` utility with the Upstash client, returning `{ success, remaining, reset }`
-- Get the IP from `x-forwarded-for` (Vercel) or the request, and combine IP + email where the spec says so
-- Limits:
-  - Login (credentials): 5 attempts / 15 min, keyed by IP + email
-  - Register (`POST /api/auth/register`): 3 attempts / 1 hour, keyed by IP
-  - Forgot password: 3 attempts / 1 hour, keyed by IP
-  - Reset password: 5 attempts / 15 min, keyed by IP
-  - Resend verification: 3 attempts / 15 min, keyed by IP + email
-- API routes return 429 with `{ error: "Too many attempts. Please try again in X minutes." }` and a `Retry-After` header
-- The frontend shows a friendly error in a toast
-- Fail open (allow the request) if Upstash is unavailable or not configured
-- Document `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.example`
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- The spec lists every endpoint as an `/api/auth/*` route, but only `register` is an API route in this codebase. Login (`signInWithCredentials`), forgot password (`requestPasswordReset`), reset password (`resetPassword`) and resend verification (`resendVerificationEmail`) are server actions in `src/actions/auth.ts`. Rate limit them inside the actions, read the IP via `headers()`, and return the same "Too many attempts…" message through the `{ success, data, error }` pattern (no 429 status or `Retry-After` from a server action).
-- Login is limited in the Credentials `authorize` in `src/auth.ts`, so it covers both `signInWithCredentials` and direct POSTs to `/api/auth/callback/credentials`. NextAuth forwards the request headers to `authorize` and rethrows the `LoginRateLimited` error to the action, which turns it into the rate-limited result.
-- `requestPasswordReset` and `resendVerificationEmail` already have a 60s per-email cooldown. Keep it alongside the new IP limits.
-- Upstash free tier: 10k requests/day, enough for auth limiting.
-- Rate limiting middleware can come later for a cleaner setup.
 
 ## History
 
@@ -59,3 +38,4 @@ Completed
 - **Email Verification Toggle** — `EMAIL_VERIFICATION_ENABLED` flag in `src/lib/verification.ts` (on unless the env var is exactly `"false"`); when off, `POST /api/auth/register` skips the email, sets `emailVerified` at sign-up and returns `requiresVerification: false`, credentials sign-in skips the verification check, `resendVerificationEmail` is a no-op, and the sign-up toast reads "Account created successfully!"; documented in `.env.example` (Completed)
 - **Forgot Password** — "Forgot password?" link on `/sign-in`, `/forgot-password` page with a `requestPasswordReset` server action (same response for unknown emails, only users with a `passwordHash`, 60s cooldown) that emails a 1h reset link via `sendPasswordResetEmail` in `src/lib/email.ts`, reset tokens in `VerificationToken` under a `password-reset:<email>` identifier (hash only, earlier tokens replaced) via `src/lib/password-reset.ts`, shared `createToken`/`hashToken`/`PASSWORD_RESET_PREFIX` in `src/lib/tokens.ts` with `verifyEmailToken` now ignoring reset tokens, `/reset-password` page checking the token at request time (`connection()` for Cache Components) with an invalid/expired state, `resetPassword` server action consuming the token, bcrypt-hashing the new password and setting `emailVerified` in one transaction, redirect to `/sign-in?reset=1` with a success banner, shared `passwordSchema` plus `forgotPasswordSchema`/`resetPasswordSchema` in `src/lib/validations/auth.ts` (Completed)
 - **Profile Page** — protected `/profile` route (added to the `src/proxy.ts` matcher) sharing the top bar and sidebar via a new `AppShell` used by both the dashboard and profile layouts, `getProfile` in `src/lib/db/profile.ts` scoped to the signed-in user (name, email, image, creation date, `hasPassword`, item and collection counts, per-type counts for all 7 system types), user card with `UserAvatar` and "Member since" date, Total Items / Collections `StatCard`s plus a type-colored `TypeBreakdown`, `ChangePasswordDialog` (only for users with a `passwordHash`; current password checked with bcrypt, new one hashed with 12 rounds, `changePasswordSchema`), `DeleteAccountDialog` requiring the user to type "delete" (checked client and server side via shared `DELETE_CONFIRMATION`/`isDeleteConfirmed`), `deleteAccount` server action cascading the user's data, removing their verification and reset tokens and signing out, profile loading skeleton, shadcn dialog and alert-dialog added (Completed)
+- **Rate Limiting for Auth** — `@upstash/ratelimit` + `@upstash/redis` with sliding-window limiters in `src/lib/rate-limit.ts` (`checkRateLimit` returning `{ success, remaining, reset }`, `getClientIp` from `x-forwarded-for`/`x-real-ip`, `getRequestIp` for server actions, "Too many attempts. Please try again in X minutes." message), failing open when Upstash is unconfigured, errors or takes over 2s; login 5/15 min by IP + email checked in the Credentials `authorize` via a `LoginRateLimited` `CredentialsSignin` (covers direct callback POSTs), `POST /api/auth/register` 3/1 h by IP returning 429 with `Retry-After`, forgot password 3/1 h and reset password 5/15 min by IP and resend verification 3/15 min by IP + email in the server actions (`rateLimited` result, existing 60s cooldowns kept), rate-limit errors shown as toasts in the auth forms, `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` in `.env.example` (Completed)
