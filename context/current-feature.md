@@ -1,4 +1,4 @@
-# Current Feature: Items List Three Columns
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,23 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- `/items/[type]` grid shows three columns per row on larger screens instead of two
-- Stays responsive: one column on mobile, two on medium screens, three on large
-- Loading skeleton grid matches the page grid so the layout doesn't jump
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Grid lives in `src/app/items/[type]/page.tsx` and `src/app/items/[type]/loading.tsx`, currently `grid-cols-1 md:grid-cols-2`
-- Uses `xl:grid-cols-3`, not `lg`. With the 16rem sidebar open, three columns at 1024px squeezed `ItemCard` titles to ~10 characters ("Next.js mul…"); at 1280px they read fine. Checked in the browser at 390px (1 column), 1024px (2) and 1280px (3)
-- Styling only, no server action or utility changes, so no new unit tests
 
 ## History
 
@@ -49,3 +41,4 @@ In Progress
 - **Rate Limiting for Auth** — `@upstash/ratelimit` + `@upstash/redis` with sliding-window limiters in `src/lib/rate-limit.ts` (`checkRateLimit` returning `{ success, remaining, reset }`, `getClientIp` from `x-forwarded-for`/`x-real-ip`, `getRequestIp` for server actions, "Too many attempts. Please try again in X minutes." message), failing open when Upstash is unconfigured, errors or takes over 2s; login 5/15 min by IP + email checked in the Credentials `authorize` via a `LoginRateLimited` `CredentialsSignin` (covers direct callback POSTs), `POST /api/auth/register` 3/1 h by IP returning 429 with `Retry-After`, forgot password 3/1 h and reset password 5/15 min by IP and resend verification 3/15 min by IP + email in the server actions (`rateLimited` result, existing 60s cooldowns kept), rate-limit errors shown as toasts in the auth forms, `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` in `.env.example` (Completed)
 - **Items List View** — protected `/items/[type]` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing the signed-in user's items of one type via `getItemsByTypeSlug` in `src/lib/db/items.ts` (plural slug lookup with system types winning over custom ones, pinned first then most recently used), header with the type-colored icon, title and item count, responsive grid of type-colored `ItemCard`s (one column, two from `md` up), empty state, 404 for unknown slugs, loading skeleton, encoded `callbackUrl` on the sign-in fallback; dashboard and sidebar data functions in `src/lib/db/items.ts` and `src/lib/db/collections.ts` now take the session user's id instead of the hardcoded demo-user filter, unused `src/lib/db/demo-user.ts` removed (Completed)
 - **Vitest Setup** — Vitest 5 for unit testing server actions and utilities only (`include` limited to `src/actions/**/*.test.ts` and `src/lib/**/*.test.ts`, node environment, `@/` alias, `mockReset` + `restoreMocks`), `vitest.setup.ts` stubbing `server-only`, `npm run test` (watch) and `npm run test:run` scripts, `@types/node` bumped to `^22` for Vitest 5, colocated example tests for `src/lib/tokens.ts`, `src/lib/validations/auth.ts`, `src/lib/rate-limit.ts` and `src/actions/profile.ts` (mocked `@/auth`, `@/lib/prisma` and `bcryptjs`), testing added to the workflow in `context/ai-interaction.md`, `context/coding-standards.md`, `CLAUDE.md` and the `/feature` test action (Completed)
+- **Items List Three Columns** — `/items/[type]` grid and its loading skeleton now go one column on mobile, two from `md` and three from `xl` (`xl:grid-cols-3` rather than `lg`, since at 1024px with the sidebar open three columns truncated `ItemCard` titles to ~10 characters), checked in the browser at 390px, 1024px and 1280px (Completed)
