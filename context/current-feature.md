@@ -2,19 +2,31 @@
 
 <!-- Feature Name -->
 
+Vitest Setup
+
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Set up Vitest for unit testing server actions (`src/actions`) and utilities (`src/lib`), not components
+- `npm run test` (watch) and `npm run test:run` (single run) scripts
+- Example tests for both patterns: pure utilities and a server action with mocked auth and Prisma
+- Add testing to the workflow and docs
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Vitest 5 needs `@types/node` 22+, so it was bumped from `^20` to `^22` (matches the local Node 22 runtime)
+- `vitest.config.ts`: node environment, `@/` alias, `include` limited to `src/actions/**/*.test.ts` and `src/lib/**/*.test.ts`, `mockReset` + `restoreMocks` between tests
+- `vitest.setup.ts` stubs `server-only`, which throws outside a React Server Components build
+- Tests live next to the source file they test
 
 ## History
 

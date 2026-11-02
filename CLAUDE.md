@@ -17,6 +17,8 @@ Read the following to get the full context of the project:
 - `npm run build` — production build (also type-checks)
 - `npm run start` — serve the production build
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
+- `npm run test` — Vitest in watch mode (server actions and utilities only, `src/actions/**/*.test.ts` and `src/lib/**/*.test.ts`)
+- `npm run test:run` — run the Vitest suite once
 - `npm run db:generate` — generate the Prisma client
 - `npm run db:migrate` — create and apply a migration (`prisma migrate dev`)
 - `npm run db:deploy` — apply pending migrations (`prisma migrate deploy`)

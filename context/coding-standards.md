@@ -54,6 +54,7 @@ Example v4 configuration:
 - Server Actions: `src/actions/[feature].ts`
 - Types: `src/types/[feature].ts`
 - Lib/Utils: `src/lib/[utility].ts`
+- Unit tests: next to the source file, `src/actions/[feature].test.ts` or `src/lib/[utility].test.ts` (Vitest, server actions and utilities only)
 
 ## Naming
 
