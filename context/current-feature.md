@@ -1,4 +1,4 @@
-# Current Feature: Item Drawer
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,30 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Right-side slide-in drawer (shadcn `Sheet`) that opens when an `ItemCard` is clicked; it is the item detail view, with no separate item page
-- Works on both the dashboard and the `/items/[type]` list pages
-- Client wrapper component manages the drawer state, since the pages are server components
-- Feels snappy: fetch on click, no page navigation
-- Full item detail (content, collections, language, etc.) fetched on click from `GET /api/items/[id]`, with an auth check
-- Query function lives in `src/lib/db/items.ts` and is scoped to the signed-in user; the API route calls it
-- Skeleton/loading state while the detail is fetching
-- Action bar: Favorite (star, yellow when active), Pin, Copy, Edit (pencil) and Delete (trash, right-aligned), laid out as in the screenshot
-- Drawer shows the item details display only for now
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Card data (title, description, tags, etc.) is still fetched by the server components as before
-- Code editor and other type-specific extras come later; out of scope here
-- Visual reference: `context/screenshots/dashboard-ui-drawer.png`
-- Spec: `context/features/item-drawer-spec.md`
 
 ## History
 
@@ -57,3 +42,4 @@ In Progress
 - **Items List View** — protected `/items/[type]` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing the signed-in user's items of one type via `getItemsByTypeSlug` in `src/lib/db/items.ts` (plural slug lookup with system types winning over custom ones, pinned first then most recently used), header with the type-colored icon, title and item count, responsive grid of type-colored `ItemCard`s (one column, two from `md` up), empty state, 404 for unknown slugs, loading skeleton, encoded `callbackUrl` on the sign-in fallback; dashboard and sidebar data functions in `src/lib/db/items.ts` and `src/lib/db/collections.ts` now take the session user's id instead of the hardcoded demo-user filter, unused `src/lib/db/demo-user.ts` removed (Completed)
 - **Vitest Setup** — Vitest 5 for unit testing server actions and utilities only (`include` limited to `src/actions/**/*.test.ts` and `src/lib/**/*.test.ts`, node environment, `@/` alias, `mockReset` + `restoreMocks`), `vitest.setup.ts` stubbing `server-only`, `npm run test` (watch) and `npm run test:run` scripts, `@types/node` bumped to `^22` for Vitest 5, colocated example tests for `src/lib/tokens.ts`, `src/lib/validations/auth.ts`, `src/lib/rate-limit.ts` and `src/actions/profile.ts` (mocked `@/auth`, `@/lib/prisma` and `bcryptjs`), testing added to the workflow in `context/ai-interaction.md`, `context/coding-standards.md`, `CLAUDE.md` and the `/feature` test action (Completed)
 - **Items List Three Columns** — `/items/[type]` grid and its loading skeleton now go one column on mobile, two from `md` and three from `xl` (`xl:grid-cols-3` rather than `lg`, since at 1024px with the sidebar open three columns truncated `ItemCard` titles to ~10 characters), checked in the browser at 390px, 1024px and 1280px (Completed)
+- **Item Drawer** — clicking an `ItemCard` on the dashboard or `/items/[type]` opens a right-side shadcn `Sheet` with the item's full details (no page navigation); `getItemDetail` in `src/lib/db/items.ts` scoped to the signed-in user (content, language, URL/file, tags, collections, dates) with unit tests, `GET /api/items/[id]` (401 signed out, 404 for unknown or other users' items, `{ success, data, error }`), `ItemDrawerProvider` inside `AppShell` fetching on click and aborting stale requests, `ItemDrawerTrigger` wrapping the server-rendered `ItemCard` (click, Enter or Space), header with type icon and type/language badges, action bar with Favorite (yellow when active), Pin, Copy (content, URL or file URL to the clipboard with a toast), Edit and right-aligned Delete (all but Copy display only for now), Description / Content / Tags / Collections / Details sections, loading skeleton and error state, full width on mobile with a wrapping action bar, new `overlayClassName` prop on `SheetContent` for a dimmed `bg-black/50` backdrop without blur, `ItemDetailJson` type in `src/types/items.ts` (Completed)
