@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Items List Three Columns
 
 <!-- Feature Name -->
 
@@ -6,15 +6,23 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- `/items/[type]` grid shows three columns per row on larger screens instead of two
+- Stays responsive: one column on mobile, two on medium screens, three on large
+- Loading skeleton grid matches the page grid so the layout doesn't jump
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Grid lives in `src/app/items/[type]/page.tsx` and `src/app/items/[type]/loading.tsx`, currently `grid-cols-1 md:grid-cols-2`
+- Uses `xl:grid-cols-3`, not `lg`. With the 16rem sidebar open, three columns at 1024px squeezed `ItemCard` titles to ~10 characters ("Next.js mul…"); at 1280px they read fine. Checked in the browser at 390px (1 column), 1024px (2) and 1280px (3)
+- Styling only, no server action or utility changes, so no new unit tests
 
 ## History
 
