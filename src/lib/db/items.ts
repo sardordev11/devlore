@@ -1,7 +1,6 @@
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { demoUserFilter } from "@/lib/db/demo-user";
 import { prisma } from "@/lib/prisma";
 
 interface ItemSummaryType {
@@ -21,6 +20,16 @@ export interface ItemSummary {
   createdAt: Date;
   type: ItemSummaryType;
   tags: string[];
+}
+
+export interface ItemTypeListing {
+  type: {
+    name: string;
+    slug: string;
+    icon: string;
+    color: string;
+  };
+  items: ItemSummary[];
 }
 
 export interface ItemStats {
@@ -62,9 +71,9 @@ function toItemSummary({ tags, ...item }: ItemRow): ItemSummary {
   return { ...item, tags: tags.map((tag) => tag.name) };
 }
 
-export async function getPinnedItems(): Promise<ItemSummary[]> {
+export async function getPinnedItems(userId: string): Promise<ItemSummary[]> {
   const items = await prisma.item.findMany({
-    where: { ...demoUserFilter(), isPinned: true },
+    where: { userId, isPinned: true },
     orderBy: RECENT_ORDER,
     select: ITEM_SUMMARY_SELECT,
   });
@@ -72,9 +81,12 @@ export async function getPinnedItems(): Promise<ItemSummary[]> {
   return items.map(toItemSummary);
 }
 
-export async function getRecentItems(limit = 10): Promise<ItemSummary[]> {
+export async function getRecentItems(
+  userId: string,
+  limit = 10,
+): Promise<ItemSummary[]> {
   const items = await prisma.item.findMany({
-    where: demoUserFilter(),
+    where: { userId },
     orderBy: RECENT_ORDER,
     take: limit,
     select: ITEM_SUMMARY_SELECT,
@@ -83,10 +95,34 @@ export async function getRecentItems(limit = 10): Promise<ItemSummary[]> {
   return items.map(toItemSummary);
 }
 
-export async function getItemStats(): Promise<ItemStats> {
+// Returns null when no system type or custom type of this user has the slug.
+export async function getItemsByTypeSlug(
+  userId: string,
+  slug: string,
+): Promise<ItemTypeListing | null> {
+  const found = await prisma.itemType.findFirst({
+    where: { slug, OR: [{ isSystem: true }, { userId }] },
+    // A system type wins if a custom type reuses its slug.
+    orderBy: { isSystem: "desc" },
+    select: { id: true, name: true, slug: true, icon: true, color: true },
+  });
+  if (!found) return null;
+
+  const { id: typeId, ...type } = found;
+  const items = await prisma.item.findMany({
+    where: { userId, typeId },
+    // Pinned items stay at the top.
+    orderBy: [{ isPinned: "desc" }, ...RECENT_ORDER],
+    select: ITEM_SUMMARY_SELECT,
+  });
+
+  return { type, items: items.map(toItemSummary) };
+}
+
+export async function getItemStats(userId: string): Promise<ItemStats> {
   const groups = await prisma.item.groupBy({
     by: ["isFavorite"],
-    where: demoUserFilter(),
+    where: { userId },
     _count: { _all: true },
   });
 
@@ -96,7 +132,9 @@ export async function getItemStats(): Promise<ItemStats> {
   };
 }
 
-export async function getSidebarItemTypes(): Promise<SidebarItemType[]> {
+export async function getSidebarItemTypes(
+  userId: string,
+): Promise<SidebarItemType[]> {
   const types = await prisma.itemType.findMany({
     where: { isSystem: true },
     // Seeded in display order.
@@ -108,7 +146,7 @@ export async function getSidebarItemTypes(): Promise<SidebarItemType[]> {
       icon: true,
       color: true,
       isProOnly: true,
-      _count: { select: { items: { where: demoUserFilter() } } },
+      _count: { select: { items: { where: { userId } } } },
     },
   });
 

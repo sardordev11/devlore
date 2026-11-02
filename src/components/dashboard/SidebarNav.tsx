@@ -2,6 +2,7 @@ import { ChevronDownIcon, FolderIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 
+import { auth } from "@/auth";
 import { SidebarNavItem } from "@/components/dashboard/SidebarNavItem";
 import {
   Collapsible,
@@ -29,9 +30,14 @@ const CHEVRON_CLASS = "ml-auto transition-transform in-data-panel-open:rotate-18
 export async function SidebarNav() {
   // User data must be fetched per request, not prerendered at build time.
   await connection();
+  const session = await auth();
+  // Signed-in routes are guarded by the proxy, so this is only a fallback.
+  if (!session?.user?.id) return null;
+
+  const userId = session.user.id;
   const [itemTypes, { favorites, recents }] = await Promise.all([
-    getSidebarItemTypes(),
-    getSidebarCollections(),
+    getSidebarItemTypes(userId),
+    getSidebarCollections(userId),
   ]);
 
   return (

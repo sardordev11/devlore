@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Items List View
 
 <!-- Feature Name -->
 
@@ -6,15 +6,26 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Dynamic route `/items/[type]` (e.g. `/items/snippets`, `/items/notes`)
+- Fetch and display the signed-in user's items filtered by type
+- Responsive grid of `ItemCard` components
+- Two columns on medium screens and up
+- Each card has a left border colored by its item type
+- Follow existing codebase patterns
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/item-list-view-spec.md`
+- `[type]` maps to `ItemType.slug` (pluralized, e.g. `snippets`), matching the sidebar type links
+- Also scoped the dashboard and sidebar to the signed-in user: every data function in `src/lib/db/items.ts` and `src/lib/db/collections.ts` now takes a `userId` from the session instead of the hardcoded demo-user filter, and the unused `src/lib/db/demo-user.ts` is removed
 
 ## History
 

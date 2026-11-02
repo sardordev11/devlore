@@ -6,8 +6,10 @@ import {
   PinIcon,
   StarIcon,
 } from "lucide-react";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
+import { auth } from "@/auth";
 import { CollectionCard } from "@/components/dashboard/CollectionCard";
 import { DashboardSection } from "@/components/dashboard/DashboardSection";
 import { ItemCard } from "@/components/dashboard/ItemCard";
@@ -18,13 +20,17 @@ import { getItemStats, getPinnedItems, getRecentItems } from "@/lib/db/items";
 export default async function DashboardPage() {
   // User data must be fetched per request, not prerendered at build time.
   await connection();
+  const session = await auth();
+  if (!session?.user?.id) redirect("/sign-in?callbackUrl=/dashboard");
+
+  const userId = session.user.id;
   const [recentCollections, collectionStats, pinnedItems, recentItems, itemStats] =
     await Promise.all([
-      getRecentCollections(),
-      getCollectionStats(),
-      getPinnedItems(),
-      getRecentItems(),
-      getItemStats(),
+      getRecentCollections(userId),
+      getCollectionStats(userId),
+      getPinnedItems(userId),
+      getRecentItems(userId),
+      getItemStats(userId),
     ]);
 
   const STATS = [

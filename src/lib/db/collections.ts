@@ -1,7 +1,6 @@
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
-import { demoUserFilter } from "@/lib/db/demo-user";
 import { prisma } from "@/lib/prisma";
 
 export interface CollectionType {
@@ -114,10 +113,11 @@ async function toCollectionSummaries(
 }
 
 export async function getRecentCollections(
+  userId: string,
   limit = 6,
 ): Promise<CollectionSummary[]> {
   const collections = await prisma.collection.findMany({
-    where: demoUserFilter(),
+    where: { userId },
     orderBy: { updatedAt: "desc" },
     take: limit,
     include: COLLECTION_SUMMARY_INCLUDE,
@@ -128,17 +128,17 @@ export async function getRecentCollections(
 }
 
 export async function getSidebarCollections(
+  userId: string,
   recentLimit = 5,
 ): Promise<SidebarCollections> {
-  const where = demoUserFilter();
   const [favoriteRows, recentRows] = await Promise.all([
     prisma.collection.findMany({
-      where: { ...where, isFavorite: true },
+      where: { userId, isFavorite: true },
       orderBy: { name: "asc" },
       include: COLLECTION_SUMMARY_INCLUDE,
     }),
     prisma.collection.findMany({
-      where: { ...where, isFavorite: false },
+      where: { userId, isFavorite: false },
       orderBy: { updatedAt: "desc" },
       take: recentLimit,
       include: COLLECTION_SUMMARY_INCLUDE,
@@ -152,10 +152,12 @@ export async function getSidebarCollections(
   return { favorites, recents };
 }
 
-export async function getCollectionStats(): Promise<CollectionStats> {
+export async function getCollectionStats(
+  userId: string,
+): Promise<CollectionStats> {
   const groups = await prisma.collection.groupBy({
     by: ["isFavorite"],
-    where: demoUserFilter(),
+    where: { userId },
     _count: { _all: true },
   });
 
