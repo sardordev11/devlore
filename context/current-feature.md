@@ -1,4 +1,4 @@
-# Current Feature: Items List View
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,26 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Dynamic route `/items/[type]` (e.g. `/items/snippets`, `/items/notes`)
-- Fetch and display the signed-in user's items filtered by type
-- Responsive grid of `ItemCard` components
-- Two columns on medium screens and up
-- Each card has a left border colored by its item type
-- Follow existing codebase patterns
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/item-list-view-spec.md`
-- `[type]` maps to `ItemType.slug` (pluralized, e.g. `snippets`), matching the sidebar type links
-- Also scoped the dashboard and sidebar to the signed-in user: every data function in `src/lib/db/items.ts` and `src/lib/db/collections.ts` now takes a `userId` from the session instead of the hardcoded demo-user filter, and the unused `src/lib/db/demo-user.ts` is removed
 
 ## History
 
@@ -50,3 +39,4 @@ In Progress
 - **Forgot Password** — "Forgot password?" link on `/sign-in`, `/forgot-password` page with a `requestPasswordReset` server action (same response for unknown emails, only users with a `passwordHash`, 60s cooldown) that emails a 1h reset link via `sendPasswordResetEmail` in `src/lib/email.ts`, reset tokens in `VerificationToken` under a `password-reset:<email>` identifier (hash only, earlier tokens replaced) via `src/lib/password-reset.ts`, shared `createToken`/`hashToken`/`PASSWORD_RESET_PREFIX` in `src/lib/tokens.ts` with `verifyEmailToken` now ignoring reset tokens, `/reset-password` page checking the token at request time (`connection()` for Cache Components) with an invalid/expired state, `resetPassword` server action consuming the token, bcrypt-hashing the new password and setting `emailVerified` in one transaction, redirect to `/sign-in?reset=1` with a success banner, shared `passwordSchema` plus `forgotPasswordSchema`/`resetPasswordSchema` in `src/lib/validations/auth.ts` (Completed)
 - **Profile Page** — protected `/profile` route (added to the `src/proxy.ts` matcher) sharing the top bar and sidebar via a new `AppShell` used by both the dashboard and profile layouts, `getProfile` in `src/lib/db/profile.ts` scoped to the signed-in user (name, email, image, creation date, `hasPassword`, item and collection counts, per-type counts for all 7 system types), user card with `UserAvatar` and "Member since" date, Total Items / Collections `StatCard`s plus a type-colored `TypeBreakdown`, `ChangePasswordDialog` (only for users with a `passwordHash`; current password checked with bcrypt, new one hashed with 12 rounds, `changePasswordSchema`), `DeleteAccountDialog` requiring the user to type "delete" (checked client and server side via shared `DELETE_CONFIRMATION`/`isDeleteConfirmed`), `deleteAccount` server action cascading the user's data, removing their verification and reset tokens and signing out, profile loading skeleton, shadcn dialog and alert-dialog added (Completed)
 - **Rate Limiting for Auth** — `@upstash/ratelimit` + `@upstash/redis` with sliding-window limiters in `src/lib/rate-limit.ts` (`checkRateLimit` returning `{ success, remaining, reset }`, `getClientIp` from `x-forwarded-for`/`x-real-ip`, `getRequestIp` for server actions, "Too many attempts. Please try again in X minutes." message), failing open when Upstash is unconfigured, errors or takes over 2s; login 5/15 min by IP + email checked in the Credentials `authorize` via a `LoginRateLimited` `CredentialsSignin` (covers direct callback POSTs), `POST /api/auth/register` 3/1 h by IP returning 429 with `Retry-After`, forgot password 3/1 h and reset password 5/15 min by IP and resend verification 3/15 min by IP + email in the server actions (`rateLimited` result, existing 60s cooldowns kept), rate-limit errors shown as toasts in the auth forms, `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` in `.env.example` (Completed)
+- **Items List View** — protected `/items/[type]` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing the signed-in user's items of one type via `getItemsByTypeSlug` in `src/lib/db/items.ts` (plural slug lookup with system types winning over custom ones, pinned first then most recently used), header with the type-colored icon, title and item count, responsive grid of type-colored `ItemCard`s (one column, two from `md` up), empty state, 404 for unknown slugs, loading skeleton, encoded `callbackUrl` on the sign-in fallback; dashboard and sidebar data functions in `src/lib/db/items.ts` and `src/lib/db/collections.ts` now take the session user's id instead of the hardcoded demo-user filter, unused `src/lib/db/demo-user.ts` removed (Completed)
