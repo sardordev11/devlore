@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Prisma } from "@/generated/prisma/client";
+import type { ContentType, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 interface ItemSummaryType {
@@ -20,6 +20,25 @@ export interface ItemSummary {
   createdAt: Date;
   type: ItemSummaryType;
   tags: string[];
+}
+
+export interface ItemDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  contentType: ContentType;
+  content: string | null;
+  language: string | null;
+  url: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  isFavorite: boolean;
+  isPinned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  type: ItemSummaryType & { slug: string };
+  tags: string[];
+  collections: { id: string; name: string }[];
 }
 
 export interface ItemTypeListing {
@@ -117,6 +136,47 @@ export async function getItemsByTypeSlug(
   });
 
   return { type, items: items.map(toItemSummary) };
+}
+
+// Returns null when the item doesn't exist or belongs to another user.
+export async function getItemDetail(
+  userId: string,
+  itemId: string,
+): Promise<ItemDetail | null> {
+  const item = await prisma.item.findFirst({
+    where: { id: itemId, userId },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      contentType: true,
+      content: true,
+      language: true,
+      url: true,
+      fileUrl: true,
+      fileName: true,
+      isFavorite: true,
+      isPinned: true,
+      createdAt: true,
+      updatedAt: true,
+      type: {
+        select: { id: true, name: true, slug: true, icon: true, color: true },
+      },
+      tags: { select: { name: true }, orderBy: { name: "asc" } },
+      collections: {
+        select: { collection: { select: { id: true, name: true } } },
+        orderBy: { collection: { name: "asc" } },
+      },
+    },
+  });
+  if (!item) return null;
+
+  const { tags, collections, ...rest } = item;
+  return {
+    ...rest,
+    tags: tags.map((tag) => tag.name),
+    collections: collections.map(({ collection }) => collection),
+  };
 }
 
 export async function getItemStats(userId: string): Promise<ItemStats> {
