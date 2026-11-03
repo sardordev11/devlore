@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { getItemDetail } from "@/lib/db/items";
+import { Prisma } from "@/generated/prisma/client";
+import { getItemDetail, updateItem } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: { item: { findFirst: vi.fn() } },
+  prisma: { item: { findFirst: vi.fn(), update: vi.fn() } },
 }));
 
 const mockPrisma = vi.mocked(prisma, { deep: true });
@@ -63,5 +64,73 @@ describe("getItemDetail", () => {
       tags: ["auth", "react"],
       collections: [{ id: "col-1", name: "React Patterns" }],
     });
+  });
+});
+
+describe("updateItem", () => {
+  const input = {
+    title: "useAuth Hook",
+    description: null,
+    content: "export function useAuth() {}",
+    tags: ["auth", "react"],
+  };
+
+  it("updates only the user's item and replaces its tags", async () => {
+    mockPrisma.item.update.mockResolvedValue(ROW as never);
+
+    await updateItem("user-1", "item-1", input);
+
+    expect(mockPrisma.item.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "item-1", userId: "user-1" },
+        data: {
+          title: "useAuth Hook",
+          description: null,
+          content: "export function useAuth() {}",
+          tags: {
+            set: [],
+            connectOrCreate: [
+              {
+                where: { userId_name: { userId: "user-1", name: "auth" } },
+                create: { name: "auth", userId: "user-1" },
+              },
+              {
+                where: { userId_name: { userId: "user-1", name: "react" } },
+                create: { name: "react", userId: "user-1" },
+              },
+            ],
+          },
+        },
+      }),
+    );
+  });
+
+  it("returns the updated item detail", async () => {
+    mockPrisma.item.update.mockResolvedValue(ROW as never);
+
+    await expect(updateItem("user-1", "item-1", input)).resolves.toEqual({
+      ...ROW,
+      tags: ["auth", "react"],
+      collections: [{ id: "col-1", name: "React Patterns" }],
+    });
+  });
+
+  it("returns null when the item isn't found for the user", async () => {
+    mockPrisma.item.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Not found", {
+        code: "P2025",
+        clientVersion: "7",
+      }),
+    );
+
+    await expect(updateItem("user-2", "item-1", input)).resolves.toBeNull();
+  });
+
+  it("rethrows other database errors", async () => {
+    mockPrisma.item.update.mockRejectedValue(new Error("db down"));
+
+    await expect(updateItem("user-1", "item-1", input)).rejects.toThrow(
+      "db down",
+    );
   });
 });

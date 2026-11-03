@@ -19,7 +19,11 @@ interface DetailSectionProps {
   children: React.ReactNode;
 }
 
-function DetailSection({ title, icon: Icon, children }: DetailSectionProps) {
+export function DetailSection({
+  title,
+  icon: Icon,
+  children,
+}: DetailSectionProps) {
   return (
     <section className="flex flex-col gap-2">
       <h3 className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -86,6 +90,15 @@ export function ItemDrawerDetails({ item }: ItemDrawerDetailsProps) {
         </DetailSection>
       )}
 
+      <ItemMetaSections item={item} />
+    </div>
+  );
+}
+
+// Collections and dates, shown read-only in both view and edit mode.
+export function ItemMetaSections({ item }: ItemDrawerDetailsProps) {
+  return (
+    <>
       {item.collections.length > 0 && (
         <DetailSection title="Collections" icon={FolderIcon}>
           <div className="flex flex-wrap gap-1.5">
@@ -110,6 +123,6 @@ export function ItemDrawerDetails({ item }: ItemDrawerDetailsProps) {
           </dd>
         </dl>
       </DetailSection>
-    </div>
+    </>
   );
 }

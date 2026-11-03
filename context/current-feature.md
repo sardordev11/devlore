@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Item Drawer Edit Mode
 
 <!-- Feature Name -->
 
@@ -12,9 +12,39 @@ Completed
 
 <!-- Goals & requirements -->
 
+- Edit button (pencil) in the item drawer action bar switches the same drawer from view mode to edit mode inline
+- In edit mode the action bar is replaced with Save and Cancel buttons
+- Cancel discards changes and returns to view mode
+- Save persists changes via a server action, returns to view mode and refreshes the drawer data
+- Toast on save success or error
+- Editable for all types: **Title** (text input, required), **Description** (textarea, optional), **Tags** (comma-separated input converted to a tag array on save)
+- Type-specific fields, only shown for the relevant type:
+  - **Content** (textarea): snippet, prompt, command, note
+  - **Language** (text input): snippet, command
+  - **URL** (text input): link
+- Display only in edit mode: item type, collections, created/updated dates
+- Zod schema for the update payload, validated in the server action before hitting the database:
+  - `title`: non-empty string, trimmed
+  - `description`: string or null, optional
+  - `content`: string or null, optional
+  - `url`: valid URL string or null, optional
+  - `language`: string or null, optional
+  - `tags`: array of trimmed non-empty strings
+- Zod errors returned in the `{ success: false, error }` response so the client can display them
+- `updateItem(itemId, data)` server action in `src/actions/items.ts` with the `{ success, data, error }` pattern: validates with Zod, gets the session via `auth()`, validates ownership, calls the query function
+- `updateItem` query function in `src/lib/db/items.ts`: disconnects all existing tags and connect-or-creates the new ones, returns the updated `ItemDetail` so the drawer refreshes without a second fetch
+- Unit tests for the server action and query function
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Keep it simple: no form library, controlled inputs with local state
+- Client side: disable Save when the title is empty (basic UX guard)
+- Server side: Zod validates all fields in the server action (source of truth)
+- Content textarea doesn't need to be a code editor yet, that comes later
+- After save, call `router.refresh()` so the underlying card list reflects the changes
+- Collections will be managed separately
 
 ## History
 

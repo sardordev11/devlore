@@ -15,6 +15,7 @@ import type { ItemDetailJson } from "@/types/items";
 
 interface ItemDrawerActionsProps {
   item: ItemDetailJson;
+  onEdit: () => void;
 }
 
 // What "Copy" puts on the clipboard for each content type.
@@ -24,8 +25,8 @@ function getCopyValue(item: ItemDetailJson): string | null {
   return item.content;
 }
 
-// Favorite, Pin, Edit and Delete are display only until their features land.
-export function ItemDrawerActions({ item }: ItemDrawerActionsProps) {
+// Favorite, Pin and Delete are display only until their features land.
+export function ItemDrawerActions({ item, onEdit }: ItemDrawerActionsProps) {
   const copyValue = getCopyValue(item);
 
   async function handleCopy() {
@@ -71,7 +72,7 @@ export function ItemDrawerActions({ item }: ItemDrawerActionsProps) {
       </Button>
 
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" onClick={onEdit}>
           <PencilIcon />
           Edit
         </Button>

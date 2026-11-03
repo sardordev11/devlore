@@ -1,7 +1,9 @@
 import "server-only";
 
-import type { ContentType, Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
+import type { ContentType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { UpdateItemInput } from "@/lib/validations/items";
 
 interface ItemSummaryType {
   id: string;
@@ -84,10 +86,46 @@ const RECENT_ORDER = [
   { updatedAt: "desc" },
 ] satisfies Prisma.ItemOrderByWithRelationInput[];
 
+const ITEM_DETAIL_SELECT = {
+  id: true,
+  title: true,
+  description: true,
+  contentType: true,
+  content: true,
+  language: true,
+  url: true,
+  fileUrl: true,
+  fileName: true,
+  isFavorite: true,
+  isPinned: true,
+  createdAt: true,
+  updatedAt: true,
+  type: {
+    select: { id: true, name: true, slug: true, icon: true, color: true },
+  },
+  tags: { select: { name: true }, orderBy: { name: "asc" } },
+  collections: {
+    select: { collection: { select: { id: true, name: true } } },
+    orderBy: { collection: { name: "asc" } },
+  },
+} satisfies Prisma.ItemSelect;
+
 type ItemRow = Prisma.ItemGetPayload<{ select: typeof ITEM_SUMMARY_SELECT }>;
+
+type ItemDetailRow = Prisma.ItemGetPayload<{
+  select: typeof ITEM_DETAIL_SELECT;
+}>;
 
 function toItemSummary({ tags, ...item }: ItemRow): ItemSummary {
   return { ...item, tags: tags.map((tag) => tag.name) };
+}
+
+function toItemDetail({ tags, collections, ...item }: ItemDetailRow): ItemDetail {
+  return {
+    ...item,
+    tags: tags.map((tag) => tag.name),
+    collections: collections.map(({ collection }) => collection),
+  };
 }
 
 export async function getPinnedItems(userId: string): Promise<ItemSummary[]> {
@@ -145,38 +183,46 @@ export async function getItemDetail(
 ): Promise<ItemDetail | null> {
   const item = await prisma.item.findFirst({
     where: { id: itemId, userId },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      contentType: true,
-      content: true,
-      language: true,
-      url: true,
-      fileUrl: true,
-      fileName: true,
-      isFavorite: true,
-      isPinned: true,
-      createdAt: true,
-      updatedAt: true,
-      type: {
-        select: { id: true, name: true, slug: true, icon: true, color: true },
-      },
-      tags: { select: { name: true }, orderBy: { name: "asc" } },
-      collections: {
-        select: { collection: { select: { id: true, name: true } } },
-        orderBy: { collection: { name: "asc" } },
-      },
-    },
+    select: ITEM_DETAIL_SELECT,
   });
-  if (!item) return null;
 
-  const { tags, collections, ...rest } = item;
-  return {
-    ...rest,
-    tags: tags.map((tag) => tag.name),
-    collections: collections.map(({ collection }) => collection),
-  };
+  return item ? toItemDetail(item) : null;
+}
+
+// Replaces the item's tags with `data.tags`, creating any the user doesn't have yet.
+// Returns null when the item doesn't exist or belongs to another user.
+export async function updateItem(
+  userId: string,
+  itemId: string,
+  { tags, ...fields }: UpdateItemInput,
+): Promise<ItemDetail | null> {
+  try {
+    const item = await prisma.item.update({
+      // userId in the where makes the ownership check part of the update.
+      where: { id: itemId, userId },
+      data: {
+        ...fields,
+        tags: {
+          set: [],
+          connectOrCreate: tags.map((name) => ({
+            where: { userId_name: { userId, name } },
+            create: { name, userId },
+          })),
+        },
+      },
+      select: ITEM_DETAIL_SELECT,
+    });
+    return toItemDetail(item);
+  } catch (error) {
+    // P2025: no record matched the where.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function getItemStats(userId: string): Promise<ItemStats> {

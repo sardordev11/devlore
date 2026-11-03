@@ -1,9 +1,10 @@
 "use client";
 
-import { createElement } from "react";
+import { createElement, useState } from "react";
 
 import { ItemDrawerActions } from "@/components/items/ItemDrawerActions";
 import { ItemDrawerDetails } from "@/components/items/ItemDrawerDetails";
+import { ItemEditForm } from "@/components/items/ItemEditForm";
 import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
@@ -20,6 +21,7 @@ interface ItemDrawerProps {
   onOpenChange: (open: boolean) => void;
   item: ItemDetailJson | null;
   error: string | null;
+  onItemUpdated: (item: ItemDetailJson) => void;
 }
 
 export function ItemDrawer({
@@ -27,6 +29,7 @@ export function ItemDrawer({
   onOpenChange,
   item,
   error,
+  onItemUpdated,
 }: ItemDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -36,11 +39,12 @@ export function ItemDrawer({
         overlayClassName="bg-black/50 supports-backdrop-filter:backdrop-blur-none"
       >
         {item ? (
-          <>
-            <ItemDrawerHeader item={item} />
-            <ItemDrawerActions item={item} />
-            <ItemDrawerDetails item={item} />
-          </>
+          // Keyed so edit mode resets when another item opens.
+          <ItemDrawerBody
+            key={item.id}
+            item={item}
+            onItemUpdated={onItemUpdated}
+          />
         ) : error ? (
           <SheetHeader className="p-6">
             <SheetTitle>Couldn&apos;t open item</SheetTitle>
@@ -51,6 +55,39 @@ export function ItemDrawer({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function ItemDrawerBody({
+  item,
+  onItemUpdated,
+}: {
+  item: ItemDetailJson;
+  onItemUpdated: (item: ItemDetailJson) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  function handleSaved(updated: ItemDetailJson) {
+    onItemUpdated(updated);
+    setIsEditing(false);
+  }
+
+  return (
+    <>
+      <ItemDrawerHeader item={item} />
+      {isEditing ? (
+        <ItemEditForm
+          item={item}
+          onCancel={() => setIsEditing(false)}
+          onSaved={handleSaved}
+        />
+      ) : (
+        <>
+          <ItemDrawerActions item={item} onEdit={() => setIsEditing(true)} />
+          <ItemDrawerDetails item={item} />
+        </>
+      )}
+    </>
   );
 }
 
