@@ -11,11 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { parseTags } from "@/lib/validations/items";
+import { LANGUAGE_TYPE_SLUGS, parseTags } from "@/lib/validations/items";
 import type { ItemDetailJson } from "@/types/items";
-
-// Types with a code-highlighting language.
-const LANGUAGE_TYPE_SLUGS = new Set(["snippets", "commands"]);
 
 type FieldName = "title" | "description" | "content" | "language" | "url" | "tags";
 
@@ -32,7 +29,7 @@ interface EditFieldProps {
   children: React.ReactNode;
 }
 
-function EditField({ id, label, error, children }: EditFieldProps) {
+export function EditField({ id, label, error, children }: EditFieldProps) {
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>

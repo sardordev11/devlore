@@ -2,16 +2,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { auth } from "@/auth";
 import {
+  createItem as createItemQuery,
   deleteItem as deleteItemQuery,
   updateItem as updateItemQuery,
 } from "@/lib/db/items";
-import { deleteItem, updateItem } from "@/actions/items";
+import { createItem, deleteItem, updateItem } from "@/actions/items";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/db/items", () => ({ updateItem: vi.fn(), deleteItem: vi.fn() }));
+vi.mock("@/lib/db/items", () => ({
+  createItem: vi.fn(),
+  updateItem: vi.fn(),
+  deleteItem: vi.fn(),
+}));
 
 // auth() is overloaded (session getter and middleware wrapper), so cast the mock
 const mockAuth = vi.mocked(auth as () => Promise<unknown>);
+const mockCreateItemQuery = vi.mocked(createItemQuery);
 const mockUpdateItemQuery = vi.mocked(updateItemQuery);
 const mockDeleteItemQuery = vi.mocked(deleteItemQuery);
 
@@ -41,6 +47,85 @@ const ITEM = {
   tags: ["auth", "react"],
   collections: [],
 };
+
+describe("createItem", () => {
+  const input = {
+    type: "snippets",
+    title: "  useAuth Hook ",
+    description: "",
+    content: "export function useAuth() {}",
+    language: "typescript",
+    tags: ["react", "auth", "react"],
+  };
+
+  beforeEach(() => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "" });
+  });
+
+  it("requires a session", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await createItem(input);
+    expect(result).toEqual({ success: false, error: "You must be signed in" });
+    expect(mockCreateItemQuery).not.toHaveBeenCalled();
+  });
+
+  it("returns Zod errors without touching the database", async () => {
+    const result = await createItem({ ...input, type: "links", title: " " });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "Title is required",
+      fieldErrors: {
+        title: ["Title is required"],
+        url: ["URL is required"],
+      },
+    });
+    expect(mockCreateItemQuery).not.toHaveBeenCalled();
+  });
+
+  it("creates the parsed input for the session user", async () => {
+    mockCreateItemQuery.mockResolvedValue(ITEM);
+
+    const result = await createItem(input);
+
+    expect(mockCreateItemQuery).toHaveBeenCalledWith("user-1", {
+      type: "snippets",
+      title: "useAuth Hook",
+      description: null,
+      content: "export function useAuth() {}",
+      language: "typescript",
+      url: null,
+      tags: ["react", "auth"],
+    });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        ...ITEM,
+        createdAt: "2026-01-15T00:00:00.000Z",
+        updatedAt: "2026-01-15T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("returns an error when the type is missing from the database", async () => {
+    mockCreateItemQuery.mockResolvedValue(null);
+
+    const result = await createItem(input);
+    expect(result).toEqual({ success: false, error: "Item type not found" });
+  });
+
+  it("returns a friendly error when the database fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockCreateItemQuery.mockRejectedValue(new Error("db down"));
+
+    const result = await createItem(input);
+    expect(result).toEqual({
+      success: false,
+      error: "Couldn't create the item. Please try again.",
+    });
+  });
+});
 
 describe("updateItem", () => {
   const input = {

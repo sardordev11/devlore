@@ -1,11 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { Prisma } from "@/generated/prisma/client";
-import { deleteItem, getItemDetail, updateItem } from "@/lib/db/items";
+import {
+  createItem,
+  deleteItem,
+  getItemDetail,
+  updateItem,
+} from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: { item: { findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() } },
+  prisma: {
+    item: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    itemType: { findFirst: vi.fn() },
+  },
 }));
 
 const mockPrisma = vi.mocked(prisma, { deep: true });
@@ -59,6 +72,66 @@ describe("getItemDetail", () => {
 
     const item = await getItemDetail("user-1", "item-1");
 
+    expect(item).toEqual({
+      ...ROW,
+      tags: ["auth", "react"],
+      collections: [{ id: "col-1", name: "React Patterns" }],
+    });
+  });
+});
+
+describe("createItem", () => {
+  const input = {
+    type: "snippets" as const,
+    title: "useAuth Hook",
+    description: null,
+    content: "export function useAuth() {}",
+    language: "typescript",
+    url: null,
+    tags: ["auth"],
+  };
+
+  it("looks up the system type by slug", async () => {
+    mockPrisma.itemType.findFirst.mockResolvedValue(null as never);
+
+    await expect(createItem("user-1", input)).resolves.toBeNull();
+    expect(mockPrisma.itemType.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { slug: "snippets", isSystem: true } }),
+    );
+    expect(mockPrisma.item.create).not.toHaveBeenCalled();
+  });
+
+  it("creates the item for the user with the type's content type and tags", async () => {
+    mockPrisma.itemType.findFirst.mockResolvedValue({
+      id: "type-1",
+      contentType: "TEXT",
+    } as never);
+    mockPrisma.item.create.mockResolvedValue(ROW as never);
+
+    const item = await createItem("user-1", input);
+
+    expect(mockPrisma.item.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          title: "useAuth Hook",
+          description: null,
+          content: "export function useAuth() {}",
+          language: "typescript",
+          url: null,
+          contentType: "TEXT",
+          userId: "user-1",
+          typeId: "type-1",
+          tags: {
+            connectOrCreate: [
+              {
+                where: { userId_name: { userId: "user-1", name: "auth" } },
+                create: { name: "auth", userId: "user-1" },
+              },
+            ],
+          },
+        },
+      }),
+    );
     expect(item).toEqual({
       ...ROW,
       tags: ["auth", "react"],

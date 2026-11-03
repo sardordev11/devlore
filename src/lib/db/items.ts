@@ -3,7 +3,10 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { ContentType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import type { UpdateItemInput } from "@/lib/validations/items";
+import type {
+  CreateItemInput,
+  UpdateItemInput,
+} from "@/lib/validations/items";
 
 interface ItemSummaryType {
   id: string;
@@ -189,6 +192,38 @@ export async function getItemDetail(
   return item ? toItemDetail(item) : null;
 }
 
+function connectOrCreateTags(userId: string, tags: string[]) {
+  return tags.map((name) => ({
+    where: { userId_name: { userId, name } },
+    create: { name, userId },
+  }));
+}
+
+// Creates an item of a system type, connecting the user's existing tags or creating new ones.
+// Returns null when no system type has the slug.
+export async function createItem(
+  userId: string,
+  { type: slug, tags, ...fields }: CreateItemInput,
+): Promise<ItemDetail | null> {
+  const type = await prisma.itemType.findFirst({
+    where: { slug, isSystem: true },
+    select: { id: true, contentType: true },
+  });
+  if (!type) return null;
+
+  const item = await prisma.item.create({
+    data: {
+      ...fields,
+      contentType: type.contentType,
+      userId,
+      typeId: type.id,
+      tags: { connectOrCreate: connectOrCreateTags(userId, tags) },
+    },
+    select: ITEM_DETAIL_SELECT,
+  });
+  return toItemDetail(item);
+}
+
 // Replaces the item's tags with `data.tags`, creating any the user doesn't have yet.
 // Returns null when the item doesn't exist or belongs to another user.
 export async function updateItem(
@@ -204,10 +239,7 @@ export async function updateItem(
         ...fields,
         tags: {
           set: [],
-          connectOrCreate: tags.map((name) => ({
-            where: { userId_name: { userId, name } },
-            create: { name, userId },
-          })),
+          connectOrCreate: connectOrCreateTags(userId, tags),
         },
       },
       select: ITEM_DETAIL_SELECT,

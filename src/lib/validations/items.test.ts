@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseTags, updateItemSchema } from "@/lib/validations/items";
+import {
+  createItemSchema,
+  parseTags,
+  updateItemSchema,
+} from "@/lib/validations/items";
 
 describe("updateItemSchema", () => {
   const base = { title: "useAuth Hook", tags: [] };
@@ -49,6 +53,73 @@ describe("updateItemSchema", () => {
     expect(updateItemSchema.safeParse({ ...base, tags: [" "] }).success).toBe(
       false,
     );
+  });
+});
+
+describe("createItemSchema", () => {
+  const base = { type: "snippets", title: "useAuth Hook", tags: [] };
+
+  it("rejects unknown and non-creatable types", () => {
+    for (const type of ["files", "images", "widgets", undefined]) {
+      expect(createItemSchema.safeParse({ ...base, type }).success).toBe(false);
+    }
+  });
+
+  it("requires a title", () => {
+    const result = createItemSchema.safeParse({ ...base, title: "  " });
+    expect(result.success).toBe(false);
+  });
+
+  it("requires a URL for links", () => {
+    const result = createItemSchema.safeParse({ ...base, type: "links" });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]).toMatchObject({
+      path: ["url"],
+      message: "URL is required",
+    });
+    expect(
+      createItemSchema.safeParse({ ...base, type: "links", url: "javascript:x" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("keeps only the fields the type uses", () => {
+    const fields = {
+      content: "body",
+      language: "ts",
+      url: "https://react.dev",
+    };
+
+    expect(createItemSchema.parse({ ...base, ...fields })).toMatchObject({
+      content: "body",
+      language: "ts",
+      url: null,
+    });
+    expect(
+      createItemSchema.parse({ ...base, ...fields, type: "prompts" }),
+    ).toMatchObject({ content: "body", language: null, url: null });
+    expect(
+      createItemSchema.parse({ ...base, ...fields, type: "links" }),
+    ).toMatchObject({ content: null, language: null, url: "https://react.dev" });
+  });
+
+  it("stores blank optional text as null and dedupes tags", () => {
+    const data = createItemSchema.parse({
+      ...base,
+      description: " ",
+      content: "",
+      tags: ["react", "react"],
+    });
+
+    expect(data).toEqual({
+      type: "snippets",
+      title: "useAuth Hook",
+      description: null,
+      content: null,
+      language: null,
+      url: null,
+      tags: ["react"],
+    });
   });
 });
 
