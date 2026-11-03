@@ -128,3 +128,46 @@
     @apply font-sans;
     }
 }
+
+/* Rendered Markdown in MarkdownEditor (Tailwind preflight strips element styles). */
+.markdown-preview {
+  @apply text-sm leading-relaxed break-words text-foreground;
+
+  & > :first-child { @apply mt-0; }
+  & > :last-child { @apply mb-0; }
+
+  & h1, & h2, & h3, & h4, & h5, & h6 { @apply mt-5 mb-2 font-semibold leading-tight; }
+  & h1 { @apply border-b pb-1.5 text-2xl font-bold; }
+  & h2 { @apply border-b pb-1 text-xl; }
+  & h3 { @apply text-lg; }
+  & h4 { @apply text-base; }
+  & h5 { @apply text-sm; }
+  & h6 { @apply text-xs tracking-wide text-muted-foreground uppercase; }
+
+  & p { @apply my-3; }
+  & strong { @apply font-semibold; }
+  & hr { @apply my-5 border-border; }
+
+  & a { @apply text-blue-400 underline-offset-4 hover:text-blue-300 hover:underline; }
+
+  & ul, & ol { @apply my-3 pl-6; }
+  & ul { @apply list-disc; }
+  & ol { @apply list-decimal; }
+  & li { @apply my-1; }
+  & li > ul, & li > ol { @apply my-1; }
+  & li::marker { @apply text-muted-foreground; }
+  & li:has(> input[type="checkbox"]) { @apply list-none; }
+  & input[type="checkbox"] { @apply mr-1.5 -ml-5 align-middle; }
+
+  & blockquote { @apply my-3 border-l-4 border-blue-500/60 pl-4 text-muted-foreground; }
+
+  & code { @apply rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.85em]; }
+  & pre { @apply my-3 overflow-x-auto rounded-md border bg-[#141414] p-3 font-mono text-xs leading-relaxed; }
+  & pre code { @apply bg-transparent p-0 text-[inherit]; }
+
+  & table { @apply my-3 block w-max max-w-full overflow-x-auto border-collapse text-xs; }
+  & th, & td { @apply border px-3 py-1.5 text-left; }
+  & th { @apply bg-[#2d2d2d] font-semibold; }
+
+  & img { @apply max-w-full rounded-md; }
+}

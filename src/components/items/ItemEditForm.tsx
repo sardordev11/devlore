@@ -6,12 +6,19 @@ import { useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { updateItem } from "@/actions/items";
+import { CodeEditor } from "@/components/items/CodeEditor";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
+import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LANGUAGE_TYPE_SLUGS, parseTags } from "@/lib/validations/items";
+import { getFallbackLanguage } from "@/lib/code-language";
+import {
+  LANGUAGE_TYPE_SLUGS,
+  MARKDOWN_TYPE_SLUGS,
+  parseTags,
+} from "@/lib/validations/items";
 import type { ItemDetailJson } from "@/types/items";
 
 type FieldName = "title" | "description" | "content" | "language" | "url" | "tags";
@@ -146,11 +153,28 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
             label="Content"
             error={fieldErrors.content?.[0]}
           >
-            <Textarea
-              {...fieldProps("content")}
-              rows={10}
-              className="max-h-96 font-mono text-xs leading-relaxed md:text-xs"
-            />
+            {MARKDOWN_TYPE_SLUGS.has(item.type.slug) ? (
+              <MarkdownEditor
+                {...fieldProps("content")}
+                onChange={(content) => setValue("content", content)}
+              />
+            ) : showLanguage ? (
+              <CodeEditor
+                value={values.content}
+                onChange={(content) => setValue("content", content)}
+                language={values.language}
+                fallbackLanguage={getFallbackLanguage(item.type.slug)}
+                disabled={isPending}
+                ariaLabel="Content"
+                invalid={Boolean(fieldErrors.content)}
+              />
+            ) : (
+              <Textarea
+                {...fieldProps("content")}
+                rows={10}
+                className="max-h-96 font-mono text-xs leading-relaxed md:text-xs"
+              />
+            )}
           </EditField>
         )}
 

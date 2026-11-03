@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { createItem } from "@/actions/items";
+import { CodeEditor } from "@/components/items/CodeEditor";
 import { EditField } from "@/components/items/ItemEditForm";
+import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,10 +23,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { getFallbackLanguage } from "@/lib/code-language";
 import { getTypeIcon } from "@/lib/type-icons";
 import { cn } from "@/lib/utils";
 import {
   getCreateFields,
+  MARKDOWN_TYPE_SLUGS,
   parseTags,
   type createItemSchema,
   type CreatableTypeSlug,
@@ -214,11 +218,28 @@ export function CreateItemDialog() {
               label="Content"
               error={fieldErrors.content?.[0]}
             >
-              <Textarea
-                {...fieldProps("content")}
-                rows={8}
-                className="max-h-72 font-mono text-xs leading-relaxed md:text-xs"
-              />
+              {MARKDOWN_TYPE_SLUGS.has(type) ? (
+                <MarkdownEditor
+                  key={type}
+                  {...fieldProps("content")}
+                  onChange={(content) =>
+                    setValues((current) => ({ ...current, content }))
+                  }
+                />
+              ) : (
+                <CodeEditor
+                  key={type}
+                  value={values.content}
+                  onChange={(content) =>
+                    setValues((current) => ({ ...current, content }))
+                  }
+                  language={values.language}
+                  fallbackLanguage={getFallbackLanguage(type)}
+                  disabled={isPending}
+                  ariaLabel="Content"
+                  invalid={Boolean(fieldErrors.content)}
+                />
+              )}
             </EditField>
           )}
 

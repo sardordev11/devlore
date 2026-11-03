@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Markdown Editor
 
 <!-- Feature Name -->
 
@@ -6,15 +6,45 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- `MarkdownEditor` component with a tabbed Write / Preview interface
+- Replace the `Textarea` with `MarkdownEditor` for the content field of notes and prompts only
+- Snippets and commands keep their current content editor (no changes)
+- Render with `react-markdown` + `remark-gfm` (GitHub Flavored Markdown)
+- Dark theme container (`bg-[#1e1e1e]`) with a `bg-[#2d2d2d]` header holding the tabs and a copy button
+- Readonly mode shows only the Preview tab; edit mode defaults to Write with Preview available
+- Fluid height, max 400px, scrolling beyond that
+- Preview styling via a custom `.markdown-preview` class in `globals.css`:
+  - Distinct h1–h6 sizes and weights
+  - Code blocks with a dark background and monospace font; inline code with a subtle highlight
+  - Ordered/unordered lists with indentation and bullets
+  - Blockquotes with a left border accent
+  - Blue links with a hover state
+  - Tables with borders and a header background
+- Integration:
+  - `CreateItemDialog` (spec's "NewItemDialog"): content field for note and prompt
+  - Item drawer edit mode (`ItemEditForm`): content field for note and prompt
+  - Item drawer view mode (`ItemDrawerDetails`): readonly preview for note and prompt content
+- `CodeEditor` for snippets and commands: a VS Code-style Monaco editor (`@monaco-editor/react`, `vs-dark` theme) with line numbers and syntax highlighting from the item's language
+  - Same dark frame as `MarkdownEditor` (shared header with the language label and copy button)
+  - Fluid height that follows the content, max 400px
+  - Readonly in the drawer view, editable in `CreateItemDialog` and `ItemEditForm`; the highlighting follows the Language field as it's typed
+  - Item languages (`ts`, `bash`, `yml`, …) mapped to Monaco language ids via a utility in `src/lib`, with unit tests
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- The spec references an existing `CodeEditor` (for the copy button style and the 400px height behavior), but no `CodeEditor` exists in the codebase yet; snippets and commands currently use a plain `Textarea`. The header/copy button style and height behavior will be defined in `MarkdownEditor` itself, reusable by a future `CodeEditor`.
+- New dependencies: `react-markdown`, `remark-gfm`, `@monaco-editor/react`.
+- `CodeEditor` was added on request during this feature, since the Markdown editor spec was written around it. Monaco is loaded from the jsDelivr CDN by `@monaco-editor/react`'s default loader (no CSP in the app), which keeps it out of the app bundle.
+- Component goes in `src/components/items/MarkdownEditor.tsx` (client component).
+- No server actions or utilities change, so likely no new unit tests unless a helper is extracted to `src/lib`.
 
 ## History
 

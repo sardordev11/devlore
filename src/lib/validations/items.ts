@@ -27,6 +27,12 @@ export const LANGUAGE_TYPE_SLUGS: ReadonlySet<string> = new Set([
   "commands",
 ]);
 
+// Types whose content is edited and shown as Markdown.
+export const MARKDOWN_TYPE_SLUGS: ReadonlySet<string> = new Set([
+  "notes",
+  "prompts",
+]);
+
 // Which optional fields a creatable type uses.
 export function getCreateFields(slug: CreatableTypeSlug) {
   return {

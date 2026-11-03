@@ -3,7 +3,14 @@
 import { CalendarIcon, FolderIcon, TagIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { CodeEditor } from "@/components/items/CodeEditor";
+import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Badge } from "@/components/ui/badge";
+import { getFallbackLanguage } from "@/lib/code-language";
+import {
+  LANGUAGE_TYPE_SLUGS,
+  MARKDOWN_TYPE_SLUGS,
+} from "@/lib/validations/items";
 import type { ItemDetailJson } from "@/types/items";
 
 // Rendered only on the client, so the viewer's own time zone is fine.
@@ -50,6 +57,20 @@ function ItemContent({ item }: ItemDrawerDetailsProps) {
   }
   if (item.contentType === "FILE" && item.fileName) {
     return <p className="break-all">{item.fileName}</p>;
+  }
+  if (item.content && MARKDOWN_TYPE_SLUGS.has(item.type.slug)) {
+    return <MarkdownEditor value={item.content} readOnly />;
+  }
+  if (item.content && LANGUAGE_TYPE_SLUGS.has(item.type.slug)) {
+    return (
+      <CodeEditor
+        value={item.content}
+        language={item.language}
+        fallbackLanguage={getFallbackLanguage(item.type.slug)}
+        ariaLabel="Content"
+        readOnly
+      />
+    );
   }
   if (item.content) {
     return (

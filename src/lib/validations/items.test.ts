@@ -2,9 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   createItemSchema,
+  MARKDOWN_TYPE_SLUGS,
   parseTags,
   updateItemSchema,
 } from "@/lib/validations/items";
+
+describe("MARKDOWN_TYPE_SLUGS", () => {
+  it("covers notes and prompts only", () => {
+    expect([...MARKDOWN_TYPE_SLUGS].sort()).toEqual(["notes", "prompts"]);
+  });
+});
 
 describe("updateItemSchema", () => {
   const base = { title: "useAuth Hook", tags: [] };
