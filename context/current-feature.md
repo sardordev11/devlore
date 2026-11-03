@@ -1,4 +1,4 @@
-# Current Feature: Markdown Editor
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,45 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- `MarkdownEditor` component with a tabbed Write / Preview interface
-- Replace the `Textarea` with `MarkdownEditor` for the content field of notes and prompts only
-- Snippets and commands keep their current content editor (no changes)
-- Render with `react-markdown` + `remark-gfm` (GitHub Flavored Markdown)
-- Dark theme container (`bg-[#1e1e1e]`) with a `bg-[#2d2d2d]` header holding the tabs and a copy button
-- Readonly mode shows only the Preview tab; edit mode defaults to Write with Preview available
-- Fluid height, max 400px, scrolling beyond that
-- Preview styling via a custom `.markdown-preview` class in `globals.css`:
-  - Distinct h1–h6 sizes and weights
-  - Code blocks with a dark background and monospace font; inline code with a subtle highlight
-  - Ordered/unordered lists with indentation and bullets
-  - Blockquotes with a left border accent
-  - Blue links with a hover state
-  - Tables with borders and a header background
-- Integration:
-  - `CreateItemDialog` (spec's "NewItemDialog"): content field for note and prompt
-  - Item drawer edit mode (`ItemEditForm`): content field for note and prompt
-  - Item drawer view mode (`ItemDrawerDetails`): readonly preview for note and prompt content
-- `CodeEditor` for snippets and commands: a VS Code-style Monaco editor (`@monaco-editor/react`, `vs-dark` theme) with line numbers and syntax highlighting from the item's language
-  - Same dark frame as `MarkdownEditor` (shared header with the language label and copy button)
-  - Fluid height that follows the content, max 400px
-  - Readonly in the drawer view, editable in `CreateItemDialog` and `ItemEditForm`; the highlighting follows the Language field as it's typed
-  - Item languages (`ts`, `bash`, `yml`, …) mapped to Monaco language ids via a utility in `src/lib`, with unit tests
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- The spec references an existing `CodeEditor` (for the copy button style and the 400px height behavior), but no `CodeEditor` exists in the codebase yet; snippets and commands currently use a plain `Textarea`. The header/copy button style and height behavior will be defined in `MarkdownEditor` itself, reusable by a future `CodeEditor`.
-- New dependencies: `react-markdown`, `remark-gfm`, `@monaco-editor/react`.
-- `CodeEditor` was added on request during this feature, since the Markdown editor spec was written around it. Monaco is loaded from the jsDelivr CDN by `@monaco-editor/react`'s default loader (no CSP in the app), which keeps it out of the app bundle.
-- Component goes in `src/components/items/MarkdownEditor.tsx` (client component).
-- No server actions or utilities change, so likely no new unit tests unless a helper is extracted to `src/lib`.
 
 ## History
 
@@ -76,3 +46,4 @@ In Progress
 - **Item Drawer Edit Mode** — Edit button in the item drawer switches it to an inline form (`ItemEditForm`) with Save and Cancel replacing the action bar; Title, Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, URL for links, with collections and dates kept read-only via a shared `ItemMetaSections`; `updateItemSchema` in `src/lib/validations/items.ts` (trimmed title, blank optional text stored as null, omitted fields left unchanged, http(s)-only URLs, trimmed and deduped tags) plus `parseTags`; `updateItem` server action in `src/actions/items.ts` (session check, Zod validation returning `error` and `fieldErrors`, dates serialized to ISO strings); `updateItem` query in `src/lib/db/items.ts` with `userId` in the update's where for ownership (P2025 → not found), tags replaced via `set: []` + `connectOrCreate`, returning the updated `ItemDetail` through a shared `ITEM_DETAIL_SELECT`/`toItemDetail`; success/error toasts, inline field errors, Save disabled on a blank title, `router.refresh()` after save; shadcn textarea added; unit tests for the schema, query function and server action (Completed)
 - **Delete Items** — the Delete button in the item drawer opens a shadcn `AlertDialog` (`DeleteItemDialog`) naming the item, with Cancel and a destructive Delete button, both disabled with a "Deleting…" state while pending; `deleteItem` server action in `src/actions/items.ts` (session check, `itemIdSchema` in `src/lib/validations/items.ts`, `{ success, data, error }`); `deleteItem` query in `src/lib/db/items.ts` with `userId` in the delete's where for ownership (P2025 → not found), collection links cascading and tags left in place; on success the dialog and drawer close, an "Item deleted" Sonner toast shows and `router.refresh()` updates lists, stats and sidebar counts; error toast with the drawer kept open on failure; `onItemDeleted` threaded from `ItemDrawerProvider` through `ItemDrawer` to `ItemDrawerActions`; unit tests for the query function and server action (Completed)
 - **Item Create** — the top bar's "New Item" button opens a shadcn `Dialog` (`CreateItemDialog`) with a radio-style type selector (Snippet, Prompt, Command, Note, Link with type-colored icons; File and Image left out since they need uploads); Title (required), Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, required URL for links; `createItemSchema` in `src/lib/validations/items.ts` (type limited to `CREATABLE_TYPE_SLUGS`, "URL is required" for links, fields the type doesn't use dropped via `getCreateFields`, title/URL/tag rules shared with `updateItemSchema`, `LANGUAGE_TYPE_SLUGS` now shared with `ItemEditForm`); `createItem` server action in `src/actions/items.ts` (session check, Zod validation with `fieldErrors`, shared `toItemDetailJson`); `createItem` query in `src/lib/db/items.ts` looking up the system type by slug for its id and content type, tags via a shared `connectOrCreateTags`; "Item created" toast, dialog closes and resets, `router.refresh()`; inline field errors and error toast on failure, Create disabled without a title (or URL for links); `EditField` exported from `ItemEditForm` for reuse; unit tests for the schema, query function and server action (Completed)
+- **Markdown Editor** — `MarkdownEditor` with Write/Preview tabs (`react-markdown` + `remark-gfm`) for note and prompt content, readonly Preview-only mode in the drawer view, Write by default in `CreateItemDialog` and `ItemEditForm`, links opening in a new tab, preview styled by a custom `.markdown-preview` class in `globals.css` (headings, inline and block code, lists and task lists, blockquotes, blue links, tables); `CodeEditor` added on request for snippets and commands, a VS Code-style Monaco editor (`@monaco-editor/react`, `vs-dark`, line numbers, word wrap, loaded from the jsDelivr CDN) whose highlighting follows the item's Language field, readonly in the drawer view; both share `EditorFrame` (`#1e1e1e` container, `#2d2d2d` header with a copy button) and grow with their content up to 400px; `MARKDOWN_TYPE_SLUGS` in `src/lib/validations/items.ts`, `toMonacoLanguage` (aliases like `ts`, `bash`, `yml`) and `getFallbackLanguage` (shell for commands) in `src/lib/code-language.ts`, with unit tests (Completed)
