@@ -1,4 +1,4 @@
-# Current Feature: Item Drawer Edit Mode
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -12,39 +12,9 @@ Completed
 
 <!-- Goals & requirements -->
 
-- Edit button (pencil) in the item drawer action bar switches the same drawer from view mode to edit mode inline
-- In edit mode the action bar is replaced with Save and Cancel buttons
-- Cancel discards changes and returns to view mode
-- Save persists changes via a server action, returns to view mode and refreshes the drawer data
-- Toast on save success or error
-- Editable for all types: **Title** (text input, required), **Description** (textarea, optional), **Tags** (comma-separated input converted to a tag array on save)
-- Type-specific fields, only shown for the relevant type:
-  - **Content** (textarea): snippet, prompt, command, note
-  - **Language** (text input): snippet, command
-  - **URL** (text input): link
-- Display only in edit mode: item type, collections, created/updated dates
-- Zod schema for the update payload, validated in the server action before hitting the database:
-  - `title`: non-empty string, trimmed
-  - `description`: string or null, optional
-  - `content`: string or null, optional
-  - `url`: valid URL string or null, optional
-  - `language`: string or null, optional
-  - `tags`: array of trimmed non-empty strings
-- Zod errors returned in the `{ success: false, error }` response so the client can display them
-- `updateItem(itemId, data)` server action in `src/actions/items.ts` with the `{ success, data, error }` pattern: validates with Zod, gets the session via `auth()`, validates ownership, calls the query function
-- `updateItem` query function in `src/lib/db/items.ts`: disconnects all existing tags and connect-or-creates the new ones, returns the updated `ItemDetail` so the drawer refreshes without a second fetch
-- Unit tests for the server action and query function
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Keep it simple: no form library, controlled inputs with local state
-- Client side: disable Save when the title is empty (basic UX guard)
-- Server side: Zod validates all fields in the server action (source of truth)
-- Content textarea doesn't need to be a code editor yet, that comes later
-- After save, call `router.refresh()` so the underlying card list reflects the changes
-- Collections will be managed separately
 
 ## History
 
@@ -73,3 +43,4 @@ Completed
 - **Vitest Setup** — Vitest 5 for unit testing server actions and utilities only (`include` limited to `src/actions/**/*.test.ts` and `src/lib/**/*.test.ts`, node environment, `@/` alias, `mockReset` + `restoreMocks`), `vitest.setup.ts` stubbing `server-only`, `npm run test` (watch) and `npm run test:run` scripts, `@types/node` bumped to `^22` for Vitest 5, colocated example tests for `src/lib/tokens.ts`, `src/lib/validations/auth.ts`, `src/lib/rate-limit.ts` and `src/actions/profile.ts` (mocked `@/auth`, `@/lib/prisma` and `bcryptjs`), testing added to the workflow in `context/ai-interaction.md`, `context/coding-standards.md`, `CLAUDE.md` and the `/feature` test action (Completed)
 - **Items List Three Columns** — `/items/[type]` grid and its loading skeleton now go one column on mobile, two from `md` and three from `xl` (`xl:grid-cols-3` rather than `lg`, since at 1024px with the sidebar open three columns truncated `ItemCard` titles to ~10 characters), checked in the browser at 390px, 1024px and 1280px (Completed)
 - **Item Drawer** — clicking an `ItemCard` on the dashboard or `/items/[type]` opens a right-side shadcn `Sheet` with the item's full details (no page navigation); `getItemDetail` in `src/lib/db/items.ts` scoped to the signed-in user (content, language, URL/file, tags, collections, dates) with unit tests, `GET /api/items/[id]` (401 signed out, 404 for unknown or other users' items, `{ success, data, error }`), `ItemDrawerProvider` inside `AppShell` fetching on click and aborting stale requests, `ItemDrawerTrigger` wrapping the server-rendered `ItemCard` (click, Enter or Space), header with type icon and type/language badges, action bar with Favorite (yellow when active), Pin, Copy (content, URL or file URL to the clipboard with a toast), Edit and right-aligned Delete (all but Copy display only for now), Description / Content / Tags / Collections / Details sections, loading skeleton and error state, full width on mobile with a wrapping action bar, new `overlayClassName` prop on `SheetContent` for a dimmed `bg-black/50` backdrop without blur, `ItemDetailJson` type in `src/types/items.ts` (Completed)
+- **Item Drawer Edit Mode** — Edit button in the item drawer switches it to an inline form (`ItemEditForm`) with Save and Cancel replacing the action bar; Title, Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, URL for links, with collections and dates kept read-only via a shared `ItemMetaSections`; `updateItemSchema` in `src/lib/validations/items.ts` (trimmed title, blank optional text stored as null, omitted fields left unchanged, http(s)-only URLs, trimmed and deduped tags) plus `parseTags`; `updateItem` server action in `src/actions/items.ts` (session check, Zod validation returning `error` and `fieldErrors`, dates serialized to ISO strings); `updateItem` query in `src/lib/db/items.ts` with `userId` in the update's where for ownership (P2025 → not found), tags replaced via `set: []` + `connectOrCreate`, returning the updated `ItemDetail` through a shared `ITEM_DETAIL_SELECT`/`toItemDetail`; success/error toasts, inline field errors, Save disabled on a blank title, `router.refresh()` after save; shadcn textarea added; unit tests for the schema, query function and server action (Completed)
