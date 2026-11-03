@@ -21,6 +21,10 @@ export const CREATABLE_TYPE_SLUGS = [
 
 export type CreatableTypeSlug = (typeof CREATABLE_TYPE_SLUGS)[number];
 
+export function isCreatableTypeSlug(slug: string): slug is CreatableTypeSlug {
+  return (CREATABLE_TYPE_SLUGS as readonly string[]).includes(slug);
+}
+
 // Types with a code-highlighting language.
 export const LANGUAGE_TYPE_SLUGS: ReadonlySet<string> = new Set([
   "snippets",

@@ -1,6 +1,6 @@
 "use client";
 
-import Editor, { type OnMount } from "@monaco-editor/react";
+import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
 import { useState } from "react";
 
 import { EditorFrame } from "@/components/items/EditorFrame";
@@ -11,6 +11,22 @@ const MAX_HEIGHT = 400;
 const MIN_HEIGHT = 80;
 const LINE_HEIGHT = 19;
 const VERTICAL_PADDING = 24;
+const THEME_NAME = "devlore-dark";
+
+// vs-dark with subtle translucent scrollbar sliders that blend into the frame.
+const defineTheme: BeforeMount = (monaco) => {
+  monaco.editor.defineTheme(THEME_NAME, {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "scrollbar.shadow": "#00000000",
+      "scrollbarSlider.background": "#ffffff1a",
+      "scrollbarSlider.hoverBackground": "#ffffff33",
+      "scrollbarSlider.activeBackground": "#ffffff4d",
+    },
+  });
+};
 
 interface CodeEditorProps {
   value: string;
@@ -58,23 +74,30 @@ export function CodeEditor({
   };
 
   const header = (
-    <div className="flex items-center gap-3 px-1">
-      <div className="flex gap-1.5" aria-hidden="true">
-        <span className="size-2.5 rounded-full bg-[#ff5f57]" />
-        <span className="size-2.5 rounded-full bg-[#febc2e]" />
-        <span className="size-2.5 rounded-full bg-[#28c840]" />
-      </div>
-      <span className="font-mono text-xs text-muted-foreground">
-        {monacoLanguage}
-      </span>
+    <div className="flex gap-1.5 px-1" aria-hidden="true">
+      <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+      <span className="size-2.5 rounded-full bg-[#febc2e]" />
+      <span className="size-2.5 rounded-full bg-[#28c840]" />
     </div>
   );
 
+  const languageLabel = (
+    <span className="font-mono text-xs text-muted-foreground">
+      {monacoLanguage}
+    </span>
+  );
+
   return (
-    <EditorFrame header={header} copyValue={value} invalid={invalid}>
+    <EditorFrame
+      header={header}
+      headerActions={languageLabel}
+      copyValue={value}
+      invalid={invalid}
+    >
       <Editor
         height={height}
-        theme="vs-dark"
+        theme={THEME_NAME}
+        beforeMount={defineTheme}
         language={monacoLanguage}
         value={value}
         onChange={(next) => onChange?.(next ?? "")}

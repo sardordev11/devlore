@@ -103,11 +103,20 @@ function TypeSelector({ value, onChange, disabled }: TypeSelectorProps) {
   );
 }
 
-export function CreateItemDialog() {
+interface CreateItemDialogProps {
+  // Preselects this type and labels the trigger "New <Type>", e.g. on /items/snippets.
+  defaultType?: CreatableTypeSlug;
+}
+
+export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [type, setType] = useState<CreatableTypeSlug>("snippets");
+  const initialType = defaultType ?? "snippets";
+  const [type, setType] = useState<CreatableTypeSlug>(initialType);
+  const triggerLabel = defaultType
+    ? `New ${TYPE_OPTIONS.find((option) => option.slug === defaultType)?.label}`
+    : "New Item";
   const [values, setValues] = useState(EMPTY_VALUES);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -118,7 +127,7 @@ export function CreateItemDialog() {
     if (isPending) return;
     setOpen(nextOpen);
     if (!nextOpen) {
-      setType("snippets");
+      setType(initialType);
       setValues(EMPTY_VALUES);
       setFieldErrors({});
     }
@@ -158,7 +167,7 @@ export function CreateItemDialog() {
       }
       toast.success("Item created");
       setOpen(false);
-      setType("snippets");
+      setType(initialType);
       setValues(EMPTY_VALUES);
       setFieldErrors({});
       router.refresh();
@@ -167,9 +176,10 @@ export function CreateItemDialog() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button aria-label="New Item" />}>
+      <DialogTrigger render={<Button aria-label={triggerLabel} />}>
         <Plus data-icon="inline-start" />
-        <span className="hidden sm:inline">New Item</span>
+        {/* The top bar is tight on mobile, so only the type pages always show the label. */}
+        <span className={cn(!defaultType && "hidden sm:inline")}>{triggerLabel}</span>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>

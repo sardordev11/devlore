@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 interface EditorFrameProps {
   // Left side of the header (tabs, language label).
   header: React.ReactNode;
+  // Right side of the header, just before the copy button.
+  headerActions?: React.ReactNode;
   copyValue: string;
   invalid?: boolean;
   children: React.ReactNode;
@@ -18,6 +20,7 @@ interface EditorFrameProps {
 // Dark VS Code-style frame shared by MarkdownEditor and CodeEditor.
 export function EditorFrame({
   header,
+  headerActions,
   copyValue,
   invalid = false,
   children,
@@ -44,17 +47,20 @@ export function EditorFrame({
     >
       <div className="flex items-center justify-between gap-2 border-b bg-[#2d2d2d] px-2 py-1">
         {header}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          onClick={handleCopy}
-          disabled={!copyValue}
-          aria-label="Copy content"
-          className="text-muted-foreground hover:text-foreground"
-        >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-        </Button>
+        <div className="flex items-center gap-2">
+          {headerActions}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleCopy}
+            disabled={!copyValue}
+            aria-label="Copy content"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            {copied ? <CheckIcon /> : <CopyIcon />}
+          </Button>
+        </div>
       </div>
       {children}
     </div>

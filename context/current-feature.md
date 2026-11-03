@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Code Editor
 
 <!-- Feature Name -->
 
@@ -6,15 +6,32 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- `CodeEditor` component using Monaco Editor with a dark theme
+- `CodeEditor` replaces the Textarea for snippets and commands only
+- Notes, prompts and other non-code types keep their current editor
+- macOS-style window dots (red/yellow/green) at the top of the editor
+- Quick copy button in the editor header
+- Language shown in the editor header next to the copy button
+- Display (readonly) and edit modes both supported
+- Fluid editor height up to a max of 400px, with a nice-looking scrollbar that matches the theme
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/code-editor-spec.md`
+- Most of this shipped with the Markdown Editor feature. `src/components/items/CodeEditor.tsx` already has Monaco with `vs-dark`, readonly/edit modes, macOS dots, the language label, height that grows to 400px, and an 8px scrollbar. `EditorFrame.tsx` provides the copy button. It's already wired into `CreateItemDialog`, `ItemEditForm` and the drawer view for snippets and commands.
+- Remaining gaps:
+  - **Themed scrollbar**: Monaco still uses the default `vs-dark` slider colors. Define a custom theme with `beforeMount` + `monaco.editor.defineTheme` that extends `vs-dark` and sets `scrollbarSlider.*` colors to match the app.
+  - **Language position**: the label is on the left next to the dots. The spec asks for it next to the copy button, on the right.
+  - **Notes and prompts**: they use `MarkdownEditor`, not a plain Textarea. That's an intentional, already-shipped improvement, so leave it as is.
+- Added on request: a type-specific "New <Type>" button in the `/items/[type]` header that opens `CreateItemDialog` with that type preselected. It uses a new `defaultType` prop, is shown only for creatable types (`isCreatableTypeSlug` in `src/lib/validations/items.ts`, so not files or images) and has a matching skeleton in `loading.tsx`.
 
 ## History
 

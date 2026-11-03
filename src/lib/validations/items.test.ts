@@ -2,10 +2,25 @@ import { describe, expect, it } from "vitest";
 
 import {
   createItemSchema,
+  isCreatableTypeSlug,
   MARKDOWN_TYPE_SLUGS,
   parseTags,
   updateItemSchema,
 } from "@/lib/validations/items";
+
+describe("isCreatableTypeSlug", () => {
+  it("accepts the types the New Item dialog can create", () => {
+    for (const slug of ["snippets", "prompts", "commands", "notes", "links"]) {
+      expect(isCreatableTypeSlug(slug)).toBe(true);
+    }
+  });
+
+  it("rejects upload types and unknown slugs", () => {
+    for (const slug of ["files", "images", "snippet", ""]) {
+      expect(isCreatableTypeSlug(slug)).toBe(false);
+    }
+  });
+});
 
 describe("MARKDOWN_TYPE_SLUGS", () => {
   it("covers notes and prompts only", () => {

@@ -4,8 +4,10 @@ import { connection } from "next/server";
 
 import { auth } from "@/auth";
 import { ItemCard } from "@/components/dashboard/ItemCard";
+import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 import { getTypeIcon } from "@/lib/type-icons";
+import { isCreatableTypeSlug } from "@/lib/validations/items";
 
 export default async function ItemsByTypePage({
   params,
@@ -27,18 +29,23 @@ export default async function ItemsByTypePage({
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
-      <header className="flex items-center gap-3">
-        <div
-          className="flex size-10 shrink-0 items-center justify-center rounded-lg"
-          // 1a = ~10% alpha on the hex type color.
-          style={{ backgroundColor: `${type.color}1a`, color: type.color }}
-        >
-          {createElement(getTypeIcon(type.icon), { className: "size-5" })}
+      <header className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex size-10 shrink-0 items-center justify-center rounded-lg"
+            // 1a = ~10% alpha on the hex type color.
+            style={{ backgroundColor: `${type.color}1a`, color: type.color }}
+          >
+            {createElement(getTypeIcon(type.icon), { className: "size-5" })}
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold">{title}</h1>
+            <p className="text-muted-foreground">{countLabel}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="text-muted-foreground">{countLabel}</p>
-        </div>
+        {isCreatableTypeSlug(type.slug) && (
+          <CreateItemDialog defaultType={type.slug} />
+        )}
       </header>
 
       {items.length > 0 ? (
