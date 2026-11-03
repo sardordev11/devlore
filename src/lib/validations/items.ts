@@ -8,6 +8,8 @@ const blankToNull = z
 
 const optionalText = blankToNull.nullish();
 
+export const itemIdSchema = z.string().min(1).max(100);
+
 export const updateItemSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   description: optionalText,

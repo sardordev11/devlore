@@ -1,15 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { auth } from "@/auth";
-import { updateItem as updateItemQuery } from "@/lib/db/items";
-import { updateItem } from "@/actions/items";
+import {
+  deleteItem as deleteItemQuery,
+  updateItem as updateItemQuery,
+} from "@/lib/db/items";
+import { deleteItem, updateItem } from "@/actions/items";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/db/items", () => ({ updateItem: vi.fn() }));
+vi.mock("@/lib/db/items", () => ({ updateItem: vi.fn(), deleteItem: vi.fn() }));
 
 // auth() is overloaded (session getter and middleware wrapper), so cast the mock
 const mockAuth = vi.mocked(auth as () => Promise<unknown>);
 const mockUpdateItemQuery = vi.mocked(updateItemQuery);
+const mockDeleteItemQuery = vi.mocked(deleteItemQuery);
 
 const date = new Date("2026-01-15T00:00:00Z");
 
@@ -114,6 +118,55 @@ describe("updateItem", () => {
     expect(result).toEqual({
       success: false,
       error: "Couldn't save the item. Please try again.",
+    });
+  });
+});
+
+describe("deleteItem", () => {
+  beforeEach(() => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "" });
+  });
+
+  it("requires a session", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await deleteItem("item-1");
+    expect(result).toEqual({ success: false, error: "You must be signed in" });
+    expect(mockDeleteItemQuery).not.toHaveBeenCalled();
+  });
+
+  it.each([[""], [123], [{ id: "item-1" }], ["x".repeat(101)]])(
+    "rejects an invalid id (%j) without touching the database",
+    async (itemId) => {
+      const result = await deleteItem(itemId);
+      expect(result).toEqual({ success: false, error: "Item not found" });
+      expect(mockDeleteItemQuery).not.toHaveBeenCalled();
+    },
+  );
+
+  it("deletes the item for the session user", async () => {
+    mockDeleteItemQuery.mockResolvedValue(true);
+
+    const result = await deleteItem("item-1");
+    expect(mockDeleteItemQuery).toHaveBeenCalledWith("user-1", "item-1");
+    expect(result).toEqual({ success: true, data: { id: "item-1" } });
+  });
+
+  it("returns not found for another user's item", async () => {
+    mockDeleteItemQuery.mockResolvedValue(false);
+
+    const result = await deleteItem("item-1");
+    expect(result).toEqual({ success: false, error: "Item not found" });
+  });
+
+  it("returns a friendly error when the database fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockDeleteItemQuery.mockRejectedValue(new Error("db down"));
+
+    const result = await deleteItem("item-1");
+    expect(result).toEqual({
+      success: false,
+      error: "Couldn't delete the item. Please try again.",
     });
   });
 });

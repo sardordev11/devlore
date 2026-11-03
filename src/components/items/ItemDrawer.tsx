@@ -22,6 +22,7 @@ interface ItemDrawerProps {
   item: ItemDetailJson | null;
   error: string | null;
   onItemUpdated: (item: ItemDetailJson) => void;
+  onItemDeleted: () => void;
 }
 
 export function ItemDrawer({
@@ -30,6 +31,7 @@ export function ItemDrawer({
   item,
   error,
   onItemUpdated,
+  onItemDeleted,
 }: ItemDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -44,6 +46,7 @@ export function ItemDrawer({
             key={item.id}
             item={item}
             onItemUpdated={onItemUpdated}
+            onItemDeleted={onItemDeleted}
           />
         ) : error ? (
           <SheetHeader className="p-6">
@@ -61,9 +64,11 @@ export function ItemDrawer({
 function ItemDrawerBody({
   item,
   onItemUpdated,
+  onItemDeleted,
 }: {
   item: ItemDetailJson;
   onItemUpdated: (item: ItemDetailJson) => void;
+  onItemDeleted: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -83,7 +88,11 @@ function ItemDrawerBody({
         />
       ) : (
         <>
-          <ItemDrawerActions item={item} onEdit={() => setIsEditing(true)} />
+          <ItemDrawerActions
+            item={item}
+            onEdit={() => setIsEditing(true)}
+            onDeleted={onItemDeleted}
+          />
           <ItemDrawerDetails item={item} />
         </>
       )}

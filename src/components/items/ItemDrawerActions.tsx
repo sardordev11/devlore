@@ -1,14 +1,9 @@
 "use client";
 
-import {
-  CopyIcon,
-  PencilIcon,
-  PinIcon,
-  StarIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { CopyIcon, PencilIcon, PinIcon, StarIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { DeleteItemDialog } from "@/components/items/DeleteItemDialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ItemDetailJson } from "@/types/items";
@@ -16,6 +11,7 @@ import type { ItemDetailJson } from "@/types/items";
 interface ItemDrawerActionsProps {
   item: ItemDetailJson;
   onEdit: () => void;
+  onDeleted: () => void;
 }
 
 // What "Copy" puts on the clipboard for each content type.
@@ -25,8 +21,12 @@ function getCopyValue(item: ItemDetailJson): string | null {
   return item.content;
 }
 
-// Favorite, Pin and Delete are display only until their features land.
-export function ItemDrawerActions({ item, onEdit }: ItemDrawerActionsProps) {
+// Favorite and Pin are display only until their features land.
+export function ItemDrawerActions({
+  item,
+  onEdit,
+  onDeleted,
+}: ItemDrawerActionsProps) {
   const copyValue = getCopyValue(item);
 
   async function handleCopy() {
@@ -76,14 +76,11 @@ export function ItemDrawerActions({ item, onEdit }: ItemDrawerActionsProps) {
           <PencilIcon />
           Edit
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Delete item"
-          className="text-destructive hover:text-destructive"
-        >
-          <Trash2Icon />
-        </Button>
+        <DeleteItemDialog
+          itemId={item.id}
+          itemTitle={item.title}
+          onDeleted={onDeleted}
+        />
       </div>
     </div>
   );

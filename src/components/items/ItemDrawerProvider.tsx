@@ -72,6 +72,7 @@ export function ItemDrawerProvider({ children }: ItemDrawerProviderProps) {
         item={item}
         error={error}
         onItemUpdated={setItem}
+        onItemDeleted={() => handleOpenChange(false)}
       />
     </ItemDrawerContext.Provider>
   );

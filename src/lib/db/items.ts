@@ -225,6 +225,29 @@ export async function updateItem(
   }
 }
 
+// Returns false when the item doesn't exist or belongs to another user.
+// Collection links cascade; tags are left in place.
+export async function deleteItem(
+  userId: string,
+  itemId: string,
+): Promise<boolean> {
+  try {
+    await prisma.item.delete({
+      where: { id: itemId, userId },
+      select: { id: true },
+    });
+    return true;
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export async function getItemStats(userId: string): Promise<ItemStats> {
   const groups = await prisma.item.groupBy({
     by: ["isFavorite"],

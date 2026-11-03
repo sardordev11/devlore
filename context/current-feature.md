@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Delete Items
 
 <!-- Feature Name -->
 
@@ -6,15 +6,30 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Wire up the existing (display-only) Delete button in the item drawer's action bar
+- Clicking Delete opens a shadcn `AlertDialog` confirmation showing the item's title, with Cancel and a destructive Delete button
+- `deleteItem` query in `src/lib/db/items.ts` scoped to the signed-in user (`userId` in the where; unknown or other users' items → not found)
+- `deleteItem` server action in `src/actions/items.ts` with a session check, Zod-validated id and the `{ success, data, error }` pattern
+- On success: close the dialog and the drawer, show a Sonner success toast ("Item deleted"), and `router.refresh()` so the dashboard, `/items/[type]` lists, stats and sidebar counts update
+- On failure: show an error toast and keep the drawer open
+- Disable the dialog buttons and show a pending state while deleting
+- Unit tests for the new query function and server action
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- `AlertDialog` (`src/components/ui/alert-dialog.tsx`) is already installed and used by `DeleteAccountDialog` on the profile page — follow that pattern
+- Delete button lives in `src/components/items/ItemDrawerActions.tsx` (currently display only alongside Favorite and Pin)
+- Tags and `ItemCollection` rows: collection links cascade on item delete; tags are left in place (no orphan-tag cleanup in this feature)
+- File items: R2 object cleanup is out of scope (uploads don't exist yet)
+- Follow existing `updateItem` patterns (action, query, tests) from Item Drawer Edit Mode
 
 ## History
 

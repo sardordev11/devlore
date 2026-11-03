@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { Prisma } from "@/generated/prisma/client";
-import { getItemDetail, updateItem } from "@/lib/db/items";
+import { deleteItem, getItemDetail, updateItem } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: { item: { findFirst: vi.fn(), update: vi.fn() } },
+  prisma: { item: { findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() } },
 }));
 
 const mockPrisma = vi.mocked(prisma, { deep: true });
@@ -132,5 +132,34 @@ describe("updateItem", () => {
     await expect(updateItem("user-1", "item-1", input)).rejects.toThrow(
       "db down",
     );
+  });
+});
+
+describe("deleteItem", () => {
+  it("deletes only the user's item", async () => {
+    mockPrisma.item.delete.mockResolvedValue({ id: "item-1" } as never);
+
+    await expect(deleteItem("user-1", "item-1")).resolves.toBe(true);
+    expect(mockPrisma.item.delete).toHaveBeenCalledWith({
+      where: { id: "item-1", userId: "user-1" },
+      select: { id: true },
+    });
+  });
+
+  it("returns false when the item isn't found for the user", async () => {
+    mockPrisma.item.delete.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Not found", {
+        code: "P2025",
+        clientVersion: "7",
+      }),
+    );
+
+    await expect(deleteItem("user-2", "item-1")).resolves.toBe(false);
+  });
+
+  it("rethrows other database errors", async () => {
+    mockPrisma.item.delete.mockRejectedValue(new Error("db down"));
+
+    await expect(deleteItem("user-1", "item-1")).rejects.toThrow("db down");
   });
 });
