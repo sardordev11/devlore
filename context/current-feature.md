@@ -1,4 +1,4 @@
-# Current Feature: Code Editor
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,32 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- `CodeEditor` component using Monaco Editor with a dark theme
-- `CodeEditor` replaces the Textarea for snippets and commands only
-- Notes, prompts and other non-code types keep their current editor
-- macOS-style window dots (red/yellow/green) at the top of the editor
-- Quick copy button in the editor header
-- Language shown in the editor header next to the copy button
-- Display (readonly) and edit modes both supported
-- Fluid editor height up to a max of 400px, with a nice-looking scrollbar that matches the theme
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/code-editor-spec.md`
-- Most of this shipped with the Markdown Editor feature. `src/components/items/CodeEditor.tsx` already has Monaco with `vs-dark`, readonly/edit modes, macOS dots, the language label, height that grows to 400px, and an 8px scrollbar. `EditorFrame.tsx` provides the copy button. It's already wired into `CreateItemDialog`, `ItemEditForm` and the drawer view for snippets and commands.
-- Remaining gaps:
-  - **Themed scrollbar**: Monaco still uses the default `vs-dark` slider colors. Define a custom theme with `beforeMount` + `monaco.editor.defineTheme` that extends `vs-dark` and sets `scrollbarSlider.*` colors to match the app.
-  - **Language position**: the label is on the left next to the dots. The spec asks for it next to the copy button, on the right.
-  - **Notes and prompts**: they use `MarkdownEditor`, not a plain Textarea. That's an intentional, already-shipped improvement, so leave it as is.
-- Added on request: a type-specific "New <Type>" button in the `/items/[type]` header that opens `CreateItemDialog` with that type preselected. It uses a new `defaultType` prop, is shown only for creatable types (`isCreatableTypeSlug` in `src/lib/validations/items.ts`, so not files or images) and has a matching skeleton in `loading.tsx`.
 
 ## History
 
@@ -64,3 +47,4 @@ In Progress
 - **Delete Items** — the Delete button in the item drawer opens a shadcn `AlertDialog` (`DeleteItemDialog`) naming the item, with Cancel and a destructive Delete button, both disabled with a "Deleting…" state while pending; `deleteItem` server action in `src/actions/items.ts` (session check, `itemIdSchema` in `src/lib/validations/items.ts`, `{ success, data, error }`); `deleteItem` query in `src/lib/db/items.ts` with `userId` in the delete's where for ownership (P2025 → not found), collection links cascading and tags left in place; on success the dialog and drawer close, an "Item deleted" Sonner toast shows and `router.refresh()` updates lists, stats and sidebar counts; error toast with the drawer kept open on failure; `onItemDeleted` threaded from `ItemDrawerProvider` through `ItemDrawer` to `ItemDrawerActions`; unit tests for the query function and server action (Completed)
 - **Item Create** — the top bar's "New Item" button opens a shadcn `Dialog` (`CreateItemDialog`) with a radio-style type selector (Snippet, Prompt, Command, Note, Link with type-colored icons; File and Image left out since they need uploads); Title (required), Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, required URL for links; `createItemSchema` in `src/lib/validations/items.ts` (type limited to `CREATABLE_TYPE_SLUGS`, "URL is required" for links, fields the type doesn't use dropped via `getCreateFields`, title/URL/tag rules shared with `updateItemSchema`, `LANGUAGE_TYPE_SLUGS` now shared with `ItemEditForm`); `createItem` server action in `src/actions/items.ts` (session check, Zod validation with `fieldErrors`, shared `toItemDetailJson`); `createItem` query in `src/lib/db/items.ts` looking up the system type by slug for its id and content type, tags via a shared `connectOrCreateTags`; "Item created" toast, dialog closes and resets, `router.refresh()`; inline field errors and error toast on failure, Create disabled without a title (or URL for links); `EditField` exported from `ItemEditForm` for reuse; unit tests for the schema, query function and server action (Completed)
 - **Markdown Editor** — `MarkdownEditor` with Write/Preview tabs (`react-markdown` + `remark-gfm`) for note and prompt content, readonly Preview-only mode in the drawer view, Write by default in `CreateItemDialog` and `ItemEditForm`, links opening in a new tab, preview styled by a custom `.markdown-preview` class in `globals.css` (headings, inline and block code, lists and task lists, blockquotes, blue links, tables); `CodeEditor` added on request for snippets and commands, a VS Code-style Monaco editor (`@monaco-editor/react`, `vs-dark`, line numbers, word wrap, loaded from the jsDelivr CDN) whose highlighting follows the item's Language field, readonly in the drawer view; both share `EditorFrame` (`#1e1e1e` container, `#2d2d2d` header with a copy button) and grow with their content up to 400px; `MARKDOWN_TYPE_SLUGS` in `src/lib/validations/items.ts`, `toMonacoLanguage` (aliases like `ts`, `bash`, `yml`) and `getFallbackLanguage` (shell for commands) in `src/lib/code-language.ts`, with unit tests (Completed)
+- **Code Editor** — custom `devlore-dark` Monaco theme (extends `vs-dark`, subtle translucent scrollbar sliders, no scrollbar shadow) defined in `beforeMount`, language label moved next to the copy button via a new `headerActions` slot on `EditorFrame`; a "New <Type>" button in the `/items/[type]` header for creatable types (`isCreatableTypeSlug` in `src/lib/validations/items.ts`, with unit tests) opening `CreateItemDialog` with the type preselected via a new `defaultType` prop, plus a matching skeleton in `loading.tsx` (Completed)
