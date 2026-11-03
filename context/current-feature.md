@@ -1,4 +1,4 @@
-# Current Feature: Item Create
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,31 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- "New Item" button in the top bar opens a shadcn `Dialog` for creating an item
-- Type selector with snippet, prompt, command, note and link
-- Fields shown based on the selected type:
-  - All types: title (required), description, tags
-  - snippet / command: content, language
-  - prompt / note: content
-  - link: URL (required)
-- `createItem` server action in `src/actions/items.ts` with Zod validation, returning `{ success, data, error }`
-- `createItem` query function in `src/lib/db/items.ts`
-- On success: toast, close the modal and refresh
-- Unit tests for the new schema, query function and server action
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/item-create-spec.md`
-- Reuse existing patterns from item edit: `src/lib/validations/items.ts` (`updateItemSchema`, `parseTags`), tag `connectOrCreate`, `ITEM_DETAIL_SELECT`/`toItemDetail`, `fieldErrors` handling
-- File and Image (Pro, file uploads) are out of scope; only the 5 free system types are selectable
 
 ## History
 
@@ -61,3 +45,4 @@ In Progress
 - **Item Drawer** — clicking an `ItemCard` on the dashboard or `/items/[type]` opens a right-side shadcn `Sheet` with the item's full details (no page navigation); `getItemDetail` in `src/lib/db/items.ts` scoped to the signed-in user (content, language, URL/file, tags, collections, dates) with unit tests, `GET /api/items/[id]` (401 signed out, 404 for unknown or other users' items, `{ success, data, error }`), `ItemDrawerProvider` inside `AppShell` fetching on click and aborting stale requests, `ItemDrawerTrigger` wrapping the server-rendered `ItemCard` (click, Enter or Space), header with type icon and type/language badges, action bar with Favorite (yellow when active), Pin, Copy (content, URL or file URL to the clipboard with a toast), Edit and right-aligned Delete (all but Copy display only for now), Description / Content / Tags / Collections / Details sections, loading skeleton and error state, full width on mobile with a wrapping action bar, new `overlayClassName` prop on `SheetContent` for a dimmed `bg-black/50` backdrop without blur, `ItemDetailJson` type in `src/types/items.ts` (Completed)
 - **Item Drawer Edit Mode** — Edit button in the item drawer switches it to an inline form (`ItemEditForm`) with Save and Cancel replacing the action bar; Title, Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, URL for links, with collections and dates kept read-only via a shared `ItemMetaSections`; `updateItemSchema` in `src/lib/validations/items.ts` (trimmed title, blank optional text stored as null, omitted fields left unchanged, http(s)-only URLs, trimmed and deduped tags) plus `parseTags`; `updateItem` server action in `src/actions/items.ts` (session check, Zod validation returning `error` and `fieldErrors`, dates serialized to ISO strings); `updateItem` query in `src/lib/db/items.ts` with `userId` in the update's where for ownership (P2025 → not found), tags replaced via `set: []` + `connectOrCreate`, returning the updated `ItemDetail` through a shared `ITEM_DETAIL_SELECT`/`toItemDetail`; success/error toasts, inline field errors, Save disabled on a blank title, `router.refresh()` after save; shadcn textarea added; unit tests for the schema, query function and server action (Completed)
 - **Delete Items** — the Delete button in the item drawer opens a shadcn `AlertDialog` (`DeleteItemDialog`) naming the item, with Cancel and a destructive Delete button, both disabled with a "Deleting…" state while pending; `deleteItem` server action in `src/actions/items.ts` (session check, `itemIdSchema` in `src/lib/validations/items.ts`, `{ success, data, error }`); `deleteItem` query in `src/lib/db/items.ts` with `userId` in the delete's where for ownership (P2025 → not found), collection links cascading and tags left in place; on success the dialog and drawer close, an "Item deleted" Sonner toast shows and `router.refresh()` updates lists, stats and sidebar counts; error toast with the drawer kept open on failure; `onItemDeleted` threaded from `ItemDrawerProvider` through `ItemDrawer` to `ItemDrawerActions`; unit tests for the query function and server action (Completed)
+- **Item Create** — the top bar's "New Item" button opens a shadcn `Dialog` (`CreateItemDialog`) with a radio-style type selector (Snippet, Prompt, Command, Note, Link with type-colored icons; File and Image left out since they need uploads); Title (required), Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, required URL for links; `createItemSchema` in `src/lib/validations/items.ts` (type limited to `CREATABLE_TYPE_SLUGS`, "URL is required" for links, fields the type doesn't use dropped via `getCreateFields`, title/URL/tag rules shared with `updateItemSchema`, `LANGUAGE_TYPE_SLUGS` now shared with `ItemEditForm`); `createItem` server action in `src/actions/items.ts` (session check, Zod validation with `fieldErrors`, shared `toItemDetailJson`); `createItem` query in `src/lib/db/items.ts` looking up the system type by slug for its id and content type, tags via a shared `connectOrCreateTags`; "Item created" toast, dialog closes and resets, `router.refresh()`; inline field errors and error toast on failure, Create disabled without a title (or URL for links); `EditField` exported from `ItemEditForm` for reuse; unit tests for the schema, query function and server action (Completed)
