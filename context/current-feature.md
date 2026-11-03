@@ -1,4 +1,4 @@
-# Current Feature: Delete Items
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,30 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Wire up the existing (display-only) Delete button in the item drawer's action bar
-- Clicking Delete opens a shadcn `AlertDialog` confirmation showing the item's title, with Cancel and a destructive Delete button
-- `deleteItem` query in `src/lib/db/items.ts` scoped to the signed-in user (`userId` in the where; unknown or other users' items → not found)
-- `deleteItem` server action in `src/actions/items.ts` with a session check, Zod-validated id and the `{ success, data, error }` pattern
-- On success: close the dialog and the drawer, show a Sonner success toast ("Item deleted"), and `router.refresh()` so the dashboard, `/items/[type]` lists, stats and sidebar counts update
-- On failure: show an error toast and keep the drawer open
-- Disable the dialog buttons and show a pending state while deleting
-- Unit tests for the new query function and server action
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- `AlertDialog` (`src/components/ui/alert-dialog.tsx`) is already installed and used by `DeleteAccountDialog` on the profile page — follow that pattern
-- Delete button lives in `src/components/items/ItemDrawerActions.tsx` (currently display only alongside Favorite and Pin)
-- Tags and `ItemCollection` rows: collection links cascade on item delete; tags are left in place (no orphan-tag cleanup in this feature)
-- File items: R2 object cleanup is out of scope (uploads don't exist yet)
-- Follow existing `updateItem` patterns (action, query, tests) from Item Drawer Edit Mode
 
 ## History
 
@@ -59,3 +44,4 @@ In Progress
 - **Items List Three Columns** — `/items/[type]` grid and its loading skeleton now go one column on mobile, two from `md` and three from `xl` (`xl:grid-cols-3` rather than `lg`, since at 1024px with the sidebar open three columns truncated `ItemCard` titles to ~10 characters), checked in the browser at 390px, 1024px and 1280px (Completed)
 - **Item Drawer** — clicking an `ItemCard` on the dashboard or `/items/[type]` opens a right-side shadcn `Sheet` with the item's full details (no page navigation); `getItemDetail` in `src/lib/db/items.ts` scoped to the signed-in user (content, language, URL/file, tags, collections, dates) with unit tests, `GET /api/items/[id]` (401 signed out, 404 for unknown or other users' items, `{ success, data, error }`), `ItemDrawerProvider` inside `AppShell` fetching on click and aborting stale requests, `ItemDrawerTrigger` wrapping the server-rendered `ItemCard` (click, Enter or Space), header with type icon and type/language badges, action bar with Favorite (yellow when active), Pin, Copy (content, URL or file URL to the clipboard with a toast), Edit and right-aligned Delete (all but Copy display only for now), Description / Content / Tags / Collections / Details sections, loading skeleton and error state, full width on mobile with a wrapping action bar, new `overlayClassName` prop on `SheetContent` for a dimmed `bg-black/50` backdrop without blur, `ItemDetailJson` type in `src/types/items.ts` (Completed)
 - **Item Drawer Edit Mode** — Edit button in the item drawer switches it to an inline form (`ItemEditForm`) with Save and Cancel replacing the action bar; Title, Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, URL for links, with collections and dates kept read-only via a shared `ItemMetaSections`; `updateItemSchema` in `src/lib/validations/items.ts` (trimmed title, blank optional text stored as null, omitted fields left unchanged, http(s)-only URLs, trimmed and deduped tags) plus `parseTags`; `updateItem` server action in `src/actions/items.ts` (session check, Zod validation returning `error` and `fieldErrors`, dates serialized to ISO strings); `updateItem` query in `src/lib/db/items.ts` with `userId` in the update's where for ownership (P2025 → not found), tags replaced via `set: []` + `connectOrCreate`, returning the updated `ItemDetail` through a shared `ITEM_DETAIL_SELECT`/`toItemDetail`; success/error toasts, inline field errors, Save disabled on a blank title, `router.refresh()` after save; shadcn textarea added; unit tests for the schema, query function and server action (Completed)
+- **Delete Items** — the Delete button in the item drawer opens a shadcn `AlertDialog` (`DeleteItemDialog`) naming the item, with Cancel and a destructive Delete button, both disabled with a "Deleting…" state while pending; `deleteItem` server action in `src/actions/items.ts` (session check, `itemIdSchema` in `src/lib/validations/items.ts`, `{ success, data, error }`); `deleteItem` query in `src/lib/db/items.ts` with `userId` in the delete's where for ownership (P2025 → not found), collection links cascading and tags left in place; on success the dialog and drawer close, an "Item deleted" Sonner toast shows and `router.refresh()` updates lists, stats and sidebar counts; error toast with the drawer kept open on failure; `onItemDeleted` threaded from `ItemDrawerProvider` through `ItemDrawer` to `ItemDrawerActions`; unit tests for the query function and server action (Completed)
