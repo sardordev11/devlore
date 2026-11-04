@@ -1,22 +1,20 @@
 # Current Feature
 
-Card Quick Copy
+<!-- Feature Name -->
 
 ## Status
+
+<!-- Not Started|In Progress|Completed -->
 
 Completed
 
 ## Goals
 
-- Copy icon button on `ItemCard`, `ImageCard` and `FileRow` that copies the item without opening the drawer
-- Copies the same value as the drawer's Copy button: content for text types, URL for links, file URL for files and images
-- "Copied to clipboard" / "Couldn't copy to clipboard" toasts; hidden when there's nothing to copy
-- Clicks and keypresses on the button don't open the drawer
+<!-- Goals & requirements -->
 
 ## Notes
 
-- Shared `getCopyValue` in `src/lib/copy-value.ts` used by the cards and the drawer, with unit tests
-- `ItemSummary` gains `copyValue`, computed server side so only the copy text reaches the client
+<!-- Any extra notes -->
 
 ## History
 
