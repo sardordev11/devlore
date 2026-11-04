@@ -1,12 +1,13 @@
 "use client";
 
-import { CalendarIcon, FolderIcon, TagIcon } from "lucide-react";
+import { CalendarIcon, FileIcon, FolderIcon, TagIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { CodeEditor } from "@/components/items/CodeEditor";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Badge } from "@/components/ui/badge";
 import { getFallbackLanguage } from "@/lib/code-language";
+import { formatFileSize, isImageMimeType } from "@/lib/file-constraints";
 import {
   LANGUAGE_TYPE_SLUGS,
   MARKDOWN_TYPE_SLUGS,
@@ -42,6 +43,36 @@ export function DetailSection({
   );
 }
 
+function FilePreview({ item }: ItemDrawerDetailsProps) {
+  const details = [
+    item.fileSize !== null && formatFileSize(item.fileSize),
+    item.mimeType,
+  ].filter(Boolean);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {item.fileUrl && isImageMimeType(item.mimeType) && (
+        // Served from the public R2 domain, which next/image isn't configured for.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.fileUrl}
+          alt={item.title}
+          className="max-h-96 w-full rounded-lg border bg-muted/40 object-contain"
+        />
+      )}
+      <div className="flex items-center gap-3 rounded-lg border p-3">
+        <FileIcon className="size-8 shrink-0 text-muted-foreground" />
+        <div className="min-w-0">
+          <p className="break-all font-medium">{item.fileName}</p>
+          {details.length > 0 && (
+            <p className="text-xs text-muted-foreground">{details.join(" · ")}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ItemContent({ item }: ItemDrawerDetailsProps) {
   if (item.contentType === "URL" && item.url) {
     return (
@@ -56,7 +87,7 @@ function ItemContent({ item }: ItemDrawerDetailsProps) {
     );
   }
   if (item.contentType === "FILE" && item.fileName) {
-    return <p className="break-all">{item.fileName}</p>;
+    return <FilePreview item={item} />;
   }
   if (item.content && MARKDOWN_TYPE_SLUGS.has(item.type.slug)) {
     return <MarkdownEditor value={item.content} readOnly />;

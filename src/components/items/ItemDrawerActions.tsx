@@ -1,6 +1,12 @@
 "use client";
 
-import { CopyIcon, PencilIcon, PinIcon, StarIcon } from "lucide-react";
+import {
+  CopyIcon,
+  DownloadIcon,
+  PencilIcon,
+  PinIcon,
+  StarIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { DeleteItemDialog } from "@/components/items/DeleteItemDialog";
@@ -70,6 +76,17 @@ export function ItemDrawerActions({
         <CopyIcon />
         Copy
       </Button>
+      {item.contentType === "FILE" && item.fileName && (
+        <Button
+          variant="ghost"
+          size="sm"
+          nativeButton={false}
+          render={<a href={`/api/items/${item.id}/download`} download />}
+        >
+          <DownloadIcon />
+          Download
+        </Button>
+      )}
 
       <div className="ml-auto flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={onEdit}>

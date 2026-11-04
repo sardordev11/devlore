@@ -10,13 +10,14 @@ import {
 
 describe("isCreatableTypeSlug", () => {
   it("accepts the types the New Item dialog can create", () => {
-    for (const slug of ["snippets", "prompts", "commands", "notes", "links"]) {
+    const slugs = ["snippets", "prompts", "commands", "notes", "links", "files", "images"];
+    for (const slug of slugs) {
       expect(isCreatableTypeSlug(slug)).toBe(true);
     }
   });
 
-  it("rejects upload types and unknown slugs", () => {
-    for (const slug of ["files", "images", "snippet", ""]) {
+  it("rejects unknown slugs", () => {
+    for (const slug of ["snippet", "image", ""]) {
       expect(isCreatableTypeSlug(slug)).toBe(false);
     }
   });
@@ -81,8 +82,8 @@ describe("updateItemSchema", () => {
 describe("createItemSchema", () => {
   const base = { type: "snippets", title: "useAuth Hook", tags: [] };
 
-  it("rejects unknown and non-creatable types", () => {
-    for (const type of ["files", "images", "widgets", undefined]) {
+  it("rejects unknown types", () => {
+    for (const type of ["widgets", "image", undefined]) {
       expect(createItemSchema.safeParse({ ...base, type }).success).toBe(false);
     }
   });
@@ -141,6 +142,54 @@ describe("createItemSchema", () => {
       language: null,
       url: null,
       tags: ["react"],
+      file: null,
+    });
+  });
+
+  describe("file types", () => {
+    const file = {
+      key: "users/user-1/abc.png",
+      fileName: "diagram.png",
+      fileSize: 2048,
+      mimeType: "image/png",
+    };
+
+    it("requires an uploaded file", () => {
+      const result = createItemSchema.safeParse({ ...base, type: "images" });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]).toMatchObject({
+        path: ["file"],
+        message: "File is required",
+      });
+    });
+
+    it("keeps the file and drops text fields", () => {
+      const data = createItemSchema.parse({
+        ...base,
+        type: "images",
+        content: "body",
+        language: "ts",
+        url: "https://react.dev",
+        file,
+      });
+
+      expect(data).toMatchObject({ content: null, language: null, url: null, file });
+    });
+
+    it("rejects files that break the type's constraints", () => {
+      for (const bad of [
+        { ...file, fileName: "diagram.pdf" },
+        { ...file, fileSize: 6 * 1024 * 1024 },
+        { ...file, mimeType: "text/html" },
+      ]) {
+        expect(
+          createItemSchema.safeParse({ ...base, type: "images", file: bad }).success,
+        ).toBe(false);
+      }
+    });
+
+    it("drops a file sent with a text type", () => {
+      expect(createItemSchema.parse({ ...base, file }).file).toBeNull();
     });
   });
 });

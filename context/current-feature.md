@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: File Upload with Cloudflare R2
 
 <!-- Feature Name -->
 
@@ -6,15 +6,46 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Upload API route for Cloudflare R2
+- Keep Prisma/db functions in `src/lib/db/items.ts`
+- `FileUpload` component with drag-and-drop
+- Create item modal uses `FileUpload` for the File and Image types
+- Delete the file from R2 when its item is deleted
+- Download proxy API route (avoids CORS issues)
+- Download button in `ItemDrawer` for file types
+- Upload progress indicator
+- Image preview for images, file info (name, size, type) for files
+
 ## Notes
 
 <!-- Any extra notes -->
+
+Spec: `context/features/file-image-spec.md`
+
+File constraints:
+
+| Type   | Max Size | Extensions                                                                       |
+| ------ | -------- | -------------------------------------------------------------------------------- |
+| Images | 5 MB     | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`                                 |
+| Files  | 10 MB    | `.pdf`, `.txt`, `.md`, `.json`, `.yaml`, `.yml`, `.xml`, `.csv`, `.toml`, `.ini` |
+
+Allowed MIME types:
+
+- Images: `image/png`, `image/jpeg`, `image/gif`, `image/webp`, `image/svg+xml`
+- Files: `application/pdf`, `text/plain` (also `.ini`), `text/markdown`, `application/json`, `application/x-yaml`, `text/yaml`, `application/xml`, `text/xml`, `text/csv`, `application/toml`
+
+Context:
+
+- Schema already has `fileUrl`, `fileName`, `fileSize`, `mimeType` on `Item`; File/Image types are `contentType: FILE` and `isProOnly`
+- Project overview flow: presigned PUT URL from the API, browser uploads directly to R2, then the item is created
+- R2 env vars: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`
+- Plan limits aren't enforced yet (`ENFORCE_PLAN_LIMITS`), so all users can upload for now
 
 ## History
 

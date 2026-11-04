@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { ContentType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getFileUrl } from "@/lib/r2";
 import type {
   CreateItemInput,
   UpdateItemInput,
@@ -37,6 +38,8 @@ export interface ItemDetail {
   url: string | null;
   fileUrl: string | null;
   fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
   isFavorite: boolean;
   isPinned: boolean;
   createdAt: Date;
@@ -44,6 +47,12 @@ export interface ItemDetail {
   type: ItemSummaryType & { slug: string };
   tags: string[];
   collections: { id: string; name: string }[];
+}
+
+export interface ItemFile {
+  fileUrl: string;
+  fileName: string;
+  mimeType: string | null;
 }
 
 export interface ItemTypeListing {
@@ -99,6 +108,8 @@ const ITEM_DETAIL_SELECT = {
   url: true,
   fileUrl: true,
   fileName: true,
+  fileSize: true,
+  mimeType: true,
   isFavorite: true,
   isPinned: true,
   createdAt: true,
@@ -192,6 +203,20 @@ export async function getItemDetail(
   return item ? toItemDetail(item) : null;
 }
 
+// Returns null when the item has no file, doesn't exist or belongs to another user.
+export async function getItemFile(
+  userId: string,
+  itemId: string,
+): Promise<ItemFile | null> {
+  const item = await prisma.item.findFirst({
+    where: { id: itemId, userId, contentType: "FILE" },
+    select: { fileUrl: true, fileName: true, mimeType: true },
+  });
+  if (!item?.fileUrl || !item.fileName) return null;
+
+  return { fileUrl: item.fileUrl, fileName: item.fileName, mimeType: item.mimeType };
+}
+
 function connectOrCreateTags(userId: string, tags: string[]) {
   return tags.map((name) => ({
     where: { userId_name: { userId, name } },
@@ -200,10 +225,10 @@ function connectOrCreateTags(userId: string, tags: string[]) {
 }
 
 // Creates an item of a system type, connecting the user's existing tags or creating new ones.
-// Returns null when no system type has the slug.
+// An uploaded file is stored by its public R2 URL. Returns null when no system type has the slug.
 export async function createItem(
   userId: string,
-  { type: slug, tags, ...fields }: CreateItemInput,
+  { type: slug, tags, file, ...fields }: CreateItemInput,
 ): Promise<ItemDetail | null> {
   const type = await prisma.itemType.findFirst({
     where: { slug, isSystem: true },
@@ -214,6 +239,12 @@ export async function createItem(
   const item = await prisma.item.create({
     data: {
       ...fields,
+      ...(file && {
+        fileUrl: getFileUrl(file.key),
+        fileName: file.fileName,
+        fileSize: file.fileSize,
+        mimeType: file.mimeType,
+      }),
       contentType: type.contentType,
       userId,
       typeId: type.id,
@@ -257,24 +288,24 @@ export async function updateItem(
   }
 }
 
-// Returns false when the item doesn't exist or belongs to another user.
+// Returns the deleted item's file URL (if any) so the caller can remove the file,
+// or null when the item doesn't exist or belongs to another user.
 // Collection links cascade; tags are left in place.
 export async function deleteItem(
   userId: string,
   itemId: string,
-): Promise<boolean> {
+): Promise<{ fileUrl: string | null } | null> {
   try {
-    await prisma.item.delete({
+    return await prisma.item.delete({
       where: { id: itemId, userId },
-      select: { id: true },
+      select: { fileUrl: true },
     });
-    return true;
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     ) {
-      return false;
+      return null;
     }
     throw error;
   }

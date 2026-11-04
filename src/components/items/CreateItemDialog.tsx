@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { createItem } from "@/actions/items";
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { FileUpload } from "@/components/items/FileUpload";
 import { EditField } from "@/components/items/ItemEditForm";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { getFallbackLanguage } from "@/lib/code-language";
+import { isFileTypeSlug } from "@/lib/file-constraints";
 import { getTypeIcon } from "@/lib/type-icons";
 import { cn } from "@/lib/utils";
 import {
@@ -46,6 +49,8 @@ const TYPE_OPTIONS: {
   { slug: "commands", label: "Command", icon: "Terminal", color: "#f97316" },
   { slug: "notes", label: "Note", icon: "StickyNote", color: "#fde047" },
   { slug: "links", label: "Link", icon: "Link", color: "#10b981" },
+  { slug: "files", label: "File", icon: "File", color: "#6b7280" },
+  { slug: "images", label: "Image", icon: "Image", color: "#ec4899" },
 ];
 
 type FieldName = "title" | "description" | "content" | "language" | "url" | "tags";
@@ -74,7 +79,7 @@ function TypeSelector({ value, onChange, disabled }: TypeSelectorProps) {
     <div
       role="radiogroup"
       aria-label="Item type"
-      className="grid grid-cols-3 gap-2 sm:grid-cols-5"
+      className="grid grid-cols-4 gap-2 sm:grid-cols-7"
     >
       {TYPE_OPTIONS.map((option) => {
         const Icon = getTypeIcon(option.icon);
@@ -119,18 +124,23 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
     : "New Item";
   const [values, setValues] = useState(EMPTY_VALUES);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [file, setFile] = useState<File | null>(null);
+  const { upload, progress } = useFileUpload();
 
   const fields = getCreateFields(type);
   const showUrl = fields.url;
 
+  function reset() {
+    setType(initialType);
+    setValues(EMPTY_VALUES);
+    setFieldErrors({});
+    setFile(null);
+  }
+
   function handleOpenChange(nextOpen: boolean) {
     if (isPending) return;
     setOpen(nextOpen);
-    if (!nextOpen) {
-      setType(initialType);
-      setValues(EMPTY_VALUES);
-      setFieldErrors({});
-    }
+    if (!nextOpen) reset();
   }
 
   function fieldProps(name: FieldName) {
@@ -159,7 +169,20 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
     };
 
     startTransition(async () => {
-      const result = await createItem(payload);
+      // Files go to R2 first; the item then references the stored key.
+      let uploaded = null;
+      if (isFileTypeSlug(type)) {
+        if (!file) return;
+        const uploadResult = await upload(file, type);
+        if (!uploadResult.success) {
+          setFieldErrors({ file: [uploadResult.error] });
+          toast.error(uploadResult.error);
+          return;
+        }
+        uploaded = uploadResult.data;
+      }
+
+      const result = await createItem({ ...payload, file: uploaded });
       if (!result.success) {
         setFieldErrors("fieldErrors" in result ? result.fieldErrors : {});
         toast.error(result.error);
@@ -167,9 +190,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
       }
       toast.success("Item created");
       setOpen(false);
-      setType(initialType);
-      setValues(EMPTY_VALUES);
-      setFieldErrors({});
+      reset();
       router.refresh();
     });
   }
@@ -195,6 +216,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
             onChange={(slug) => {
               setType(slug);
               setFieldErrors({});
+              setFile(null);
             }}
             disabled={isPending}
           />
@@ -202,6 +224,27 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
           <EditField id="new-item-title" label="Title" error={fieldErrors.title?.[0]}>
             <Input {...fieldProps("title")} required autoFocus />
           </EditField>
+
+          {isFileTypeSlug(type) && (
+            <EditField
+              id="new-item-file"
+              label={type === "images" ? "Image" : "File"}
+            >
+              <FileUpload
+                key={type}
+                id="new-item-file"
+                type={type}
+                file={file}
+                onChange={(selected) => {
+                  setFile(selected);
+                  setFieldErrors((current) => ({ ...current, file: undefined }));
+                }}
+                progress={progress}
+                disabled={isPending}
+                error={fieldErrors.file?.[0]}
+              />
+            </EditField>
+          )}
 
           {showUrl && (
             <EditField id="new-item-url" label="URL" error={fieldErrors.url?.[0]}>
@@ -274,10 +317,13 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
             <Button
               type="submit"
               disabled={
-                isPending || !values.title.trim() || (showUrl && !values.url.trim())
+                isPending ||
+                !values.title.trim() ||
+                (showUrl && !values.url.trim()) ||
+                (fields.file && !file)
               }
             >
-              {isPending ? "Creating…" : "Create item"}
+              {progress !== null ? "Uploading…" : isPending ? "Creating…" : "Create item"}
             </Button>
           </DialogFooter>
         </form>

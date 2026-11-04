@@ -5,9 +5,14 @@ import {
   createItem,
   deleteItem,
   getItemDetail,
+  getItemFile,
   updateItem,
 } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
+
+vi.mock("@/lib/r2", () => ({
+  getFileUrl: (key: string) => `https://files.example.com/${key}`,
+}));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -35,6 +40,8 @@ const ROW = {
   url: null,
   fileUrl: null,
   fileName: null,
+  fileSize: null,
+  mimeType: null,
   isFavorite: true,
   isPinned: false,
   createdAt,
@@ -89,6 +96,7 @@ describe("createItem", () => {
     language: "typescript",
     url: null,
     tags: ["auth"],
+    file: null,
   };
 
   it("looks up the system type by slug", async () => {
@@ -137,6 +145,78 @@ describe("createItem", () => {
       tags: ["auth", "react"],
       collections: [{ id: "col-1", name: "React Patterns" }],
     });
+  });
+});
+
+describe("createItem with a file", () => {
+  it("stores the public URL and file details", async () => {
+    mockPrisma.itemType.findFirst.mockResolvedValue({
+      id: "type-6",
+      contentType: "FILE",
+    } as never);
+    mockPrisma.item.create.mockResolvedValue(ROW as never);
+
+    await createItem("user-1", {
+      type: "files",
+      title: "Spec",
+      description: null,
+      content: null,
+      language: null,
+      url: null,
+      tags: [],
+      file: {
+        key: "users/user-1/abc.pdf",
+        fileName: "spec.pdf",
+        fileSize: 1024,
+        mimeType: "application/pdf",
+      },
+    });
+
+    expect(mockPrisma.item.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          contentType: "FILE",
+          fileUrl: "https://files.example.com/users/user-1/abc.pdf",
+          fileName: "spec.pdf",
+          fileSize: 1024,
+          mimeType: "application/pdf",
+        }),
+      }),
+    );
+  });
+});
+
+describe("getItemFile", () => {
+  it("scopes the lookup to the user's file items", async () => {
+    mockPrisma.item.findFirst.mockResolvedValue(null as never);
+
+    await expect(getItemFile("user-1", "item-1")).resolves.toBeNull();
+    expect(mockPrisma.item.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "item-1", userId: "user-1", contentType: "FILE" },
+      }),
+    );
+  });
+
+  it("returns the file when it has a URL and name", async () => {
+    const file = {
+      fileUrl: "https://files.example.com/users/user-1/abc.pdf",
+      fileName: "spec.pdf",
+      mimeType: "application/pdf",
+    };
+    mockPrisma.item.findFirst.mockResolvedValue(file as never);
+
+    await expect(getItemFile("user-1", "item-1")).resolves.toEqual(file);
+  });
+
+  it("returns null for a file item without a stored file", async () => {
+    mockPrisma.item.findFirst.mockResolvedValue({
+      fileUrl: null,
+      fileName: null,
+      mimeType: null,
+    } as never);
+
+    await expect(getItemFile("user-1", "item-1")).resolves.toBeNull();
   });
 });
 
@@ -209,17 +289,19 @@ describe("updateItem", () => {
 });
 
 describe("deleteItem", () => {
-  it("deletes only the user's item", async () => {
-    mockPrisma.item.delete.mockResolvedValue({ id: "item-1" } as never);
+  it("deletes only the user's item and returns its file URL", async () => {
+    mockPrisma.item.delete.mockResolvedValue({ fileUrl: null } as never);
 
-    await expect(deleteItem("user-1", "item-1")).resolves.toBe(true);
+    await expect(deleteItem("user-1", "item-1")).resolves.toEqual({
+      fileUrl: null,
+    });
     expect(mockPrisma.item.delete).toHaveBeenCalledWith({
       where: { id: "item-1", userId: "user-1" },
-      select: { id: true },
+      select: { fileUrl: true },
     });
   });
 
-  it("returns false when the item isn't found for the user", async () => {
+  it("returns null when the item isn't found for the user", async () => {
     mockPrisma.item.delete.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError("Not found", {
         code: "P2025",
@@ -227,7 +309,7 @@ describe("deleteItem", () => {
       }),
     );
 
-    await expect(deleteItem("user-2", "item-1")).resolves.toBe(false);
+    await expect(deleteItem("user-2", "item-1")).resolves.toBeNull();
   });
 
   it("rethrows other database errors", async () => {
