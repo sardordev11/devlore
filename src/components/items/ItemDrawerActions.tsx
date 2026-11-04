@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { DeleteItemDialog } from "@/components/items/DeleteItemDialog";
 import { Button } from "@/components/ui/button";
+import { getCopyValue } from "@/lib/copy-value";
 import { cn } from "@/lib/utils";
 import type { ItemDetailJson } from "@/types/items";
 
@@ -18,13 +19,6 @@ interface ItemDrawerActionsProps {
   item: ItemDetailJson;
   onEdit: () => void;
   onDeleted: () => void;
-}
-
-// What "Copy" puts on the clipboard for each content type.
-function getCopyValue(item: ItemDetailJson): string | null {
-  if (item.contentType === "URL") return item.url;
-  if (item.contentType === "FILE") return item.fileUrl;
-  return item.content;
 }
 
 // Favorite and Pin are display only until their features land.

@@ -2,12 +2,10 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import type { ContentType } from "@/generated/prisma/client";
+import { getCopyValue } from "@/lib/copy-value";
 import { prisma } from "@/lib/prisma";
 import { getFileUrl } from "@/lib/r2";
-import type {
-  CreateItemInput,
-  UpdateItemInput,
-} from "@/lib/validations/items";
+import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
 
 interface ItemSummaryType {
   id: string;
@@ -28,6 +26,8 @@ export interface ItemSummary {
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
+  // What the card's quick copy button puts on the clipboard.
+  copyValue: string | null;
   type: ItemSummaryType;
   tags: string[];
 }
@@ -95,6 +95,9 @@ const ITEM_SUMMARY_SELECT = {
   fileUrl: true,
   fileName: true,
   fileSize: true,
+  contentType: true,
+  content: true,
+  url: true,
   type: { select: { id: true, name: true, icon: true, color: true } },
   tags: { select: { name: true }, orderBy: { name: "asc" } },
 } satisfies Prisma.ItemSelect;
@@ -137,11 +140,30 @@ type ItemDetailRow = Prisma.ItemGetPayload<{
   select: typeof ITEM_DETAIL_SELECT;
 }>;
 
-function toItemSummary({ tags, ...item }: ItemRow): ItemSummary {
-  return { ...item, tags: tags.map((tag) => tag.name) };
+function toItemSummary({
+  tags,
+  contentType,
+  content,
+  url,
+  ...item
+}: ItemRow): ItemSummary {
+  return {
+    ...item,
+    copyValue: getCopyValue({
+      contentType,
+      content,
+      url,
+      fileUrl: item.fileUrl,
+    }),
+    tags: tags.map((tag) => tag.name),
+  };
 }
 
-function toItemDetail({ tags, collections, ...item }: ItemDetailRow): ItemDetail {
+function toItemDetail({
+  tags,
+  collections,
+  ...item
+}: ItemDetailRow): ItemDetail {
   return {
     ...item,
     tags: tags.map((tag) => tag.name),
@@ -221,7 +243,11 @@ export async function getItemFile(
   });
   if (!item?.fileUrl || !item.fileName) return null;
 
-  return { fileUrl: item.fileUrl, fileName: item.fileName, mimeType: item.mimeType };
+  return {
+    fileUrl: item.fileUrl,
+    fileName: item.fileName,
+    mimeType: item.mimeType,
+  };
 }
 
 function connectOrCreateTags(userId: string, tags: string[]) {

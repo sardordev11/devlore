@@ -1,6 +1,7 @@
 import { PinIcon, StarIcon } from "lucide-react";
 import { createElement } from "react";
 
+import { CopyButton } from "@/components/items/CopyButton";
 import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,12 +66,21 @@ export function ItemCard({ item }: ItemCardProps) {
             )}
           </div>
 
-          <time
-            dateTime={date.toISOString()}
-            className="shrink-0 text-xs text-muted-foreground"
-          >
-            {DATE_FORMAT.format(date)}
-          </time>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <time
+              dateTime={date.toISOString()}
+              className="text-xs text-muted-foreground"
+            >
+              {DATE_FORMAT.format(date)}
+            </time>
+            {item.copyValue && (
+              <CopyButton
+                value={item.copyValue}
+                size="icon-sm"
+                className="-mr-1.5"
+              />
+            )}
+          </div>
         </CardContent>
       </Card>
     </ItemDrawerTrigger>

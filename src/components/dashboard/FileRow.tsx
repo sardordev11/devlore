@@ -1,6 +1,7 @@
 import { PinIcon, StarIcon } from "lucide-react";
 import { createElement } from "react";
 
+import { CopyButton } from "@/components/items/CopyButton";
 import { FileDownloadButton } from "@/components/items/FileDownloadButton";
 import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import type { ItemSummary } from "@/lib/db/items";
@@ -66,12 +67,19 @@ export function FileRow({ item }: FileRowProps) {
           </div>
         </div>
 
-        {item.fileName ? (
-          <FileDownloadButton itemId={item.id} fileName={item.fileName} />
-        ) : (
-          // Keeps the size and date columns aligned with rows that have a button.
-          <div className="size-8 shrink-0" />
-        )}
+        <div className="flex shrink-0 items-center">
+          {item.copyValue ? (
+            <CopyButton value={item.copyValue} />
+          ) : (
+            // Keeps the size and date columns aligned with rows that have a button.
+            <div className="size-8" />
+          )}
+          {item.fileName ? (
+            <FileDownloadButton itemId={item.id} fileName={item.fileName} />
+          ) : (
+            <div className="size-8" />
+          )}
+        </div>
       </div>
     </ItemDrawerTrigger>
   );

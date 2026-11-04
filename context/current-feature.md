@@ -1,20 +1,22 @@
 # Current Feature
 
-<!-- Feature Name -->
+Card Quick Copy
 
 ## Status
-
-<!-- Not Started|In Progress|Completed -->
 
 Completed
 
 ## Goals
 
-<!-- Goals & requirements -->
+- Copy icon button on `ItemCard`, `ImageCard` and `FileRow` that copies the item without opening the drawer
+- Copies the same value as the drawer's Copy button: content for text types, URL for links, file URL for files and images
+- "Copied to clipboard" / "Couldn't copy to clipboard" toasts; hidden when there's nothing to copy
+- Clicks and keypresses on the button don't open the drawer
 
 ## Notes
 
-<!-- Any extra notes -->
+- Shared `getCopyValue` in `src/lib/copy-value.ts` used by the cards and the drawer, with unit tests
+- `ItemSummary` gains `copyValue`, computed server side so only the copy text reaches the client
 
 ## History
 
@@ -51,3 +53,4 @@ Completed
 - **File Upload with Cloudflare R2** — `POST /api/upload` (session check, early 413 on oversized bodies, extension/MIME/size checks) storing files in R2 under `users/<userId>/<uuid>.<ext>` via `src/lib/r2.ts` (`@aws-sdk/client-s3`; upload, stream, delete, `createFileKey`/`isOwnedFileKey`, `getFileUrl`/`getFileKey` between keys and `R2_PUBLIC_URL` URLs) instead of presigned browser uploads, so the bucket needs no CORS; shared rules in `src/lib/file-constraints.ts` (images 5 MB: png/jpg/jpeg/gif/webp/svg; files 10 MB: pdf/txt/md/json/yaml/yml/xml/csv/toml/ini; stored MIME type from the extension, browser type only has to agree or be blank) used client and server side; `FileUpload` component (drag-and-drop, keyboard accessible, data-URL image preview, file name and size, remove button, progress bar) with a `useFileUpload` XHR hook for progress; File and Image added to `CreateItemDialog` (upload on submit, then `createItem` with the returned key; "Uploading…" state), `createItemSchema` `file` field with "File is required" and constraint checks, `createItem` action rejecting keys outside the user's prefix and deleting the upload when creation fails, `createItem` query storing `fileUrl`/`fileName`/`fileSize`/`mimeType`; `deleteItem` query returns the file URL and the action removes the R2 object (best effort); `getItemFile` plus `GET /api/items/[id]/download` streaming the user's file as an attachment (`nosniff`, no-store, RFC 5987 filename); drawer shows an image preview or file info card and a Download button; `ItemDetail` gains `fileSize` and `mimeType`; unit tests for the constraints, R2 key helpers, schema, query functions and server actions (Completed)
 - **Image Gallery View** — `/items/images` shows a gallery of `ImageCard`s (`src/components/dashboard/ImageCard.tsx`) instead of the regular `ItemCard`: 16:9 (`aspect-video`) `object-cover` thumbnail from the public R2 URL (lazy-loaded `<img>`, image icon placeholder when there's no file), subtle hover zoom (`group-hover:scale-105`, 300ms), title with pin and favorite icons below, opening the item drawer on click; same responsive grid as other types (one column, two from `md`, three from `xl`); `fileUrl` added to `ItemSummary` and `ITEM_SUMMARY_SELECT` in `src/lib/db/items.ts`; checked in the browser at 1440px (Completed)
 - **File List View** — `/items/files` shows a single-column list of `FileRow`s (`src/components/dashboard/FileRow.tsx`) instead of grid cards, with Name / Size / Uploaded column headers from `md` up that mirror the row layout; each row has an extension-based icon from `getFileIcon` in `src/lib/file-icons.ts` (text, JSON, code, config, spreadsheet, generic fallback; with unit tests), the title plus the original file name when it differs, pin and favorite icons, file size, upload date (`createdAt`, UTC) and a hover highlight; clicking a row opens the item drawer, and `FileDownloadButton` (`src/components/items/FileDownloadButton.tsx`) downloads through `GET /api/items/[id]/download` while stopping click and keydown propagation so the drawer stays closed; size and date stack under the name on mobile; `fileName` and `fileSize` added to `ItemSummary` and `ITEM_SUMMARY_SELECT`; `loading.tsx` keeps the shared grid skeleton since loading UI gets no route params and `usePathname()` there fails the build under Cache Components; checked in the browser at 1440px and 390px (Completed)
+- **Card Quick Copy** — copy icon button (`CopyButton` in `src/components/items/CopyButton.tsx`) on `ItemCard` (under the date), `ImageCard` (next to the title) and `FileRow` (next to the download button) that copies the item without opening the drawer, stopping click and keydown propagation like `FileDownloadButton`; same value as the drawer's Copy (content for text types, URL for links, file URL for files and images) via a shared `getCopyValue` in `src/lib/copy-value.ts` with unit tests, now also used by `ItemDrawerActions`; `copyValue` added to `ItemSummary`, computed server side from `contentType`/`content`/`url`/`fileUrl` so only the copy text reaches the client; hidden when there's nothing to copy; "Copied to clipboard" / "Couldn't copy to clipboard" toasts; Files list header spacer widened to keep columns aligned; checked in the browser at 1440px (Completed)
