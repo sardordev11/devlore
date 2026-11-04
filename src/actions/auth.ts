@@ -78,28 +78,32 @@ export async function signInWithCredentials(
     return { success: true };
   } catch (error) {
     // signIn throws a redirect on success, which must be rethrown
-    if (error instanceof LoginRateLimited) return rateLimited(error.reset);
-    if (
-      error instanceof CredentialsSignin &&
-      error.code === EMAIL_NOT_VERIFIED
-    ) {
-      return {
-        success: false,
-        needsVerification: true,
-        error: "Please verify your email before signing in.",
-      };
-    }
-    if (error instanceof AuthError) {
-      return {
-        success: false,
-        error:
-          error.type === "CredentialsSignin"
-            ? "Invalid email or password"
-            : "Sign in failed. Please try again.",
-      };
-    }
+    const result = toSignInResult(error);
+    if (result) return result;
     throw error;
   }
+}
+
+// Maps a sign-in failure to a result, or null for errors that aren't auth failures
+function toSignInResult(error: unknown): ActionResult | null {
+  if (error instanceof LoginRateLimited) return rateLimited(error.reset);
+  if (error instanceof CredentialsSignin && error.code === EMAIL_NOT_VERIFIED) {
+    return {
+      success: false,
+      needsVerification: true,
+      error: "Please verify your email before signing in.",
+    };
+  }
+  if (error instanceof AuthError) {
+    return {
+      success: false,
+      error:
+        error.type === "CredentialsSignin"
+          ? "Invalid email or password"
+          : "Sign in failed. Please try again.",
+    };
+  }
+  return null;
 }
 
 // Same response whether or not the account exists, so emails can't be probed

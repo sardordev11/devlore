@@ -2,26 +2,20 @@
 
 import { CheckIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition, type SubmitEvent } from "react";
+import { useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { updateItem } from "@/actions/items";
-import { CodeEditor } from "@/components/items/CodeEditor";
+import { ContentField } from "@/components/items/ContentField";
 import { EditField } from "@/components/items/EditField";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
-import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { getFallbackLanguage } from "@/lib/code-language";
-import {
-  LANGUAGE_TYPE_SLUGS,
-  MARKDOWN_TYPE_SLUGS,
-  parseTags,
-} from "@/lib/validations/items";
+import { useItemFields } from "@/hooks/use-item-fields";
+import { buildItemPayload } from "@/lib/item-form";
+import { LANGUAGE_TYPE_SLUGS } from "@/lib/validations/items";
 import type { ItemDetailJson } from "@/types/items";
-
-type FieldName = "title" | "description" | "content" | "language" | "url" | "tags";
 
 interface ItemEditFormProps {
   item: ItemDetailJson;
@@ -32,50 +26,29 @@ interface ItemEditFormProps {
 export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<FieldName, string[]>>
-  >({});
-  const [values, setValues] = useState({
-    title: item.title,
-    description: item.description ?? "",
-    content: item.content ?? "",
-    language: item.language ?? "",
-    url: item.url ?? "",
-    tags: item.tags.join(", "),
-  });
+  const { values, setValue, fieldErrors, setFieldErrors, fieldProps } =
+    useItemFields(
+      "item",
+      {
+        title: item.title,
+        description: item.description ?? "",
+        content: item.content ?? "",
+        language: item.language ?? "",
+        url: item.url ?? "",
+        tags: item.tags.join(", "),
+      },
+      isPending,
+    );
 
-  const showContent = item.contentType === "TEXT";
-  const showLanguage = LANGUAGE_TYPE_SLUGS.has(item.type.slug);
-  const showUrl = item.contentType === "URL";
-
-  function setValue(name: FieldName, value: string) {
-    setValues((current) => ({ ...current, [name]: value }));
-  }
-
-  function fieldProps(name: FieldName) {
-    const error = fieldErrors[name]?.[0];
-    return {
-      id: `item-${name}`,
-      value: values[name],
-      onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-        setValue(name, event.target.value),
-      disabled: isPending,
-      "aria-invalid": error ? true : undefined,
-      "aria-describedby": error ? `item-${name}-error` : undefined,
-    };
-  }
+  const fields = {
+    content: item.contentType === "TEXT",
+    language: LANGUAGE_TYPE_SLUGS.has(item.type.slug),
+    url: item.contentType === "URL",
+  };
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Fields that aren't shown for this type are omitted, so they stay unchanged.
-    const payload = {
-      title: values.title,
-      description: values.description,
-      tags: parseTags(values.tags),
-      ...(showContent && { content: values.content }),
-      ...(showLanguage && { language: values.language }),
-      ...(showUrl && { url: values.url }),
-    };
+    const payload = buildItemPayload(values, fields);
 
     startTransition(async () => {
       const result = await updateItem(item.id, payload);
@@ -126,38 +99,23 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
           <Textarea {...fieldProps("description")} rows={2} />
         </EditField>
 
-        {showContent && (
+        {fields.content && (
           <EditField
             id="item-content"
             label="Content"
             error={fieldErrors.content?.[0]}
           >
-            {MARKDOWN_TYPE_SLUGS.has(item.type.slug) ? (
-              <MarkdownEditor
-                {...fieldProps("content")}
-                onChange={(content) => setValue("content", content)}
-              />
-            ) : showLanguage ? (
-              <CodeEditor
-                value={values.content}
-                onChange={(content) => setValue("content", content)}
-                language={values.language}
-                fallbackLanguage={getFallbackLanguage(item.type.slug)}
-                disabled={isPending}
-                ariaLabel="Content"
-                invalid={Boolean(fieldErrors.content)}
-              />
-            ) : (
-              <Textarea
-                {...fieldProps("content")}
-                rows={10}
-                className="max-h-96 font-mono text-xs leading-relaxed md:text-xs"
-              />
-            )}
+            <ContentField
+              typeSlug={item.type.slug}
+              field={fieldProps("content")}
+              onValueChange={(content) => setValue("content", content)}
+              language={values.language}
+              invalid={Boolean(fieldErrors.content)}
+            />
           </EditField>
         )}
 
-        {showLanguage && (
+        {fields.language && (
           <EditField
             id="item-language"
             label="Language"
@@ -167,7 +125,7 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
           </EditField>
         )}
 
-        {showUrl && (
+        {fields.url && (
           <EditField id="item-url" label="URL" error={fieldErrors.url?.[0]}>
             <Input
               {...fieldProps("url")}

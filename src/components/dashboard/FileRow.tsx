@@ -7,15 +7,8 @@ import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import type { ItemSummary } from "@/lib/db/items";
 import { formatFileSize } from "@/lib/file-constraints";
 import { getFileIcon } from "@/lib/file-icons";
+import { formatDate } from "@/lib/format-date";
 import { getTypeTint } from "@/lib/type-icons";
-
-// UTC keeps the server-rendered date stable regardless of the server's time zone.
-const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  timeZone: "UTC",
-});
 
 interface FileRowProps {
   item: ItemSummary;
@@ -63,7 +56,7 @@ export function FileRow({ item }: FileRowProps) {
               dateTime={item.createdAt.toISOString()}
               className="md:w-28 md:shrink-0 md:text-right"
             >
-              {DATE_FORMAT.format(item.createdAt)}
+              {formatDate(item.createdAt, "medium")}
             </time>
           </div>
         </div>

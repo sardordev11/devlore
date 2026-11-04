@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@/generated/prisma/client";
+import { isPrismaError, PRISMA_ERROR } from "@/lib/db/prisma-errors";
 import { prisma } from "@/lib/prisma";
 import {
   checkRateLimit,
@@ -87,12 +87,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     // A concurrent registration won the race for the unique email
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return emailTaken;
-    }
+    if (isPrismaError(error, PRISMA_ERROR.uniqueConstraint)) return emailTaken;
 
     console.error("Registration failed:", error);
     return NextResponse.json(

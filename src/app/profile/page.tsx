@@ -11,14 +11,7 @@ import { TypeBreakdown } from "@/components/profile/TypeBreakdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user/UserAvatar";
 import { getProfile } from "@/lib/db/profile";
-
-// UTC keeps the server-rendered date stable regardless of the server's time zone.
-const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-  timeZone: "UTC",
-});
+import { formatDate } from "@/lib/format-date";
 
 export default async function ProfilePage() {
   // User data must be fetched per request, not prerendered at build time.
@@ -53,7 +46,7 @@ export default async function ProfilePage() {
             <p className="mt-1 text-sm text-muted-foreground">
               Member since{" "}
               <time dateTime={profile.createdAt.toISOString()}>
-                {DATE_FORMAT.format(profile.createdAt)}
+                {formatDate(profile.createdAt, "long")}
               </time>
             </p>
           </div>

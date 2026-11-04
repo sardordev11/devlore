@@ -8,14 +8,12 @@ import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Badge } from "@/components/ui/badge";
 import { getFallbackLanguage } from "@/lib/code-language";
 import { formatFileSize, isImageMimeType } from "@/lib/file-constraints";
+import { formatLocalDate } from "@/lib/format-date";
 import {
   LANGUAGE_TYPE_SLUGS,
   MARKDOWN_TYPE_SLUGS,
 } from "@/lib/validations/items";
 import type { ItemDetailJson } from "@/types/items";
-
-// Rendered only on the client, so the viewer's own time zone is fine.
-const DATE_FORMAT = new Intl.DateTimeFormat("en-US", { dateStyle: "long" });
 
 interface ItemDrawerDetailsProps {
   item: ItemDetailJson;
@@ -167,11 +165,11 @@ export function ItemMetaSections({ item }: ItemDrawerDetailsProps) {
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
           <dt className="text-muted-foreground">Created</dt>
           <dd className="text-right">
-            {DATE_FORMAT.format(new Date(item.createdAt))}
+            {formatLocalDate(item.createdAt, "long")}
           </dd>
           <dt className="text-muted-foreground">Updated</dt>
           <dd className="text-right">
-            {DATE_FORMAT.format(new Date(item.updatedAt))}
+            {formatLocalDate(item.updatedAt, "long")}
           </dd>
         </dl>
       </DetailSection>

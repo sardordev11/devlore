@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { ContentType } from "@/generated/prisma/client";
 import { getCopyValue } from "@/lib/copy-value";
+import { isPrismaError, PRISMA_ERROR } from "@/lib/db/prisma-errors";
 import { prisma } from "@/lib/prisma";
 import { getFileUrl } from "@/lib/r2";
 import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
@@ -319,13 +320,7 @@ export async function updateItem(
     });
     return toItemDetail(item);
   } catch (error) {
-    // P2025: no record matched the where.
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
-      return null;
-    }
+    if (isPrismaError(error, PRISMA_ERROR.notFound)) return null;
     throw error;
   }
 }
@@ -343,12 +338,7 @@ export async function deleteItem(
       select: { fileUrl: true },
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
-      return null;
-    }
+    if (isPrismaError(error, PRISMA_ERROR.notFound)) return null;
     throw error;
   }
 }

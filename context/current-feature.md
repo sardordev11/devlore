@@ -1,20 +1,33 @@
 # Current Feature
 
-<!-- Feature Name -->
+Split Large Blocks
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+Break large blocks into shared functions, components and utilities. No behavior changes.
+
+- `useItemFields` hook (values, field errors, `fieldProps`, reset) shared by `CreateItemDialog` and `ItemEditForm`
+- `ContentField` component for the Markdown / Code / Textarea content switch, used by both forms
+- `buildItemPayload(values, fields)` utility building the create/update payload, with unit tests
+- `TypeSelector` and `TYPE_OPTIONS` moved out of `CreateItemDialog` into their own file
+- `isPrismaError(error, code)` helper replacing the inline `P2025` checks in `src/lib/db/items.ts` and the `P2002` check in `POST /api/auth/register`, with unit tests
+- Shared date formatting in `src/lib/format-date.ts` replacing the 4 `DATE_FORMAT` constants (the drawer keeps the viewer's time zone), with unit tests
+- `FileUpload` split into a drop zone and a selected-file card, `useDataUrl` moved to `src/hooks/`
+- `signInWithCredentials` error mapping extracted into a `toSignInResult` function
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Out of scope: sharing the `SidebarNav` collapsible sections.
 
 ## History
 

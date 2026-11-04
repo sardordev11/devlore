@@ -6,14 +6,8 @@ import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ItemSummary } from "@/lib/db/items";
+import { formatDate } from "@/lib/format-date";
 import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
-
-// UTC keeps the server-rendered date stable regardless of the server's time zone.
-const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  timeZone: "UTC",
-});
 
 interface ItemCardProps {
   item: ItemSummary;
@@ -71,7 +65,7 @@ export function ItemCard({ item }: ItemCardProps) {
               dateTime={date.toISOString()}
               className="text-xs text-muted-foreground"
             >
-              {DATE_FORMAT.format(date)}
+              {formatDate(date, "short")}
             </time>
             {item.copyValue && (
               <CopyButton
