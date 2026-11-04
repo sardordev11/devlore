@@ -1,4 +1,4 @@
-# Current Feature: File List View
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,28 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- `/items/files` shows a single-column list of rows (like Google Drive/Dropbox) instead of grid cards
-- Each row shows a file icon based on the extension, the file name, file size, upload date and a download button
-- Row highlights on hover
-- Clicking a row opens the `ItemDrawer`
-- The download button downloads the file directly and stops propagation so the drawer doesn't open
-- Responsive: row info stacks vertically on mobile
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/file-display-spec.md`
-- Mirrors the Image Gallery View approach: `/items/images` already swaps `ItemCard` for `ImageCard`, so `/items/files` can swap in a list row component the same way
-- Downloads should go through the existing `GET /api/items/[id]/download` route (streams the user's file as an attachment)
-- `ItemSummary` / `ITEM_SUMMARY_SELECT` in `src/lib/db/items.ts` will likely need `fileName`, `fileSize` (and possibly `mimeType`) for the row; `fileUrl` is already there
-- The `loading.tsx` skeleton for `/items/[type]` stays the shared grid: loading UI gets no route params, and reading `usePathname()` there fails the build under Cache Components (`CLIENT_HOOK_DYNAMIC`)
 
 ## History
 
@@ -63,3 +50,4 @@ In Progress
 - **Code Editor** — custom `devlore-dark` Monaco theme (extends `vs-dark`, subtle translucent scrollbar sliders, no scrollbar shadow) defined in `beforeMount`, language label moved next to the copy button via a new `headerActions` slot on `EditorFrame`; a "New <Type>" button in the `/items/[type]` header for creatable types (`isCreatableTypeSlug` in `src/lib/validations/items.ts`, with unit tests) opening `CreateItemDialog` with the type preselected via a new `defaultType` prop, plus a matching skeleton in `loading.tsx` (Completed)
 - **File Upload with Cloudflare R2** — `POST /api/upload` (session check, early 413 on oversized bodies, extension/MIME/size checks) storing files in R2 under `users/<userId>/<uuid>.<ext>` via `src/lib/r2.ts` (`@aws-sdk/client-s3`; upload, stream, delete, `createFileKey`/`isOwnedFileKey`, `getFileUrl`/`getFileKey` between keys and `R2_PUBLIC_URL` URLs) instead of presigned browser uploads, so the bucket needs no CORS; shared rules in `src/lib/file-constraints.ts` (images 5 MB: png/jpg/jpeg/gif/webp/svg; files 10 MB: pdf/txt/md/json/yaml/yml/xml/csv/toml/ini; stored MIME type from the extension, browser type only has to agree or be blank) used client and server side; `FileUpload` component (drag-and-drop, keyboard accessible, data-URL image preview, file name and size, remove button, progress bar) with a `useFileUpload` XHR hook for progress; File and Image added to `CreateItemDialog` (upload on submit, then `createItem` with the returned key; "Uploading…" state), `createItemSchema` `file` field with "File is required" and constraint checks, `createItem` action rejecting keys outside the user's prefix and deleting the upload when creation fails, `createItem` query storing `fileUrl`/`fileName`/`fileSize`/`mimeType`; `deleteItem` query returns the file URL and the action removes the R2 object (best effort); `getItemFile` plus `GET /api/items/[id]/download` streaming the user's file as an attachment (`nosniff`, no-store, RFC 5987 filename); drawer shows an image preview or file info card and a Download button; `ItemDetail` gains `fileSize` and `mimeType`; unit tests for the constraints, R2 key helpers, schema, query functions and server actions (Completed)
 - **Image Gallery View** — `/items/images` shows a gallery of `ImageCard`s (`src/components/dashboard/ImageCard.tsx`) instead of the regular `ItemCard`: 16:9 (`aspect-video`) `object-cover` thumbnail from the public R2 URL (lazy-loaded `<img>`, image icon placeholder when there's no file), subtle hover zoom (`group-hover:scale-105`, 300ms), title with pin and favorite icons below, opening the item drawer on click; same responsive grid as other types (one column, two from `md`, three from `xl`); `fileUrl` added to `ItemSummary` and `ITEM_SUMMARY_SELECT` in `src/lib/db/items.ts`; checked in the browser at 1440px (Completed)
+- **File List View** — `/items/files` shows a single-column list of `FileRow`s (`src/components/dashboard/FileRow.tsx`) instead of grid cards, with Name / Size / Uploaded column headers from `md` up that mirror the row layout; each row has an extension-based icon from `getFileIcon` in `src/lib/file-icons.ts` (text, JSON, code, config, spreadsheet, generic fallback; with unit tests), the title plus the original file name when it differs, pin and favorite icons, file size, upload date (`createdAt`, UTC) and a hover highlight; clicking a row opens the item drawer, and `FileDownloadButton` (`src/components/items/FileDownloadButton.tsx`) downloads through `GET /api/items/[id]/download` while stopping click and keydown propagation so the drawer stays closed; size and date stack under the name on mobile; `fileName` and `fileSize` added to `ItemSummary` and `ITEM_SUMMARY_SELECT`; `loading.tsx` keeps the shared grid skeleton since loading UI gets no route params and `usePathname()` there fails the build under Cache Components; checked in the browser at 1440px and 390px (Completed)
