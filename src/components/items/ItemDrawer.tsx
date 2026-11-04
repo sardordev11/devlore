@@ -13,7 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getTypeIcon } from "@/lib/type-icons";
+import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
 import type { ItemDetailJson } from "@/types/items";
 
 interface ItemDrawerProps {
@@ -109,7 +109,7 @@ function ItemDrawerHeader({ item }: { item: ItemDetailJson }) {
       <div
         className="flex size-10 shrink-0 items-center justify-center rounded-lg"
         // 1a = ~10% alpha on the hex type color.
-        style={{ backgroundColor: `${type.color}1a`, color: type.color }}
+        style={getTypeTint(type.color)}
       >
         {createElement(getTypeIcon(type.icon), { className: "size-5" })}
       </div>

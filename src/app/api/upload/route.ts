@@ -7,6 +7,11 @@ import {
   isFileTypeSlug,
 } from "@/lib/file-constraints";
 import { createFileKey, uploadFile } from "@/lib/r2";
+import {
+  checkRateLimit,
+  rateLimitMessage,
+  retryAfterSeconds,
+} from "@/lib/rate-limit";
 
 // Room for the multipart boundaries and the other form fields.
 const FORM_OVERHEAD = 64 * 1024;
@@ -20,6 +25,14 @@ function errorResponse(error: string, status: number) {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return errorResponse("Unauthorized", 401);
+
+  const limit = await checkRateLimit("upload", session.user.id);
+  if (!limit.success) {
+    return NextResponse.json(
+      { success: false, error: rateLimitMessage(limit.reset) },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds(limit.reset)) } },
+    );
+  }
 
   // Reject oversized bodies before buffering them.
   const maxSize = Math.max(

@@ -3,14 +3,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteFile } from "@/lib/r2";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { changePassword, deleteAccount } from "@/actions/profile";
 
 vi.mock("@/auth", () => ({ auth: vi.fn(), signOut: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    item: { findMany: vi.fn() },
     verificationToken: { deleteMany: vi.fn() },
   },
+}));
+vi.mock("@/lib/r2", () => ({
+  getFileKey: (url: string) =>
+    url.startsWith("https://files.example.com/")
+      ? url.slice("https://files.example.com/".length)
+      : null,
+  deleteFile: vi.fn(),
+}));
+vi.mock("@/lib/rate-limit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/rate-limit")>()),
+  checkRateLimit: vi.fn(),
 }));
 vi.mock("bcryptjs", () => ({
   default: { compare: vi.fn(), hash: vi.fn() },
@@ -20,6 +34,8 @@ vi.mock("bcryptjs", () => ({
 const mockAuth = vi.mocked(auth as () => Promise<unknown>);
 const mockPrisma = vi.mocked(prisma, { deep: true });
 const mockBcrypt = vi.mocked(bcrypt);
+const mockCheckRateLimit = vi.mocked(checkRateLimit);
+const mockDeleteFile = vi.mocked(deleteFile);
 
 function signInAs(id: string) {
   mockAuth.mockResolvedValue({ user: { id }, expires: "" });
@@ -34,6 +50,7 @@ describe("changePassword", () => {
 
   beforeEach(() => {
     signInAs("user-1");
+    mockCheckRateLimit.mockResolvedValue({ success: true, remaining: 4, reset: 0 });
   });
 
   it("requires a session", async () => {
@@ -56,6 +73,23 @@ describe("changePassword", () => {
       success: false,
       error: "This account has no password to change",
     });
+  });
+
+  it("rate limits attempts per user before checking the password", async () => {
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      remaining: 0,
+      reset: Date.now() + 10 * 60 * 1000,
+    });
+
+    const result = await changePassword(input);
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("changePassword", "user-1");
+    expect(result).toEqual({
+      success: false,
+      error: "Too many attempts. Please try again in 10 minutes.",
+    });
+    expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+    expect(mockBcrypt.compare).not.toHaveBeenCalled();
   });
 
   it("flags a wrong current password", async () => {
@@ -96,6 +130,7 @@ describe("changePassword", () => {
 describe("deleteAccount", () => {
   beforeEach(() => {
     signInAs("user-1");
+    mockPrisma.item.findMany.mockResolvedValue([] as never);
   });
 
   it("requires the confirmation word", async () => {
@@ -119,6 +154,36 @@ describe("deleteAccount", () => {
     expect(signOut).toHaveBeenCalledWith({ redirectTo: "/sign-in" });
   });
 
+  it("removes the user's uploaded files from R2 after deleting the account", async () => {
+    mockPrisma.item.findMany.mockResolvedValue([
+      { fileUrl: "https://files.example.com/users/user-1/a.pdf" },
+      { fileUrl: "https://files.example.com/users/user-1/b.png" },
+    ] as never);
+    mockPrisma.user.delete.mockResolvedValue({ email: "a@b.io" } as never);
+
+    const result = await deleteAccount("delete");
+    expect(result).toEqual({ success: true });
+    expect(mockPrisma.item.findMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", fileUrl: { not: null } },
+      select: { fileUrl: true },
+    });
+    expect(mockDeleteFile).toHaveBeenCalledWith("users/user-1/a.pdf");
+    expect(mockDeleteFile).toHaveBeenCalledWith("users/user-1/b.png");
+  });
+
+  it("still signs out when an R2 delete fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockPrisma.item.findMany.mockResolvedValue([
+      { fileUrl: "https://files.example.com/users/user-1/a.pdf" },
+    ] as never);
+    mockPrisma.user.delete.mockResolvedValue({ email: "a@b.io" } as never);
+    mockDeleteFile.mockRejectedValue(new Error("r2 down"));
+
+    const result = await deleteAccount("delete");
+    expect(result).toEqual({ success: true });
+    expect(signOut).toHaveBeenCalledWith({ redirectTo: "/sign-in" });
+  });
+
   it("does not sign out when the delete fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockPrisma.user.delete.mockRejectedValue(new Error("db down"));
@@ -126,5 +191,6 @@ describe("deleteAccount", () => {
     const result = await deleteAccount("delete");
     expect(result.success).toBe(false);
     expect(signOut).not.toHaveBeenCalled();
+    expect(mockDeleteFile).not.toHaveBeenCalled();
   });
 });

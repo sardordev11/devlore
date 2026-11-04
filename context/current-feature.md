@@ -1,20 +1,33 @@
 # Current Feature
 
-<!-- Feature Name -->
+Code Scan Quick Wins
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+Low-risk fixes from the code scanner audit:
+
+- Rename the per-request `STATS` array in `src/app/dashboard/page.tsx` to `stats`
+- Move `EditField` out of `ItemEditForm` into its own file
+- Shared `getTypeTint(color)` helper for the tinted type-icon style used in 5 components
+- Rate limit `changePassword` by user id
+- Rate limit `POST /api/upload` by user id
+- Login runs bcrypt against a dummy hash when the user or password hash is missing, so timing doesn't reveal which emails exist
+- Delete the user's R2 files (best effort) after `deleteAccount`
+- `createItem` refuses a file key already used by another item
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Out of scope (bigger or behavior-changing): list pagination / lazy copy values, `CreateItemDialog` refactor, private bucket for files, per-type update validation, server-driven type list.
 
 ## History
 

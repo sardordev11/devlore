@@ -2,7 +2,7 @@ import { createElement } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import type { ProfileTypeCount } from "@/lib/db/profile";
-import { getTypeIcon } from "@/lib/type-icons";
+import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
 
 interface TypeBreakdownProps {
   types: ProfileTypeCount[];
@@ -17,7 +17,7 @@ export function TypeBreakdown({ types }: TypeBreakdownProps) {
             <div
               className="flex size-10 items-center justify-center rounded-lg"
               // Type colors are dynamic data; 1a = ~10% alpha on the hex color.
-              style={{ backgroundColor: `${type.color}1a`, color: type.color }}
+              style={getTypeTint(type.color)}
             >
               {createElement(getTypeIcon(type.icon), { className: "size-5" })}
             </div>

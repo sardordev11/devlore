@@ -9,7 +9,7 @@ import { z } from "zod";
 import { createItem } from "@/actions/items";
 import { CodeEditor } from "@/components/items/CodeEditor";
 import { FileUpload } from "@/components/items/FileUpload";
-import { EditField } from "@/components/items/ItemEditForm";
+import { EditField } from "@/components/items/EditField";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import {

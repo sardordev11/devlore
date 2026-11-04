@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import {
   createItem as createItemQuery,
   deleteItem as deleteItemQuery,
+  isFileKeyInUse,
   updateItem as updateItemQuery,
 } from "@/lib/db/items";
 import { deleteFile } from "@/lib/r2";
@@ -23,6 +24,7 @@ vi.mock("@/lib/db/items", () => ({
   createItem: vi.fn(),
   updateItem: vi.fn(),
   deleteItem: vi.fn(),
+  isFileKeyInUse: vi.fn(),
 }));
 
 // auth() is overloaded (session getter and middleware wrapper), so cast the mock
@@ -31,6 +33,7 @@ const mockCreateItemQuery = vi.mocked(createItemQuery);
 const mockUpdateItemQuery = vi.mocked(updateItemQuery);
 const mockDeleteItemQuery = vi.mocked(deleteItemQuery);
 const mockDeleteFile = vi.mocked(deleteFile);
+const mockIsFileKeyInUse = vi.mocked(isFileKeyInUse);
 
 const date = new Date("2026-01-15T00:00:00Z");
 
@@ -174,6 +177,20 @@ describe("createItem with an uploaded file", () => {
     });
 
     expect(result).toMatchObject({ success: false, error: "File not found" });
+    expect(mockCreateItemQuery).not.toHaveBeenCalled();
+    expect(mockDeleteFile).not.toHaveBeenCalled();
+  });
+
+  it("refuses a file already attached to another item and leaves it alone", async () => {
+    mockIsFileKeyInUse.mockResolvedValue(true);
+
+    const result = await createItem(input);
+
+    expect(mockIsFileKeyInUse).toHaveBeenCalledWith("user-1", file.key);
+    expect(result).toEqual({
+      success: false,
+      error: "File is already attached to another item",
+    });
     expect(mockCreateItemQuery).not.toHaveBeenCalled();
     expect(mockDeleteFile).not.toHaveBeenCalled();
   });

@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import {
   createItem as createItemQuery,
   deleteItem as deleteItemQuery,
+  isFileKeyInUse,
   updateItem as updateItemQuery,
   type ItemDetail,
 } from "@/lib/db/items";
@@ -87,6 +88,12 @@ export async function createItem(data: unknown): Promise<CreateItemResult> {
   }
 
   try {
+    // Two items sharing one object would lose the file when either is deleted.
+    // The object belongs to the existing item, so it isn't removed here.
+    if (parsed.data.file && (await isFileKeyInUse(userId, parsed.data.file.key))) {
+      return { success: false, error: "File is already attached to another item" };
+    }
+
     const item = await createItemQuery(userId, parsed.data);
     if (!item) return fail({ success: false, error: "Item type not found" });
 

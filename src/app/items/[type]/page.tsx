@@ -8,7 +8,7 @@ import { ImageCard } from "@/components/dashboard/ImageCard";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { getItemsByTypeSlug } from "@/lib/db/items";
-import { getTypeIcon } from "@/lib/type-icons";
+import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
 import { isCreatableTypeSlug } from "@/lib/validations/items";
 
 export default async function ItemsByTypePage({
@@ -38,7 +38,7 @@ export default async function ItemsByTypePage({
           <div
             className="flex size-10 shrink-0 items-center justify-center rounded-lg"
             // 1a = ~10% alpha on the hex type color.
-            style={{ backgroundColor: `${type.color}1a`, color: type.color }}
+            style={getTypeTint(type.color)}
           >
             {createElement(getTypeIcon(type.icon), { className: "size-5" })}
           </div>

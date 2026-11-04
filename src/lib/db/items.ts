@@ -257,6 +257,15 @@ function connectOrCreateTags(userId: string, tags: string[]) {
   }));
 }
 
+// True when one of the user's items already stores this uploaded file.
+export async function isFileKeyInUse(userId: string, key: string): Promise<boolean> {
+  const item = await prisma.item.findFirst({
+    where: { userId, fileUrl: getFileUrl(key) },
+    select: { id: true },
+  });
+  return item !== null;
+}
+
 // Creates an item of a system type, connecting the user's existing tags or creating new ones.
 // An uploaded file is stored by its public R2 URL. Returns null when no system type has the slug.
 export async function createItem(

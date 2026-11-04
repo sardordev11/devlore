@@ -7,6 +7,7 @@ import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import type { ItemSummary } from "@/lib/db/items";
 import { formatFileSize } from "@/lib/file-constraints";
 import { getFileIcon } from "@/lib/file-icons";
+import { getTypeTint } from "@/lib/type-icons";
 
 // UTC keeps the server-rendered date stable regardless of the server's time zone.
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
@@ -30,7 +31,7 @@ export function FileRow({ item }: FileRowProps) {
         <div
           className="flex size-9 shrink-0 items-center justify-center rounded-lg"
           // 1a = ~10% alpha on the hex type color.
-          style={{ backgroundColor: `${type.color}1a`, color: type.color }}
+          style={getTypeTint(type.color)}
         >
           {createElement(getFileIcon(item.fileName), { className: "size-4.5" })}
         </div>

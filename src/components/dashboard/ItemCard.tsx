@@ -6,7 +6,7 @@ import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ItemSummary } from "@/lib/db/items";
-import { getTypeIcon } from "@/lib/type-icons";
+import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
 
 // UTC keeps the server-rendered date stable regardless of the server's time zone.
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
@@ -34,7 +34,7 @@ export function ItemCard({ item }: ItemCardProps) {
           <div
             className="flex size-10 shrink-0 items-center justify-center rounded-lg"
             // 1a = ~10% alpha on the hex type color.
-            style={{ backgroundColor: `${type.color}1a`, color: type.color }}
+            style={getTypeTint(type.color)}
             aria-label={type.name}
           >
             {createElement(getTypeIcon(type.icon), { className: "size-5" })}

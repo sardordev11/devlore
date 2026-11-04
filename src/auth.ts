@@ -11,6 +11,10 @@ import authConfig from "@/auth.config";
 export const EMAIL_NOT_VERIFIED = "email_not_verified";
 export const RATE_LIMITED = "rate_limited";
 
+// bcrypt hash (12 rounds, same as real passwords) of a throwaway string
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$nwuCYzwfnd7BkMedV7PYE.shUbGxLofpVi0xSi/G2gcIVTTygYAfi";
+
 // Thrown only after the password checks out, so it doesn't reveal accounts
 class EmailNotVerified extends CredentialsSignin {
   code = EMAIL_NOT_VERIFIED;
@@ -48,13 +52,13 @@ const providers = authConfig.providers.map((provider) =>
           const user = await prisma.user.findUnique({
             where: { email: parsed.data.email },
           });
-          if (!user?.passwordHash) return null;
-
+          // Compare against a dummy hash when there's no password, so unknown
+          // emails take as long as wrong passwords
           const valid = await bcrypt.compare(
             parsed.data.password,
-            user.passwordHash,
+            user?.passwordHash ?? DUMMY_PASSWORD_HASH,
           );
-          if (!valid) return null;
+          if (!user?.passwordHash || !valid) return null;
           if (EMAIL_VERIFICATION_ENABLED && !user.emailVerified) {
             throw new EmailNotVerified();
           }

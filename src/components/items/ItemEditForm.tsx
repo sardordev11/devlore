@@ -7,11 +7,11 @@ import { toast } from "sonner";
 
 import { updateItem } from "@/actions/items";
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { EditField } from "@/components/items/EditField";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getFallbackLanguage } from "@/lib/code-language";
 import {
@@ -27,27 +27,6 @@ interface ItemEditFormProps {
   item: ItemDetailJson;
   onCancel: () => void;
   onSaved: (item: ItemDetailJson) => void;
-}
-
-interface EditFieldProps {
-  id: string;
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}
-
-export function EditField({ id, label, error, children }: EditFieldProps) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {error && (
-        <p id={`${id}-error`} className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
 }
 
 export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {

@@ -6,6 +6,7 @@ import {
   deleteItem,
   getItemDetail,
   getItemFile,
+  isFileKeyInUse,
   updateItem,
 } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
@@ -183,6 +184,26 @@ describe("createItem with a file", () => {
         }),
       }),
     );
+  });
+});
+
+describe("isFileKeyInUse", () => {
+  const key = "users/user-1/abc.pdf";
+
+  it("looks up the user's items by the key's public URL", async () => {
+    mockPrisma.item.findFirst.mockResolvedValue({ id: "item-1" } as never);
+
+    await expect(isFileKeyInUse("user-1", key)).resolves.toBe(true);
+    expect(mockPrisma.item.findFirst).toHaveBeenCalledWith({
+      where: { userId: "user-1", fileUrl: `https://files.example.com/${key}` },
+      select: { id: true },
+    });
+  });
+
+  it("returns false when no item stores the file", async () => {
+    mockPrisma.item.findFirst.mockResolvedValue(null as never);
+
+    await expect(isFileKeyInUse("user-1", key)).resolves.toBe(false);
   });
 });
 
