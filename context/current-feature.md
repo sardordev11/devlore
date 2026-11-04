@@ -1,33 +1,20 @@
 # Current Feature
 
-Split Large Blocks
+<!-- Feature Name -->
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-Break large blocks into shared functions, components and utilities. No behavior changes.
-
-- `useItemFields` hook (values, field errors, `fieldProps`, reset) shared by `CreateItemDialog` and `ItemEditForm`
-- `ContentField` component for the Markdown / Code / Textarea content switch, used by both forms
-- `buildItemPayload(values, fields)` utility building the create/update payload, with unit tests
-- `TypeSelector` and `TYPE_OPTIONS` moved out of `CreateItemDialog` into their own file
-- `isPrismaError(error, code)` helper replacing the inline `P2025` checks in `src/lib/db/items.ts` and the `P2002` check in `POST /api/auth/register`, with unit tests
-- Shared date formatting in `src/lib/format-date.ts` replacing the 4 `DATE_FORMAT` constants (the drawer keeps the viewer's time zone), with unit tests
-- `FileUpload` split into a drop zone and a selected-file card, `useDataUrl` moved to `src/hooks/`
-- `signInWithCredentials` error mapping extracted into a `toSignInResult` function
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Out of scope: sharing the `SidebarNav` collapsible sections.
 
 ## History
 
@@ -66,3 +53,4 @@ Break large blocks into shared functions, components and utilities. No behavior 
 - **File List View** — `/items/files` shows a single-column list of `FileRow`s (`src/components/dashboard/FileRow.tsx`) instead of grid cards, with Name / Size / Uploaded column headers from `md` up that mirror the row layout; each row has an extension-based icon from `getFileIcon` in `src/lib/file-icons.ts` (text, JSON, code, config, spreadsheet, generic fallback; with unit tests), the title plus the original file name when it differs, pin and favorite icons, file size, upload date (`createdAt`, UTC) and a hover highlight; clicking a row opens the item drawer, and `FileDownloadButton` (`src/components/items/FileDownloadButton.tsx`) downloads through `GET /api/items/[id]/download` while stopping click and keydown propagation so the drawer stays closed; size and date stack under the name on mobile; `fileName` and `fileSize` added to `ItemSummary` and `ITEM_SUMMARY_SELECT`; `loading.tsx` keeps the shared grid skeleton since loading UI gets no route params and `usePathname()` there fails the build under Cache Components; checked in the browser at 1440px and 390px (Completed)
 - **Card Quick Copy** — copy icon button (`CopyButton` in `src/components/items/CopyButton.tsx`) on `ItemCard` (under the date), `ImageCard` (next to the title) and `FileRow` (next to the download button) that copies the item without opening the drawer, stopping click and keydown propagation like `FileDownloadButton`; same value as the drawer's Copy (content for text types, URL for links, file URL for files and images) via a shared `getCopyValue` in `src/lib/copy-value.ts` with unit tests, now also used by `ItemDrawerActions`; `copyValue` added to `ItemSummary`, computed server side from `contentType`/`content`/`url`/`fileUrl` so only the copy text reaches the client; hidden when there's nothing to copy; "Copied to clipboard" / "Couldn't copy to clipboard" toasts; Files list header spacer widened to keep columns aligned; checked in the browser at 1440px (Completed)
 - **Code Scan Quick Wins** — low-risk fixes from a code scanner audit: `deleteAccount` collects the user's file URLs before the cascade and deletes the R2 objects afterwards (best effort via `Promise.allSettled`, logged on failure, sign-out unaffected); `changePassword` rate limited 5/15 min and `POST /api/upload` 20/10 min by user id (new `changePassword` and `upload` limiters in `src/lib/rate-limit.ts`, upload returns 429 with `Retry-After`); Credentials `authorize` compares against a 12-round dummy bcrypt hash when the user or password hash is missing so timing doesn't reveal accounts; `createItem` refuses a file key already attached to another item via `isFileKeyInUse` in `src/lib/db/items.ts` without deleting the shared object; shared `getTypeTint` in `src/lib/type-icons.ts` for the tinted type icon in 5 components, `EditField` moved to `src/components/items/EditField.tsx`, dashboard `STATS` renamed to `stats`; unit tests for the new behavior; not checked in the browser (Playwright browser was in use) (Completed)
+- **Split Large Blocks** — refactor with no behavior changes: `useItemFields` hook in `src/hooks/use-item-fields.ts` (values, field errors, `fieldProps` with `${idPrefix}-${name}` ids, reset), `ContentField` component (Markdown for notes/prompts, Monaco for snippets/commands, Textarea otherwise) and `buildItemPayload` in `src/lib/item-form.ts` shared by `CreateItemDialog` (333 → 221 lines) and `ItemEditForm` (188 → 146 lines); `TypeSelector` and `TYPE_OPTIONS` moved to `src/components/items/TypeSelector.tsx`; `isPrismaError(error, code)` with `PRISMA_ERROR` codes in `src/lib/db/prisma-errors.ts` replacing the inline P2025 checks in `src/lib/db/items.ts` and the P2002 check in `POST /api/auth/register`; `formatDate` (UTC) and `formatLocalDate` (viewer's time zone, used by the drawer) in `src/lib/format-date.ts` replacing four `DATE_FORMAT` constants; `FileUpload` split into `SelectedFileCard` and `FileDropZone`, `useDataUrl` moved to `src/hooks/use-data-url.ts`; `toSignInResult` extracted from `signInWithCredentials`; unit tests for `buildItemPayload`, `isPrismaError` and the date formatters; checked in the browser (New Item dialog with snippet, note and image types; snippet edit form) (Completed)
