@@ -1,4 +1,4 @@
-# Current Feature: File Upload with Cloudflare R2
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,46 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Upload API route for Cloudflare R2
-- Keep Prisma/db functions in `src/lib/db/items.ts`
-- `FileUpload` component with drag-and-drop
-- Create item modal uses `FileUpload` for the File and Image types
-- Delete the file from R2 when its item is deleted
-- Download proxy API route (avoids CORS issues)
-- Download button in `ItemDrawer` for file types
-- Upload progress indicator
-- Image preview for images, file info (name, size, type) for files
-
 ## Notes
 
 <!-- Any extra notes -->
-
-Spec: `context/features/file-image-spec.md`
-
-File constraints:
-
-| Type   | Max Size | Extensions                                                                       |
-| ------ | -------- | -------------------------------------------------------------------------------- |
-| Images | 5 MB     | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`                                 |
-| Files  | 10 MB    | `.pdf`, `.txt`, `.md`, `.json`, `.yaml`, `.yml`, `.xml`, `.csv`, `.toml`, `.ini` |
-
-Allowed MIME types:
-
-- Images: `image/png`, `image/jpeg`, `image/gif`, `image/webp`, `image/svg+xml`
-- Files: `application/pdf`, `text/plain` (also `.ini`), `text/markdown`, `application/json`, `application/x-yaml`, `text/yaml`, `application/xml`, `text/xml`, `text/csv`, `application/toml`
-
-Context:
-
-- Schema already has `fileUrl`, `fileName`, `fileSize`, `mimeType` on `Item`; File/Image types are `contentType: FILE` and `isProOnly`
-- Project overview flow: presigned PUT URL from the API, browser uploads directly to R2, then the item is created
-- R2 env vars: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`
-- Plan limits aren't enforced yet (`ENFORCE_PLAN_LIMITS`), so all users can upload for now
 
 ## History
 
@@ -79,3 +48,4 @@ Context:
 - **Item Create** — the top bar's "New Item" button opens a shadcn `Dialog` (`CreateItemDialog`) with a radio-style type selector (Snippet, Prompt, Command, Note, Link with type-colored icons; File and Image left out since they need uploads); Title (required), Description and comma-separated Tags for all types, Content for text types, Language for snippets and commands, required URL for links; `createItemSchema` in `src/lib/validations/items.ts` (type limited to `CREATABLE_TYPE_SLUGS`, "URL is required" for links, fields the type doesn't use dropped via `getCreateFields`, title/URL/tag rules shared with `updateItemSchema`, `LANGUAGE_TYPE_SLUGS` now shared with `ItemEditForm`); `createItem` server action in `src/actions/items.ts` (session check, Zod validation with `fieldErrors`, shared `toItemDetailJson`); `createItem` query in `src/lib/db/items.ts` looking up the system type by slug for its id and content type, tags via a shared `connectOrCreateTags`; "Item created" toast, dialog closes and resets, `router.refresh()`; inline field errors and error toast on failure, Create disabled without a title (or URL for links); `EditField` exported from `ItemEditForm` for reuse; unit tests for the schema, query function and server action (Completed)
 - **Markdown Editor** — `MarkdownEditor` with Write/Preview tabs (`react-markdown` + `remark-gfm`) for note and prompt content, readonly Preview-only mode in the drawer view, Write by default in `CreateItemDialog` and `ItemEditForm`, links opening in a new tab, preview styled by a custom `.markdown-preview` class in `globals.css` (headings, inline and block code, lists and task lists, blockquotes, blue links, tables); `CodeEditor` added on request for snippets and commands, a VS Code-style Monaco editor (`@monaco-editor/react`, `vs-dark`, line numbers, word wrap, loaded from the jsDelivr CDN) whose highlighting follows the item's Language field, readonly in the drawer view; both share `EditorFrame` (`#1e1e1e` container, `#2d2d2d` header with a copy button) and grow with their content up to 400px; `MARKDOWN_TYPE_SLUGS` in `src/lib/validations/items.ts`, `toMonacoLanguage` (aliases like `ts`, `bash`, `yml`) and `getFallbackLanguage` (shell for commands) in `src/lib/code-language.ts`, with unit tests (Completed)
 - **Code Editor** — custom `devlore-dark` Monaco theme (extends `vs-dark`, subtle translucent scrollbar sliders, no scrollbar shadow) defined in `beforeMount`, language label moved next to the copy button via a new `headerActions` slot on `EditorFrame`; a "New <Type>" button in the `/items/[type]` header for creatable types (`isCreatableTypeSlug` in `src/lib/validations/items.ts`, with unit tests) opening `CreateItemDialog` with the type preselected via a new `defaultType` prop, plus a matching skeleton in `loading.tsx` (Completed)
+- **File Upload with Cloudflare R2** — `POST /api/upload` (session check, early 413 on oversized bodies, extension/MIME/size checks) storing files in R2 under `users/<userId>/<uuid>.<ext>` via `src/lib/r2.ts` (`@aws-sdk/client-s3`; upload, stream, delete, `createFileKey`/`isOwnedFileKey`, `getFileUrl`/`getFileKey` between keys and `R2_PUBLIC_URL` URLs) instead of presigned browser uploads, so the bucket needs no CORS; shared rules in `src/lib/file-constraints.ts` (images 5 MB: png/jpg/jpeg/gif/webp/svg; files 10 MB: pdf/txt/md/json/yaml/yml/xml/csv/toml/ini; stored MIME type from the extension, browser type only has to agree or be blank) used client and server side; `FileUpload` component (drag-and-drop, keyboard accessible, data-URL image preview, file name and size, remove button, progress bar) with a `useFileUpload` XHR hook for progress; File and Image added to `CreateItemDialog` (upload on submit, then `createItem` with the returned key; "Uploading…" state), `createItemSchema` `file` field with "File is required" and constraint checks, `createItem` action rejecting keys outside the user's prefix and deleting the upload when creation fails, `createItem` query storing `fileUrl`/`fileName`/`fileSize`/`mimeType`; `deleteItem` query returns the file URL and the action removes the R2 object (best effort); `getItemFile` plus `GET /api/items/[id]/download` streaming the user's file as an attachment (`nosniff`, no-store, RFC 5987 filename); drawer shows an image preview or file info card and a Download button; `ItemDetail` gains `fileSize` and `mimeType`; unit tests for the constraints, R2 key helpers, schema, query functions and server actions (Completed)
