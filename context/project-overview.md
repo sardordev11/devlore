@@ -497,7 +497,7 @@ flowchart LR
     subgraph Data["🗄️ Data & Services"]
         DB[("Neon<br/>PostgreSQL")]
         R2[("Cloudflare R2<br/>File storage")]
-        REDIS[("Redis cache<br/>(optional)")]
+        REDIS[("Upstash Redis<br/>Rate limiting")]
     end
 
     subgraph External["🌐 External"]
@@ -510,8 +510,8 @@ flowchart LR
     UI --> API
     SSR -->|Prisma 7| DB
     API -->|Prisma 7| DB
-    API -->|presigned URLs| R2
-    API -.-> REDIS
+    API -->|uploads + downloads| R2
+    API -.->|auth rate limits| REDIS
     AUTH --> GH
     AUTH --> DB
     API --> OAI
@@ -528,15 +528,17 @@ sequenceDiagram
     participant R as Cloudflare R2
     participant D as Neon DB
 
-    U->>A: Request upload (name, size, mime)
-    A->>A: Check auth + Pro + size limits
-    A->>R: Generate presigned PUT URL
-    A-->>U: Presigned URL
-    U->>R: Upload file directly
-    U->>A: Confirm upload
-    A->>D: Create Item (fileUrl, fileName, fileSize)
+    U->>A: POST /api/upload (file + type)
+    A->>A: Check auth, extension, MIME type, size
+    A->>R: Put object at users/<userId>/<uuid>.<ext>
+    A-->>U: File key
+    U->>A: createItem server action (fields + key)
+    A->>A: Check the key is under the user's prefix
+    A->>D: Create Item (fileUrl, fileName, fileSize, mimeType)
     A-->>U: Item created ✅
 ```
+
+> Files go through the server rather than presigned browser uploads, so the R2 bucket needs no CORS rules. If creating the item fails, the uploaded object is deleted. Downloads stream through `GET /api/items/[id]/download`; image thumbnails load from the public `R2_PUBLIC_URL`.
 
 ---
 
@@ -548,8 +550,8 @@ sequenceDiagram
 | Language     | **TypeScript**                  | End-to-end type safety                             |
 | Database     | **Neon PostgreSQL**             | Serverless Postgres; branches for dev/preview      |
 | ORM          | **Prisma 7**                    | Migrations only, never `db push`                   |
-| Cache        | **Redis** _(maybe)_             | e.g. Upstash, if/when needed                       |
-| File storage | **Cloudflare R2**               | S3-compatible; presigned uploads                   |
+| Rate limits  | **Upstash Redis**               | Sliding-window limits on the auth flows            |
+| File storage | **Cloudflare R2**               | S3-compatible; uploads go through `/api/upload`    |
 | Auth         | **Auth.js (NextAuth v5)**       | Credentials (email/password) + GitHub OAuth        |
 | AI           | **OpenAI `gpt-5-nano`**         | Tags, summaries, explanations, prompt optimization |
 | Payments     | **Stripe**                      | Subscriptions + webhooks                           |
@@ -591,8 +593,9 @@ STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_MONTHLY=
 STRIPE_PRICE_YEARLY=
 
-# Redis (optional)
-REDIS_URL=
+# Upstash Redis (optional, rate limiting is skipped without it)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 ```
 
 ---
@@ -694,21 +697,29 @@ Refer to the screenshots below as a base for the dashboard UI. It does not have 
 
 ## 🧭 Routes
 
-| Route                     | Description                                     |
-| ------------------------- | ----------------------------------------------- |
-| `/`                       | Marketing / landing page                        |
-| `/sign-in`, `/sign-up`    | Authentication                                  |
-| `/dashboard`              | Collections grid + pinned & recent items        |
-| `/items/[type]`           | Items filtered by type, e.g. `/items/snippets`  |
-| `/collections`            | All collections                                 |
-| `/collections/[id]`       | Single collection with its items                |
-| `/search?q=`              | Search results                                  |
-| `/settings`               | Profile, theme, export                          |
-| `/settings/billing`       | Plan & Stripe customer portal                   |
-| `/api/auth/[...nextauth]` | Auth.js handlers                                |
-| `/api/upload`             | Presigned R2 upload URLs                        |
-| `/api/ai/*`               | AI endpoints (tags, summary, explain, optimize) |
-| `/api/webhooks/stripe`    | Stripe webhook handler                          |
+| Route                         | Description                                          |
+| ----------------------------- | ---------------------------------------------------- |
+| `/`                           | Marketing / landing page                             |
+| `/sign-in`, `/sign-up`        | Authentication                                       |
+| `/verify-email`               | Expired/invalid verification link, with resend form  |
+| `/forgot-password`            | Request a password reset email                       |
+| `/reset-password`             | Set a new password from a reset link                 |
+| `/dashboard`                  | Collections grid + pinned & recent items             |
+| `/items/[type]`               | Items filtered by type, e.g. `/items/snippets`       |
+| `/profile`                    | User info, stats, change password, delete account    |
+| `/collections`                | All collections                                      |
+| `/collections/[id]`           | Single collection with its items                     |
+| `/search?q=`                  | Search results                                       |
+| `/settings`                   | Theme, export                                        |
+| `/settings/billing`           | Plan & Stripe customer portal                        |
+| `/api/auth/[...nextauth]`     | Auth.js handlers                                     |
+| `/api/auth/register`          | Email/password sign-up                               |
+| `/api/auth/verify-email`      | Verification link target                             |
+| `/api/items/[id]`             | Item details for the drawer                          |
+| `/api/items/[id]/download`    | Stream the user's file as an attachment              |
+| `/api/upload`                 | Upload a file or image to R2, returns its key        |
+| `/api/ai/*`                   | AI endpoints (tags, summary, explain, optimize)      |
+| `/api/webhooks/stripe`        | Stripe webhook handler                               |
 
 > Items open in a drawer, so a dedicated item page is optional. Adding `?item=<id>` to the URL keeps drawers shareable and back-button friendly.
 
