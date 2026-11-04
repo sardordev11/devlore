@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: File List View
 
 <!-- Feature Name -->
 
@@ -6,15 +6,28 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- `/items/files` shows a single-column list of rows (like Google Drive/Dropbox) instead of grid cards
+- Each row shows a file icon based on the extension, the file name, file size, upload date and a download button
+- Row highlights on hover
+- Clicking a row opens the `ItemDrawer`
+- The download button downloads the file directly and stops propagation so the drawer doesn't open
+- Responsive: row info stacks vertically on mobile
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/file-display-spec.md`
+- Mirrors the Image Gallery View approach: `/items/images` already swaps `ItemCard` for `ImageCard`, so `/items/files` can swap in a list row component the same way
+- Downloads should go through the existing `GET /api/items/[id]/download` route (streams the user's file as an attachment)
+- `ItemSummary` / `ITEM_SUMMARY_SELECT` in `src/lib/db/items.ts` will likely need `fileName`, `fileSize` (and possibly `mimeType`) for the row; `fileUrl` is already there
+- The `loading.tsx` skeleton for `/items/[type]` stays the shared grid: loading UI gets no route params, and reading `usePathname()` there fails the build under Cache Components (`CLIENT_HOOK_DYNAMIC`)
 
 ## History
 

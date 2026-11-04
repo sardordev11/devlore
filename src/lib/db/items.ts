@@ -26,6 +26,8 @@ export interface ItemSummary {
   createdAt: Date;
   // Public R2 URL, used for image thumbnails.
   fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
   type: ItemSummaryType;
   tags: string[];
 }
@@ -91,6 +93,8 @@ const ITEM_SUMMARY_SELECT = {
   lastUsedAt: true,
   createdAt: true,
   fileUrl: true,
+  fileName: true,
+  fileSize: true,
   type: { select: { id: true, name: true, icon: true, color: true } },
   tags: { select: { name: true }, orderBy: { name: "asc" } },
 } satisfies Prisma.ItemSelect;
