@@ -24,6 +24,8 @@ export interface ItemSummary {
   isPinned: boolean;
   lastUsedAt: Date | null;
   createdAt: Date;
+  // Public R2 URL, used for image thumbnails.
+  fileUrl: string | null;
   type: ItemSummaryType;
   tags: string[];
 }
@@ -88,6 +90,7 @@ const ITEM_SUMMARY_SELECT = {
   isPinned: true,
   lastUsedAt: true,
   createdAt: true,
+  fileUrl: true,
   type: { select: { id: true, name: true, icon: true, color: true } },
   tags: { select: { name: true }, orderBy: { name: "asc" } },
 } satisfies Prisma.ItemSelect;

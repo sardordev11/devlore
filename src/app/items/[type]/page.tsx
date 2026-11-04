@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { auth } from "@/auth";
+import { ImageCard } from "@/components/dashboard/ImageCard";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { getItemsByTypeSlug } from "@/lib/db/items";
@@ -26,6 +27,7 @@ export default async function ItemsByTypePage({
   const { type, items } = listing;
   const title = type.slug.charAt(0).toUpperCase() + type.slug.slice(1);
   const countLabel = `${items.length} ${items.length === 1 ? type.name : type.slug}`;
+  const isGallery = type.slug === "images";
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
@@ -50,9 +52,13 @@ export default async function ItemsByTypePage({
 
       {items.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
+          {items.map((item) =>
+            isGallery ? (
+              <ImageCard key={item.id} item={item} />
+            ) : (
+              <ItemCard key={item.id} item={item} />
+            ),
+          )}
         </div>
       ) : (
         <p className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
