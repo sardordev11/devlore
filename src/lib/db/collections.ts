@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { CreateCollectionInput } from "@/lib/validations/collections";
 
 export interface CollectionType {
   id: string;
@@ -150,6 +151,22 @@ export async function getSidebarCollections(
     recentRows,
   );
   return { favorites, recents };
+}
+
+export interface CreatedCollection {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+export async function createCollection(
+  userId: string,
+  input: CreateCollectionInput,
+): Promise<CreatedCollection> {
+  return prisma.collection.create({
+    data: { userId, name: input.name, description: input.description },
+    select: { id: true, name: true, description: true },
+  });
 }
 
 export async function getCollectionStats(

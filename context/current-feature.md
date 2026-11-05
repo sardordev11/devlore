@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Collection Create
 
 <!-- Feature Name -->
 
@@ -6,15 +6,30 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- The top bar's "New Collection" button opens a shadcn `Dialog` (`CreateCollectionDialog`) with Name (required) and Description (optional) fields
+- `createCollectionSchema` in `src/lib/validations/collections.ts` (trimmed name, length limits, blank description stored as null)
+- `createCollection` server action in `src/actions/collections.ts` (session check, Zod validation returning `error` and `fieldErrors`, `{ success, data, error }`)
+- `createCollection` query in `src/lib/db/collections.ts`, scoped to the signed-in user's id
+- "Collection created" toast on success, error toast on failure, inline field errors; dialog closes and resets on success
+- Create button disabled without a name and while pending ("Creating…" state)
+- `router.refresh()` after save so the dashboard collections grid, collection stats and sidebar collections show the new collection
+- Unit tests for the schema, query function and server action
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Follow the Item Create patterns: `CreateItemDialog`, `createItemSchema`, `createItem` action/query, `EditField`
+- Collections are user-scoped: every query filters by the session user's id; server components fetch through `src/lib/db` functions
+- The mutation is a server action, matching `createItem` and the coding standards; client-side reads (if any are needed) go through API routes like `GET /api/items/[id]`
+- No default type picker for now (`defaultTypeId` stays null); collection color still comes from its most-used item type
+- Plan limits (3 collections on Free) are not enforced yet, per `ENFORCE_PLAN_LIMITS`
 
 ## History
 
