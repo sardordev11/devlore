@@ -1,4 +1,4 @@
-# Current Feature: Collection Create
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,30 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- The top bar's "New Collection" button opens a shadcn `Dialog` (`CreateCollectionDialog`) with Name (required) and Description (optional) fields
-- `createCollectionSchema` in `src/lib/validations/collections.ts` (trimmed name, length limits, blank description stored as null)
-- `createCollection` server action in `src/actions/collections.ts` (session check, Zod validation returning `error` and `fieldErrors`, `{ success, data, error }`)
-- `createCollection` query in `src/lib/db/collections.ts`, scoped to the signed-in user's id
-- "Collection created" toast on success, error toast on failure, inline field errors; dialog closes and resets on success
-- Create button disabled without a name and while pending ("Creating…" state)
-- `router.refresh()` after save so the dashboard collections grid, collection stats and sidebar collections show the new collection
-- Unit tests for the schema, query function and server action
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Follow the Item Create patterns: `CreateItemDialog`, `createItemSchema`, `createItem` action/query, `EditField`
-- Collections are user-scoped: every query filters by the session user's id; server components fetch through `src/lib/db` functions
-- The mutation is a server action, matching `createItem` and the coding standards; client-side reads (if any are needed) go through API routes like `GET /api/items/[id]`
-- No default type picker for now (`defaultTypeId` stays null); collection color still comes from its most-used item type
-- Plan limits (3 collections on Free) are not enforced yet, per `ENFORCE_PLAN_LIMITS`
 
 ## History
 
@@ -69,3 +54,4 @@ In Progress
 - **Card Quick Copy** — copy icon button (`CopyButton` in `src/components/items/CopyButton.tsx`) on `ItemCard` (under the date), `ImageCard` (next to the title) and `FileRow` (next to the download button) that copies the item without opening the drawer, stopping click and keydown propagation like `FileDownloadButton`; same value as the drawer's Copy (content for text types, URL for links, file URL for files and images) via a shared `getCopyValue` in `src/lib/copy-value.ts` with unit tests, now also used by `ItemDrawerActions`; `copyValue` added to `ItemSummary`, computed server side from `contentType`/`content`/`url`/`fileUrl` so only the copy text reaches the client; hidden when there's nothing to copy; "Copied to clipboard" / "Couldn't copy to clipboard" toasts; Files list header spacer widened to keep columns aligned; checked in the browser at 1440px (Completed)
 - **Code Scan Quick Wins** — low-risk fixes from a code scanner audit: `deleteAccount` collects the user's file URLs before the cascade and deletes the R2 objects afterwards (best effort via `Promise.allSettled`, logged on failure, sign-out unaffected); `changePassword` rate limited 5/15 min and `POST /api/upload` 20/10 min by user id (new `changePassword` and `upload` limiters in `src/lib/rate-limit.ts`, upload returns 429 with `Retry-After`); Credentials `authorize` compares against a 12-round dummy bcrypt hash when the user or password hash is missing so timing doesn't reveal accounts; `createItem` refuses a file key already attached to another item via `isFileKeyInUse` in `src/lib/db/items.ts` without deleting the shared object; shared `getTypeTint` in `src/lib/type-icons.ts` for the tinted type icon in 5 components, `EditField` moved to `src/components/items/EditField.tsx`, dashboard `STATS` renamed to `stats`; unit tests for the new behavior; not checked in the browser (Playwright browser was in use) (Completed)
 - **Split Large Blocks** — refactor with no behavior changes: `useItemFields` hook in `src/hooks/use-item-fields.ts` (values, field errors, `fieldProps` with `${idPrefix}-${name}` ids, reset), `ContentField` component (Markdown for notes/prompts, Monaco for snippets/commands, Textarea otherwise) and `buildItemPayload` in `src/lib/item-form.ts` shared by `CreateItemDialog` (333 → 221 lines) and `ItemEditForm` (188 → 146 lines); `TypeSelector` and `TYPE_OPTIONS` moved to `src/components/items/TypeSelector.tsx`; `isPrismaError(error, code)` with `PRISMA_ERROR` codes in `src/lib/db/prisma-errors.ts` replacing the inline P2025 checks in `src/lib/db/items.ts` and the P2002 check in `POST /api/auth/register`; `formatDate` (UTC) and `formatLocalDate` (viewer's time zone, used by the drawer) in `src/lib/format-date.ts` replacing four `DATE_FORMAT` constants; `FileUpload` split into `SelectedFileCard` and `FileDropZone`, `useDataUrl` moved to `src/hooks/use-data-url.ts`; `toSignInResult` extracted from `signInWithCredentials`; unit tests for `buildItemPayload`, `isPrismaError` and the date formatters; checked in the browser (New Item dialog with snippet, note and image types; snippet edit form) (Completed)
+- **Collection Create** — the top bar's "New Collection" button opens a shadcn `Dialog` (`CreateCollectionDialog` in `src/components/collections/`) with a required Name and optional Description; `createCollectionSchema` in `src/lib/validations/collections.ts` (trimmed name 1–100 chars, description up to 500, blank description stored as null, `COLLECTION_NAME_MAX`/`COLLECTION_DESCRIPTION_MAX` shared with the inputs' `maxLength`); `createCollection` server action in `src/actions/collections.ts` (session check, Zod validation with `fieldErrors`, `{ success, data, error }`, user id only from the session); `createCollection` query in `src/lib/db/collections.ts` scoped to the user, no default type; "Collection created" toast, dialog closes and resets, `router.refresh()` updates the dashboard grid, collection stats and sidebar recents; inline field errors and error toast on failure, Create disabled without a name and "Creating…" while pending; unit tests for the schema, query function and server action; checked in the browser (new collection appeared in the grid and sidebar, Collections stat 5 → 6) (Completed)
