@@ -1,4 +1,4 @@
-# Current Feature: Add Items to Collections
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,30 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- An item can be added to one or more collections, or to none
-- Collections input in the New Item dialog (`CreateItemDialog`) for every type, including File and Image
-- Same input in the drawer's edit form (`ItemEditForm`), preselected with the item's current collections; replaces the read-only Collections section while editing
-- The input lists only the signed-in user's collections (multi-select, e.g. a popover with checkboxes), with an empty state when the user has none
-- `collectionIds` field (array of ids, deduped, capped) added to `createItemSchema` and `updateItemSchema`; omitted on update leaves collections unchanged, an empty array removes the item from all collections
-- Ownership enforced server side: every collection id must belong to the session user, otherwise the action fails with an error and nothing is written
-- `createItem` query creates the `ItemCollection` rows; `updateItem` query replaces them (remove deselected, add new), keeping `addedAt` for collections the item was already in
-- A way for the form to load the user's collections (server-fetched list passed down, or a small server action / query in `src/lib/db/collections.ts` scoped to the user)
-- The drawer's Collections section, dashboard collection cards and sidebar counts update after save via `router.refresh()`
-- Unit tests for the schema changes, query functions and server actions
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Don't build the collection pages (`/collections`, `/collections/[id]`) yet
-- Reuse the existing `{ success, data, error, fieldErrors }` action pattern, `useItemFields` and `buildItemPayload` in `src/lib/item-form.ts`
-- Check whether a shadcn `popover` / `command` component is needed and add it via the shadcn CLI if so
 
 ## History
 
@@ -70,3 +55,4 @@ In Progress
 - **Code Scan Quick Wins** — low-risk fixes from a code scanner audit: `deleteAccount` collects the user's file URLs before the cascade and deletes the R2 objects afterwards (best effort via `Promise.allSettled`, logged on failure, sign-out unaffected); `changePassword` rate limited 5/15 min and `POST /api/upload` 20/10 min by user id (new `changePassword` and `upload` limiters in `src/lib/rate-limit.ts`, upload returns 429 with `Retry-After`); Credentials `authorize` compares against a 12-round dummy bcrypt hash when the user or password hash is missing so timing doesn't reveal accounts; `createItem` refuses a file key already attached to another item via `isFileKeyInUse` in `src/lib/db/items.ts` without deleting the shared object; shared `getTypeTint` in `src/lib/type-icons.ts` for the tinted type icon in 5 components, `EditField` moved to `src/components/items/EditField.tsx`, dashboard `STATS` renamed to `stats`; unit tests for the new behavior; not checked in the browser (Playwright browser was in use) (Completed)
 - **Split Large Blocks** — refactor with no behavior changes: `useItemFields` hook in `src/hooks/use-item-fields.ts` (values, field errors, `fieldProps` with `${idPrefix}-${name}` ids, reset), `ContentField` component (Markdown for notes/prompts, Monaco for snippets/commands, Textarea otherwise) and `buildItemPayload` in `src/lib/item-form.ts` shared by `CreateItemDialog` (333 → 221 lines) and `ItemEditForm` (188 → 146 lines); `TypeSelector` and `TYPE_OPTIONS` moved to `src/components/items/TypeSelector.tsx`; `isPrismaError(error, code)` with `PRISMA_ERROR` codes in `src/lib/db/prisma-errors.ts` replacing the inline P2025 checks in `src/lib/db/items.ts` and the P2002 check in `POST /api/auth/register`; `formatDate` (UTC) and `formatLocalDate` (viewer's time zone, used by the drawer) in `src/lib/format-date.ts` replacing four `DATE_FORMAT` constants; `FileUpload` split into `SelectedFileCard` and `FileDropZone`, `useDataUrl` moved to `src/hooks/use-data-url.ts`; `toSignInResult` extracted from `signInWithCredentials`; unit tests for `buildItemPayload`, `isPrismaError` and the date formatters; checked in the browser (New Item dialog with snippet, note and image types; snippet edit form) (Completed)
 - **Collection Create** — the top bar's "New Collection" button opens a shadcn `Dialog` (`CreateCollectionDialog` in `src/components/collections/`) with a required Name and optional Description; `createCollectionSchema` in `src/lib/validations/collections.ts` (trimmed name 1–100 chars, description up to 500, blank description stored as null, `COLLECTION_NAME_MAX`/`COLLECTION_DESCRIPTION_MAX` shared with the inputs' `maxLength`); `createCollection` server action in `src/actions/collections.ts` (session check, Zod validation with `fieldErrors`, `{ success, data, error }`, user id only from the session); `createCollection` query in `src/lib/db/collections.ts` scoped to the user, no default type; "Collection created" toast, dialog closes and resets, `router.refresh()` updates the dashboard grid, collection stats and sidebar recents; inline field errors and error toast on failure, Create disabled without a name and "Creating…" while pending; unit tests for the schema, query function and server action; checked in the browser (new collection appeared in the grid and sidebar, Collections stat 5 → 6) (Completed)
+- **Add Items to Collections** — Collections multi-select (`CollectionPicker` in `src/components/items/`, shadcn dropdown-menu checkbox items, no new components) in `CreateItemDialog` for every type and in `ItemEditForm` preselected with the item's collections, replacing the read-only Collections section while editing (`showCollections` prop on `ItemMetaSections`); options loaded on mount by `useCollectionOptions` (`src/hooks/use-collection-options.ts`) via a `getCollectionOptions` server action and query scoped to the user (sorted by name), with loading, error and "No collections yet" states; `collectionIds` in `createItemSchema` (default `[]`) and `updateItemSchema` (omitted leaves collections unchanged, `[]` removes all), deduped and capped at `MAX_ITEM_COLLECTIONS` (100); `ownsCollections` in `src/lib/db/collections.ts` checked by the `createItem`/`updateItem` actions before writing ("Collection not found" field error, uploaded file removed on create); `createItem` query creates the `ItemCollection` rows and `updateItem` replaces them via `deleteMany` + `connectOrCreate`, keeping `addedAt` for existing links; `router.refresh()` updates the drawer, dashboard cards and sidebar counts; unit tests for the schemas, queries and actions; not checked in the browser (Playwright browser was in use) (Completed)
