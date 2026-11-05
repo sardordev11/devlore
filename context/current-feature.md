@@ -1,4 +1,4 @@
-# Current Feature: Collection Pages
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,30 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Protected `/collections` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing all of the signed-in user's collections
-- Collections shown with the existing `CollectionCard` in a responsive grid, with a header (title + count), empty state and loading skeleton
-- Protected `/collections/[id]` route showing the collection's name, description and item count, plus its items
-- Items shown with the existing cards (`ItemCard`, and `ImageCard` / `FileRow` where they fit the item type), opening the item drawer on click
-- `/collections/[id]` scoped to the signed-in user: 404 for unknown collections or ones owned by other users; empty state when the collection has no items; loading skeleton
-- Query functions in `src/lib/db/collections.ts` (all collections for a user, one collection with its items) reusing the existing summary selects/shapes
-- Sidebar "View all collections" links to `/collections`; every collection card (dashboard, `/collections`) and sidebar collection links to `/collections/[id]`
-- Unit tests for the new query functions
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- The links already exist (`CollectionCard` → `/collections/${id}`, sidebar → `/collections` and `/collections/${id}`) but both routes 404 today, so this feature mainly adds the pages and data functions; verify the links still work after.
-- Follow the `/items/[type]` page patterns (session check with encoded `callbackUrl` fallback, `AppShell` layout, grid of one column / two from `md` / three from `xl`, `loading.tsx` without route params under Cache Components).
-- Collection item order: pinned first, then most recently used (matches `/items/[type]`).
-- Check the pages in the browser.
-- Collections mix item types, so `/collections/[id]` uses `ItemCard` for every item in one grid (like the dashboard) rather than mixing in `ImageCard`/`FileRow`.
 
 ## History
 
@@ -71,3 +56,4 @@ In Progress
 - **Split Large Blocks** — refactor with no behavior changes: `useItemFields` hook in `src/hooks/use-item-fields.ts` (values, field errors, `fieldProps` with `${idPrefix}-${name}` ids, reset), `ContentField` component (Markdown for notes/prompts, Monaco for snippets/commands, Textarea otherwise) and `buildItemPayload` in `src/lib/item-form.ts` shared by `CreateItemDialog` (333 → 221 lines) and `ItemEditForm` (188 → 146 lines); `TypeSelector` and `TYPE_OPTIONS` moved to `src/components/items/TypeSelector.tsx`; `isPrismaError(error, code)` with `PRISMA_ERROR` codes in `src/lib/db/prisma-errors.ts` replacing the inline P2025 checks in `src/lib/db/items.ts` and the P2002 check in `POST /api/auth/register`; `formatDate` (UTC) and `formatLocalDate` (viewer's time zone, used by the drawer) in `src/lib/format-date.ts` replacing four `DATE_FORMAT` constants; `FileUpload` split into `SelectedFileCard` and `FileDropZone`, `useDataUrl` moved to `src/hooks/use-data-url.ts`; `toSignInResult` extracted from `signInWithCredentials`; unit tests for `buildItemPayload`, `isPrismaError` and the date formatters; checked in the browser (New Item dialog with snippet, note and image types; snippet edit form) (Completed)
 - **Collection Create** — the top bar's "New Collection" button opens a shadcn `Dialog` (`CreateCollectionDialog` in `src/components/collections/`) with a required Name and optional Description; `createCollectionSchema` in `src/lib/validations/collections.ts` (trimmed name 1–100 chars, description up to 500, blank description stored as null, `COLLECTION_NAME_MAX`/`COLLECTION_DESCRIPTION_MAX` shared with the inputs' `maxLength`); `createCollection` server action in `src/actions/collections.ts` (session check, Zod validation with `fieldErrors`, `{ success, data, error }`, user id only from the session); `createCollection` query in `src/lib/db/collections.ts` scoped to the user, no default type; "Collection created" toast, dialog closes and resets, `router.refresh()` updates the dashboard grid, collection stats and sidebar recents; inline field errors and error toast on failure, Create disabled without a name and "Creating…" while pending; unit tests for the schema, query function and server action; checked in the browser (new collection appeared in the grid and sidebar, Collections stat 5 → 6) (Completed)
 - **Add Items to Collections** — Collections multi-select (`CollectionPicker` in `src/components/items/`, shadcn dropdown-menu checkbox items, no new components) in `CreateItemDialog` for every type and in `ItemEditForm` preselected with the item's collections, replacing the read-only Collections section while editing (`showCollections` prop on `ItemMetaSections`); options loaded on mount by `useCollectionOptions` (`src/hooks/use-collection-options.ts`) via a `getCollectionOptions` server action and query scoped to the user (sorted by name), with loading, error and "No collections yet" states; `collectionIds` in `createItemSchema` (default `[]`) and `updateItemSchema` (omitted leaves collections unchanged, `[]` removes all), deduped and capped at `MAX_ITEM_COLLECTIONS` (100); `ownsCollections` in `src/lib/db/collections.ts` checked by the `createItem`/`updateItem` actions before writing ("Collection not found" field error, uploaded file removed on create); `createItem` query creates the `ItemCollection` rows and `updateItem` replaces them via `deleteMany` + `connectOrCreate`, keeping `addedAt` for existing links; `router.refresh()` updates the drawer, dashboard cards and sidebar counts; unit tests for the schemas, queries and actions; not checked in the browser (Playwright browser was in use) (Completed)
+- **Collection Pages** — protected `/collections` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing all of the user's collections as `CollectionCard`s (favorites first, then most recently updated) via `getAllCollections` in `src/lib/db/collections.ts`, header with the collection count, empty state and loading skeleton; protected `/collections/[id]` route with a folder icon tinted by the collection's accent color, name, favorite star, item count and description, items as `ItemCard`s for every type (collections mix types, so no `ImageCard`/`FileRow`) opening the item drawer, pinned first then most recently used via `getItemsByCollection` in `src/lib/db/items.ts`, collection via `getCollection` (`findFirst` on id + user id, both queries run in parallel), 404 for unknown or other users' collections, empty state and loading skeleton; existing sidebar and card links to `/collections` and `/collections/[id]` now resolve; unit tests for the three query functions; checked in the browser at 1440px (list, detail, drawer, empty collection, 404) (Completed)
