@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Collection Pages
 
 <!-- Feature Name -->
 
@@ -6,15 +6,30 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Protected `/collections` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing all of the signed-in user's collections
+- Collections shown with the existing `CollectionCard` in a responsive grid, with a header (title + count), empty state and loading skeleton
+- Protected `/collections/[id]` route showing the collection's name, description and item count, plus its items
+- Items shown with the existing cards (`ItemCard`, and `ImageCard` / `FileRow` where they fit the item type), opening the item drawer on click
+- `/collections/[id]` scoped to the signed-in user: 404 for unknown collections or ones owned by other users; empty state when the collection has no items; loading skeleton
+- Query functions in `src/lib/db/collections.ts` (all collections for a user, one collection with its items) reusing the existing summary selects/shapes
+- Sidebar "View all collections" links to `/collections`; every collection card (dashboard, `/collections`) and sidebar collection links to `/collections/[id]`
+- Unit tests for the new query functions
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- The links already exist (`CollectionCard` → `/collections/${id}`, sidebar → `/collections` and `/collections/${id}`) but both routes 404 today, so this feature mainly adds the pages and data functions; verify the links still work after.
+- Follow the `/items/[type]` page patterns (session check with encoded `callbackUrl` fallback, `AppShell` layout, grid of one column / two from `md` / three from `xl`, `loading.tsx` without route params under Cache Components).
+- Collection item order: pinned first, then most recently used (matches `/items/[type]`).
+- Check the pages in the browser.
+- Collections mix item types, so `/collections/[id]` uses `ItemCard` for every item in one grid (like the dashboard) rather than mixing in `ImageCard`/`FileRow`.
 
 ## History
 

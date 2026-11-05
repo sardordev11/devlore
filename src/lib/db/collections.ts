@@ -153,6 +153,35 @@ export async function getSidebarCollections(
   return { favorites, recents };
 }
 
+// Every collection of the user for /collections, favorites first.
+export async function getAllCollections(
+  userId: string,
+): Promise<CollectionSummary[]> {
+  const collections = await prisma.collection.findMany({
+    where: { userId },
+    orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }],
+    include: COLLECTION_SUMMARY_INCLUDE,
+  });
+
+  const [all] = await toCollectionSummaries(collections);
+  return all;
+}
+
+// Returns null when the collection doesn't exist or belongs to another user.
+export async function getCollection(
+  userId: string,
+  collectionId: string,
+): Promise<CollectionSummary | null> {
+  const collection = await prisma.collection.findFirst({
+    where: { id: collectionId, userId },
+    include: COLLECTION_SUMMARY_INCLUDE,
+  });
+  if (!collection) return null;
+
+  const [[summary]] = await toCollectionSummaries([collection]);
+  return summary;
+}
+
 export interface CreatedCollection {
   id: string;
   name: string;

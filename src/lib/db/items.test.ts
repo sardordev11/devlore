@@ -6,6 +6,7 @@ import {
   deleteItem,
   getItemDetail,
   getItemFile,
+  getItemsByCollection,
   isFileKeyInUse,
   updateItem,
 } from "@/lib/db/items";
@@ -19,6 +20,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     item: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -424,5 +426,50 @@ describe("deleteItem", () => {
     mockPrisma.item.delete.mockRejectedValue(new Error("db down"));
 
     await expect(deleteItem("user-1", "item-1")).rejects.toThrow("db down");
+  });
+});
+
+describe("getItemsByCollection", () => {
+  it("lists the user's items in the collection, pinned first", async () => {
+    mockPrisma.item.findMany.mockResolvedValue([
+      {
+        id: "item-1",
+        title: "useAuth Hook",
+        description: null,
+        isFavorite: false,
+        isPinned: true,
+        lastUsedAt: null,
+        createdAt,
+        fileUrl: null,
+        fileName: null,
+        fileSize: null,
+        contentType: "TEXT",
+        content: "export function useAuth() {}",
+        url: null,
+        type: { id: "type-1", name: "snippet", icon: "Code", color: "#3b82f6" },
+        tags: [{ name: "auth" }],
+      },
+    ] as never);
+
+    const items = await getItemsByCollection("user-1", "col-1");
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: "item-1",
+        copyValue: "export function useAuth() {}",
+        tags: ["auth"],
+      }),
+    ]);
+    expect(items[0]).not.toHaveProperty("content");
+    const [args] = mockPrisma.item.findMany.mock.calls[0];
+    expect(args?.where).toEqual({
+      userId: "user-1",
+      collections: { some: { collectionId: "col-1" } },
+    });
+    expect(args?.orderBy).toEqual([
+      { isPinned: "desc" },
+      { lastUsedAt: { sort: "desc", nulls: "last" } },
+      { updatedAt: "desc" },
+    ]);
   });
 });

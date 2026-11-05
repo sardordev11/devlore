@@ -220,6 +220,20 @@ export async function getItemsByTypeSlug(
   return { type, items: items.map(toItemSummary) };
 }
 
+// The user's items in one collection, pinned first then most recently used.
+export async function getItemsByCollection(
+  userId: string,
+  collectionId: string,
+): Promise<ItemSummary[]> {
+  const items = await prisma.item.findMany({
+    where: { userId, collections: { some: { collectionId } } },
+    orderBy: [{ isPinned: "desc" }, ...RECENT_ORDER],
+    select: ITEM_SUMMARY_SELECT,
+  });
+
+  return items.map(toItemSummary);
+}
+
 // Returns null when the item doesn't exist or belongs to another user.
 export async function getItemDetail(
   userId: string,
