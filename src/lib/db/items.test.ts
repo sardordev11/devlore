@@ -98,6 +98,7 @@ describe("createItem", () => {
     url: null,
     tags: ["auth"],
     file: null,
+    collectionIds: [],
   };
 
   it("looks up the system type by slug", async () => {
@@ -138,6 +139,7 @@ describe("createItem", () => {
               },
             ],
           },
+          collections: { create: [] },
         },
       }),
     );
@@ -146,6 +148,38 @@ describe("createItem", () => {
       tags: ["auth", "react"],
       collections: [{ id: "col-1", name: "React Patterns" }],
     });
+  });
+});
+
+describe("createItem with collections", () => {
+  it("links the item to the given collections", async () => {
+    mockPrisma.itemType.findFirst.mockResolvedValue({
+      id: "type-1",
+      contentType: "TEXT",
+    } as never);
+    mockPrisma.item.create.mockResolvedValue(ROW as never);
+
+    await createItem("user-1", {
+      type: "notes",
+      title: "Note",
+      description: null,
+      content: null,
+      language: null,
+      url: null,
+      tags: [],
+      file: null,
+      collectionIds: ["col-1", "col-2"],
+    });
+
+    expect(mockPrisma.item.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          collections: {
+            create: [{ collectionId: "col-1" }, { collectionId: "col-2" }],
+          },
+        }),
+      }),
+    );
   });
 });
 
@@ -165,6 +199,7 @@ describe("createItem with a file", () => {
       language: null,
       url: null,
       tags: [],
+      collectionIds: [],
       file: {
         key: "users/user-1/abc.pdf",
         fileName: "spec.pdf",
@@ -275,6 +310,58 @@ describe("updateItem", () => {
             ],
           },
         },
+      }),
+    );
+  });
+
+  it("leaves collections alone when collectionIds is omitted", async () => {
+    mockPrisma.item.update.mockResolvedValue(ROW as never);
+
+    await updateItem("user-1", "item-1", input);
+
+    const [args] = mockPrisma.item.update.mock.calls[0];
+    expect(args.data).not.toHaveProperty("collections");
+  });
+
+  it("replaces collections, keeping existing links via connectOrCreate", async () => {
+    mockPrisma.item.update.mockResolvedValue(ROW as never);
+
+    await updateItem("user-1", "item-1", { ...input, collectionIds: ["col-1", "col-2"] });
+
+    expect(mockPrisma.item.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          collections: {
+            deleteMany: { collectionId: { notIn: ["col-1", "col-2"] } },
+            connectOrCreate: [
+              {
+                where: { itemId_collectionId: { itemId: "item-1", collectionId: "col-1" } },
+                create: { collectionId: "col-1" },
+              },
+              {
+                where: { itemId_collectionId: { itemId: "item-1", collectionId: "col-2" } },
+                create: { collectionId: "col-2" },
+              },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it("removes the item from every collection for an empty list", async () => {
+    mockPrisma.item.update.mockResolvedValue(ROW as never);
+
+    await updateItem("user-1", "item-1", { ...input, collectionIds: [] });
+
+    expect(mockPrisma.item.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          collections: {
+            deleteMany: { collectionId: { notIn: [] } },
+            connectOrCreate: [],
+          },
+        }),
       }),
     );
   });

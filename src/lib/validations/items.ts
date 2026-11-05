@@ -68,6 +68,14 @@ const tagsField = z
   // Duplicate names would collide on the per-user unique tag name.
   .transform((tags) => [...new Set(tags)]);
 
+export const MAX_ITEM_COLLECTIONS = 100;
+
+const collectionIdsField = z
+  .array(itemIdSchema, "Choose collections from the list")
+  .max(MAX_ITEM_COLLECTIONS, `An item can be in at most ${MAX_ITEM_COLLECTIONS} collections`)
+  // A duplicate id would collide on the ItemCollection primary key.
+  .transform((ids) => [...new Set(ids)]);
+
 export const updateItemSchema = z.object({
   title: titleField,
   description: optionalText,
@@ -75,6 +83,8 @@ export const updateItemSchema = z.object({
   language: optionalText,
   url: urlField,
   tags: tagsField,
+  // Omitted leaves the item's collections unchanged; [] removes it from all of them.
+  collectionIds: collectionIdsField.optional(),
 });
 
 export type UpdateItemInput = z.output<typeof updateItemSchema>;
@@ -99,6 +109,7 @@ export const createItemSchema = z
     url: urlField,
     tags: tagsField,
     file: fileField,
+    collectionIds: collectionIdsField.default([]),
   })
   .superRefine((data, ctx) => {
     if (data.type === "links" && !data.url) {

@@ -2,10 +2,11 @@
 
 import { CheckIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition, type SubmitEvent } from "react";
+import { useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { updateItem } from "@/actions/items";
+import { CollectionPicker } from "@/components/items/CollectionPicker";
 import { ContentField } from "@/components/items/ContentField";
 import { EditField } from "@/components/items/EditField";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
@@ -40,6 +41,10 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
       isPending,
     );
 
+  const [collectionIds, setCollectionIds] = useState(() =>
+    item.collections.map((collection) => collection.id),
+  );
+
   const fields = {
     content: item.contentType === "TEXT",
     language: LANGUAGE_TYPE_SLUGS.has(item.type.slug),
@@ -48,7 +53,7 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const payload = buildItemPayload(values, fields);
+    const payload = { ...buildItemPayload(values, fields), collectionIds };
 
     startTransition(async () => {
       const result = await updateItem(item.id, payload);
@@ -139,7 +144,21 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
           <Input {...fieldProps("tags")} placeholder="react, hooks, auth" />
         </EditField>
 
-        <ItemMetaSections item={item} />
+        <EditField
+          id="item-collections"
+          label="Collections"
+          error={fieldErrors.collectionIds?.[0]}
+        >
+          <CollectionPicker
+            id="item-collections"
+            value={collectionIds}
+            onChange={setCollectionIds}
+            disabled={isPending}
+            error={fieldErrors.collectionIds?.[0]}
+          />
+        </EditField>
+
+        <ItemMetaSections item={item} showCollections={false} />
       </div>
     </form>
   );

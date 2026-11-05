@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Add Items to Collections
 
 <!-- Feature Name -->
 
@@ -6,15 +6,30 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- An item can be added to one or more collections, or to none
+- Collections input in the New Item dialog (`CreateItemDialog`) for every type, including File and Image
+- Same input in the drawer's edit form (`ItemEditForm`), preselected with the item's current collections; replaces the read-only Collections section while editing
+- The input lists only the signed-in user's collections (multi-select, e.g. a popover with checkboxes), with an empty state when the user has none
+- `collectionIds` field (array of ids, deduped, capped) added to `createItemSchema` and `updateItemSchema`; omitted on update leaves collections unchanged, an empty array removes the item from all collections
+- Ownership enforced server side: every collection id must belong to the session user, otherwise the action fails with an error and nothing is written
+- `createItem` query creates the `ItemCollection` rows; `updateItem` query replaces them (remove deselected, add new), keeping `addedAt` for collections the item was already in
+- A way for the form to load the user's collections (server-fetched list passed down, or a small server action / query in `src/lib/db/collections.ts` scoped to the user)
+- The drawer's Collections section, dashboard collection cards and sidebar counts update after save via `router.refresh()`
+- Unit tests for the schema changes, query functions and server actions
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Don't build the collection pages (`/collections`, `/collections/[id]`) yet
+- Reuse the existing `{ success, data, error, fieldErrors }` action pattern, `useItemFields` and `buildItemPayload` in `src/lib/item-form.ts`
+- Check whether a shadcn `popover` / `command` component is needed and add it via the shadcn CLI if so
 
 ## History
 

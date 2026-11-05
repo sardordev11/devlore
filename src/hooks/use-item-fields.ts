@@ -6,7 +6,7 @@ import type { ItemFieldName, ItemFieldValues } from "@/lib/item-form";
 
 // Server-side field errors, which can also name fields outside the text inputs.
 export type ItemFieldErrors = Partial<
-  Record<ItemFieldName | "type" | "file", string[]>
+  Record<ItemFieldName | "type" | "file" | "collectionIds", string[]>
 >;
 
 export interface ItemFieldProps {

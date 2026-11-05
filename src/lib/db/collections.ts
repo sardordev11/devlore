@@ -169,6 +169,34 @@ export async function createCollection(
   });
 }
 
+export interface CollectionOption {
+  id: string;
+  name: string;
+}
+
+// The user's collections for the item form's collection picker.
+export async function getCollectionOptions(
+  userId: string,
+): Promise<CollectionOption[]> {
+  return prisma.collection.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+}
+
+// True when every id is one of the user's collections. Expects deduped ids.
+export async function ownsCollections(
+  userId: string,
+  collectionIds: string[],
+): Promise<boolean> {
+  if (collectionIds.length === 0) return true;
+  const owned = await prisma.collection.count({
+    where: { userId, id: { in: collectionIds } },
+  });
+  return owned === collectionIds.length;
+}
+
 export async function getCollectionStats(
   userId: string,
 ): Promise<CollectionStats> {

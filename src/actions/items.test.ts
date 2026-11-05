@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { auth } from "@/auth";
+import { ownsCollections } from "@/lib/db/collections";
 import {
   createItem as createItemQuery,
   deleteItem as deleteItemQuery,
@@ -20,6 +21,7 @@ vi.mock("@/lib/r2", async (importOriginal) => ({
       : null,
   deleteFile: vi.fn(),
 }));
+vi.mock("@/lib/db/collections", () => ({ ownsCollections: vi.fn() }));
 vi.mock("@/lib/db/items", () => ({
   createItem: vi.fn(),
   updateItem: vi.fn(),
@@ -34,6 +36,7 @@ const mockUpdateItemQuery = vi.mocked(updateItemQuery);
 const mockDeleteItemQuery = vi.mocked(deleteItemQuery);
 const mockDeleteFile = vi.mocked(deleteFile);
 const mockIsFileKeyInUse = vi.mocked(isFileKeyInUse);
+const mockOwnsCollections = vi.mocked(ownsCollections);
 
 const date = new Date("2026-01-15T00:00:00Z");
 
@@ -76,6 +79,7 @@ describe("createItem", () => {
 
   beforeEach(() => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "" });
+    mockOwnsCollections.mockResolvedValue(true);
   });
 
   it("requires a session", async () => {
@@ -114,6 +118,7 @@ describe("createItem", () => {
       url: null,
       tags: ["react", "auth"],
       file: null,
+      collectionIds: [],
     });
     expect(result).toEqual({
       success: true,
@@ -123,6 +128,31 @@ describe("createItem", () => {
         updatedAt: "2026-01-15T00:00:00.000Z",
       },
     });
+  });
+
+  it("checks the collections belong to the session user", async () => {
+    mockCreateItemQuery.mockResolvedValue(ITEM);
+
+    await createItem({ ...input, collectionIds: ["col-1", "col-2", "col-1"] });
+
+    expect(mockOwnsCollections).toHaveBeenCalledWith("user-1", ["col-1", "col-2"]);
+    expect(mockCreateItemQuery).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({ collectionIds: ["col-1", "col-2"] }),
+    );
+  });
+
+  it("refuses another user's collection without creating the item", async () => {
+    mockOwnsCollections.mockResolvedValue(false);
+
+    const result = await createItem({ ...input, collectionIds: ["col-other"] });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Collection not found",
+      fieldErrors: { collectionIds: ["Collection not found"] },
+    });
+    expect(mockCreateItemQuery).not.toHaveBeenCalled();
   });
 
   it("returns an error when the type is missing from the database", async () => {
@@ -155,6 +185,7 @@ describe("createItem with an uploaded file", () => {
 
   beforeEach(() => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "" });
+    mockOwnsCollections.mockResolvedValue(true);
   });
 
   it("creates the item with the user's uploaded file", async () => {
@@ -202,6 +233,16 @@ describe("createItem with an uploaded file", () => {
     expect(mockDeleteFile).toHaveBeenCalledWith(file.key);
   });
 
+  it("removes the upload when a collection isn't the user's", async () => {
+    mockIsFileKeyInUse.mockResolvedValue(false);
+    mockOwnsCollections.mockResolvedValue(false);
+
+    await createItem({ ...input, collectionIds: ["col-other"] });
+
+    expect(mockDeleteFile).toHaveBeenCalledWith(file.key);
+    expect(mockCreateItemQuery).not.toHaveBeenCalled();
+  });
+
   it("removes the upload when the database fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockCreateItemQuery.mockRejectedValue(new Error("db down"));
@@ -224,6 +265,7 @@ describe("updateItem", () => {
 
   beforeEach(() => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "" });
+    mockOwnsCollections.mockResolvedValue(true);
   });
 
   it("requires a session", async () => {
@@ -274,6 +316,40 @@ describe("updateItem", () => {
     });
   });
 
+  it("skips the collection check when collectionIds is omitted", async () => {
+    mockUpdateItemQuery.mockResolvedValue(ITEM);
+
+    await updateItem("item-1", input);
+
+    expect(mockOwnsCollections).not.toHaveBeenCalled();
+  });
+
+  it("saves the collections when they belong to the session user", async () => {
+    mockUpdateItemQuery.mockResolvedValue(ITEM);
+
+    await updateItem("item-1", { ...input, collectionIds: ["col-1"] });
+
+    expect(mockOwnsCollections).toHaveBeenCalledWith("user-1", ["col-1"]);
+    expect(mockUpdateItemQuery).toHaveBeenCalledWith(
+      "user-1",
+      "item-1",
+      expect.objectContaining({ collectionIds: ["col-1"] }),
+    );
+  });
+
+  it("refuses another user's collection without saving", async () => {
+    mockOwnsCollections.mockResolvedValue(false);
+
+    const result = await updateItem("item-1", { ...input, collectionIds: ["col-other"] });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Collection not found",
+      fieldErrors: { collectionIds: ["Collection not found"] },
+    });
+    expect(mockUpdateItemQuery).not.toHaveBeenCalled();
+  });
+
   it("returns not found for another user's item", async () => {
     mockUpdateItemQuery.mockResolvedValue(null);
 
@@ -296,6 +372,7 @@ describe("updateItem", () => {
 describe("deleteItem", () => {
   beforeEach(() => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "" });
+    mockOwnsCollections.mockResolvedValue(true);
   });
 
   it("requires a session", async () => {

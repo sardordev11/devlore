@@ -6,6 +6,7 @@ import { useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { createItem } from "@/actions/items";
+import { CollectionPicker } from "@/components/items/CollectionPicker";
 import { ContentField } from "@/components/items/ContentField";
 import { EditField } from "@/components/items/EditField";
 import { FileUpload } from "@/components/items/FileUpload";
@@ -50,6 +51,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
   const { values, setValue, fieldErrors, setFieldErrors, fieldProps, reset: resetFields } =
     useItemFields("new-item", EMPTY_ITEM_FIELD_VALUES, isPending);
   const [file, setFile] = useState<File | null>(null);
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const { upload, progress } = useFileUpload();
 
   const fields = getCreateFields(type);
@@ -58,6 +60,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
     setType(initialType);
     resetFields();
     setFile(null);
+    setCollectionIds([]);
   }
 
   function handleOpenChange(nextOpen: boolean) {
@@ -68,7 +71,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const payload = { type, ...buildItemPayload(values, fields) };
+    const payload = { type, ...buildItemPayload(values, fields), collectionIds };
 
     startTransition(async () => {
       // Files go to R2 first; the item then references the stored key.
@@ -196,6 +199,20 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
 
           <EditField id="new-item-tags" label="Tags" error={fieldErrors.tags?.[0]}>
             <Input {...fieldProps("tags")} placeholder="react, hooks, auth" />
+          </EditField>
+
+          <EditField
+            id="new-item-collections"
+            label="Collections"
+            error={fieldErrors.collectionIds?.[0]}
+          >
+            <CollectionPicker
+              id="new-item-collections"
+              value={collectionIds}
+              onChange={setCollectionIds}
+              disabled={isPending}
+              error={fieldErrors.collectionIds?.[0]}
+            />
           </EditField>
 
           <DialogFooter>

@@ -271,7 +271,7 @@ export async function isFileKeyInUse(userId: string, key: string): Promise<boole
 // An uploaded file is stored by its public R2 URL. Returns null when no system type has the slug.
 export async function createItem(
   userId: string,
-  { type: slug, tags, file, ...fields }: CreateItemInput,
+  { type: slug, tags, file, collectionIds, ...fields }: CreateItemInput,
 ): Promise<ItemDetail | null> {
   const type = await prisma.itemType.findFirst({
     where: { slug, isSystem: true },
@@ -292,18 +292,34 @@ export async function createItem(
       userId,
       typeId: type.id,
       tags: { connectOrCreate: connectOrCreateTags(userId, tags) },
+      collections: {
+        create: collectionIds.map((collectionId) => ({ collectionId })),
+      },
     },
     select: ITEM_DETAIL_SELECT,
   });
   return toItemDetail(item);
 }
 
-// Replaces the item's tags with `data.tags`, creating any the user doesn't have yet.
+// Keeps links to collections still selected (and their addedAt), removes the rest
+// and adds the new ones. The caller checks that the collections belong to the user.
+function setItemCollections(itemId: string, collectionIds: string[]) {
+  return {
+    deleteMany: { collectionId: { notIn: collectionIds } },
+    connectOrCreate: collectionIds.map((collectionId) => ({
+      where: { itemId_collectionId: { itemId, collectionId } },
+      create: { collectionId },
+    })),
+  } satisfies Prisma.ItemCollectionUpdateManyWithoutItemNestedInput;
+}
+
+// Replaces the item's tags with `data.tags`, creating any the user doesn't have yet,
+// and its collections with `data.collectionIds` when given.
 // Returns null when the item doesn't exist or belongs to another user.
 export async function updateItem(
   userId: string,
   itemId: string,
-  { tags, ...fields }: UpdateItemInput,
+  { tags, collectionIds, ...fields }: UpdateItemInput,
 ): Promise<ItemDetail | null> {
   try {
     const item = await prisma.item.update({
@@ -315,6 +331,9 @@ export async function updateItem(
           set: [],
           connectOrCreate: connectOrCreateTags(userId, tags),
         },
+        ...(collectionIds && {
+          collections: setItemCollections(itemId, collectionIds),
+        }),
       },
       select: ITEM_DETAIL_SELECT,
     });

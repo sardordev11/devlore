@@ -4,6 +4,7 @@ import {
   createItemSchema,
   isCreatableTypeSlug,
   MARKDOWN_TYPE_SLUGS,
+  MAX_ITEM_COLLECTIONS,
   parseTags,
   updateItemSchema,
 } from "@/lib/validations/items";
@@ -79,6 +80,26 @@ describe("updateItemSchema", () => {
   });
 });
 
+describe("updateItemSchema collectionIds", () => {
+  const base = { title: "useAuth Hook", tags: [] };
+
+  it("leaves collections unchanged when omitted", () => {
+    expect(updateItemSchema.parse(base).collectionIds).toBeUndefined();
+  });
+
+  it("keeps an empty list so the item leaves every collection", () => {
+    expect(updateItemSchema.parse({ ...base, collectionIds: [] }).collectionIds).toEqual(
+      [],
+    );
+  });
+
+  it("dedupes collection ids", () => {
+    expect(
+      updateItemSchema.parse({ ...base, collectionIds: ["col-1", "col-1"] }).collectionIds,
+    ).toEqual(["col-1"]);
+  });
+});
+
 describe("createItemSchema", () => {
   const base = { type: "snippets", title: "useAuth Hook", tags: [] };
 
@@ -143,7 +164,29 @@ describe("createItemSchema", () => {
       url: null,
       tags: ["react"],
       file: null,
+      collectionIds: [],
     });
+  });
+
+  it("dedupes collection ids and caps how many there are", () => {
+    expect(
+      createItemSchema.parse({ ...base, collectionIds: ["col-1", "col-2", "col-1"] }),
+    ).toMatchObject({ collectionIds: ["col-1", "col-2"] });
+
+    const tooMany = Array.from(
+      { length: MAX_ITEM_COLLECTIONS + 1 },
+      (_, index) => `col-${index}`,
+    );
+    expect(createItemSchema.safeParse({ ...base, collectionIds: tooMany }).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects collection ids that aren't non-empty strings", () => {
+    expect(createItemSchema.safeParse({ ...base, collectionIds: [""] }).success).toBe(false);
+    expect(createItemSchema.safeParse({ ...base, collectionIds: "col-1" }).success).toBe(
+      false,
+    );
   });
 
   describe("file types", () => {

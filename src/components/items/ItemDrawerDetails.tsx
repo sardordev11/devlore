@@ -145,11 +145,19 @@ export function ItemDrawerDetails({ item }: ItemDrawerDetailsProps) {
   );
 }
 
-// Collections and dates, shown read-only in both view and edit mode.
-export function ItemMetaSections({ item }: ItemDrawerDetailsProps) {
+interface ItemMetaSectionsProps extends ItemDrawerDetailsProps {
+  // The edit form shows a collection picker instead.
+  showCollections?: boolean;
+}
+
+// Collections and dates, shown read-only. Edit mode keeps only the dates.
+export function ItemMetaSections({
+  item,
+  showCollections = true,
+}: ItemMetaSectionsProps) {
   return (
     <>
-      {item.collections.length > 0 && (
+      {showCollections && item.collections.length > 0 && (
         <DetailSection title="Collections" icon={FolderIcon}>
           <div className="flex flex-wrap gap-1.5">
             {item.collections.map((collection) => (

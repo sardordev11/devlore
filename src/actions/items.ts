@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { ownsCollections } from "@/lib/db/collections";
 import {
   createItem as createItemQuery,
   deleteItem as deleteItemQuery,
@@ -33,6 +34,8 @@ type UpdateItemResult =
       error: string;
       fieldErrors: Partial<Record<keyof z.input<typeof updateItemSchema>, string[]>>;
     };
+
+const COLLECTION_NOT_FOUND = "Collection not found";
 
 type DeleteItemResult =
   | { success: true; data: { id: string } }
@@ -93,6 +96,13 @@ export async function createItem(data: unknown): Promise<CreateItemResult> {
     if (parsed.data.file && (await isFileKeyInUse(userId, parsed.data.file.key))) {
       return { success: false, error: "File is already attached to another item" };
     }
+    if (!(await ownsCollections(userId, parsed.data.collectionIds))) {
+      return fail({
+        success: false,
+        error: COLLECTION_NOT_FOUND,
+        fieldErrors: { collectionIds: [COLLECTION_NOT_FOUND] },
+      });
+    }
 
     const item = await createItemQuery(userId, parsed.data);
     if (!item) return fail({ success: false, error: "Item type not found" });
@@ -126,6 +136,15 @@ export async function updateItem(
   }
 
   try {
+    const { collectionIds } = parsed.data;
+    if (collectionIds && !(await ownsCollections(session.user.id, collectionIds))) {
+      return {
+        success: false,
+        error: COLLECTION_NOT_FOUND,
+        fieldErrors: { collectionIds: [COLLECTION_NOT_FOUND] },
+      };
+    }
+
     const item = await updateItemQuery(session.user.id, itemId, parsed.data);
     if (!item) return { success: false, error: "Item not found" };
 
