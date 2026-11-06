@@ -1,4 +1,4 @@
-# Current Feature: Settings Page
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,29 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- New protected `/settings` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell` via its own layout)
-- Server-side session check on the page with a sign-in redirect (`callbackUrl=/settings`), fetched per request (`connection()`)
-- "Settings" link in the user dropdown at the bottom of the sidebar (`SidebarUser`), between Profile and Sign out
-- Move the Account section (Change password + Delete account) from `/profile` to `/settings`
-  - Change password still shown only for users with a `passwordHash`
-  - Delete account flow unchanged (type "delete", cascade, sign out)
-- `/profile` keeps the user card and Usage section only
-- Loading skeleton for `/settings`
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- The spec says "delete account and forgot password", but the profile's Account section holds **Change password** and Delete account; Forgot password lives on `/sign-in`. Interpreting it as Change password.
-- Reuse existing `ChangePasswordDialog` and `DeleteAccountDialog` (consider moving them from `src/components/profile/` to `src/components/settings/`) and the existing `changePassword`/`deleteAccount` server actions — no new actions needed.
-- Settings needs `hasPassword`; reuse `getProfile` or add a small scoped query.
-- Routes table in `project-overview.md` already lists `/settings` (theme, export) — only the account actions are in scope now; theme and export are not.
 
 ## History
 
@@ -75,3 +61,4 @@ In Progress
 - **New Item Refresh Fix** — after creating an item from the New Item dialog the page showed stale data under the "Item created" toast because `CreateItemDialog` called `router.refresh()` only after the toast, adding a separate round trip (~1.8s in dev); `createItem` in `src/actions/items.ts` now calls `refresh()` from `next/cache` on success so the refreshed page comes back with the action's response, and the client `router.refresh()` was removed; Next still resolves the action result before the refreshed tree finishes streaming, so in dev (Neon latency) the item can still appear ~1.3s after the toast; optimistic UI considered and not done; unit tests check `refresh()` runs only on success; checked in the browser on `/collections/[id]` (Completed)
 - **Global Search** — Cmd+K / Ctrl+K command palette (shadcn `Command` via `cmdk`, added with `input-group`) in `src/components/search/`: `SearchTrigger` replaces the top bar search input (button styled like the input, "⌘ K" or "Ctrl K" hint by platform via `useSyncExternalStore`, also used as the Suspense fallback), `GlobalSearch` loads the search data per request in a Suspense boundary, `CommandPalette` toggles on the shortcut and shows Items (type-tinted icon, title, one-line preview) and Collections (folder icon, item count) groups with arrow-key navigation; selecting an item opens the item drawer (`ItemDrawerProvider` moved up in `AppShell` to wrap the top bar), selecting a collection navigates to `/collections/[id]`; data loaded with the page and filtered on the client, refreshed by `router.refresh()`/`refresh()` like the rest of the page; `getSearchItems` in `src/lib/db/items.ts` (user's items, most recently used first) and the existing `getAllCollections`; `getContentPreview` in `src/lib/search.ts` (content, URL or file name, whitespace collapsed, 120 chars with an ellipsis); `scoreSearchMatch` in `src/lib/search-score.ts` replacing cmdk's filter, which matched letters scattered across words ("test" matched most items): every query word must match, fuzzy matching only within one word starting with the same letter ("dckr" → "docker"), previews by substring only, word-start > substring > fuzzy and title > type > preview ranking; initials like "crp" no longer match; unit tests for all three; checked in the browser (shortcut, top bar click, fuzzy search, Enter to drawer and to a collection page) (Completed)
 - **Pagination** — numbered page links with Prev/Next at the bottom of `/items/[type]` (including the Files list and Images gallery), `/collections/[id]` and `/collections` (also paginated since the spec defines `COLLECTIONS_PER_PAGE`), via `PaginationControls` in `src/components/pagination/` on the shadcn `pagination` component (its broken `cn` import fixed, links switched to `next/link`), hidden for a single page, Prev/Next greyed out with `aria-disabled` and no href at the ends; `src/lib/pagination.ts` with `ITEMS_PER_PAGE`/`COLLECTIONS_PER_PAGE` (21), `DASHBOARD_COLLECTIONS_LIMIT` (6) and `DASHBOARD_RECENT_ITEMS_LIMIT` (10) now used as the dashboard query defaults, `parsePage` (invalid values → 1, capped at `MAX_PAGE`), `getPageCount`, `getPageOffset`, `getPageNumbers` (first, last and neighbors with ellipses, a single skipped page shown instead of an ellipsis) and `getPageHref` (page 1 is the bare path); `getItemsByTypeSlug` and `getItemsByCollection` in `src/lib/db/items.ts` and a new `getCollectionsPage` in `src/lib/db/collections.ts` fetch only one page with `skip`/`take` plus a `count`, sort orders end with `id` so pages never overlap, `getAllCollections` kept for the command palette; out-of-range pages redirect to the last page, headers show the total count; unit tests for the utilities and queries; checked in the browser at 1440px with the page size temporarily set to 2 (Completed)
+- **Settings Page** — protected `/settings` route (added to the `src/proxy.ts` matcher, session check with a `callbackUrl=/settings` sign-in redirect, wrapped in `AppShell`) with the Account section moved from `/profile`: Change password (only for users with a `passwordHash`) and Delete account, flows and server actions unchanged; "Settings" link in the sidebar user menu between Profile and Sign out; `ChangePasswordDialog` and `DeleteAccountDialog` moved to `src/components/settings/`; `getAccountSettings` in `src/lib/db/settings.ts` (just `hasPassword`, so the page skips the profile stats) with unit tests, `hasPassword` dropped from `getProfile`; `/profile` now shows only the user card and Usage, with a shorter skeleton; settings loading skeleton; the spec's "forgot password" read as Change password since Forgot password lives on `/sign-in`; checked in the browser (menu link, settings page, profile without account actions, delete dialog) (Completed)
