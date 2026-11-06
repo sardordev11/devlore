@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { auth } from "@/auth";
+import { CollectionActions } from "@/components/collections/CollectionActions";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { getCollection } from "@/lib/db/collections";
 import { getItemsByCollection } from "@/lib/db/items";
@@ -40,7 +41,7 @@ export default async function CollectionPage({
         >
           <FolderOpenIcon className="size-5" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="truncate text-2xl font-semibold">{collection.name}</h1>
             {collection.isFavorite && (
@@ -57,6 +58,14 @@ export default async function CollectionPage({
             </p>
           )}
         </div>
+        <CollectionActions
+          collection={{
+            id: collection.id,
+            name: collection.name,
+            description: collection.description,
+            isFavorite: collection.isFavorite,
+          }}
+        />
       </header>
 
       {items.length > 0 ? (

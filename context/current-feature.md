@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Collection Actions (Edit, Delete, Favorite)
 
 <!-- Feature Name -->
 
@@ -6,15 +6,38 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- `/collections/[id]` header gets Edit, Delete and Favorite buttons
+- Favorite is display only for now: icon/button reflects `isFavorite` (filled yellow star when favorited) but doesn't toggle anything
+- Edit opens a modal (shadcn `Dialog`) to edit the collection's metadata: Name (required) and Description (optional), prefilled with current values
+- `updateCollectionSchema` in `src/lib/validations/collections.ts` reusing the create rules (trimmed name 1–100, description up to 500, blank description → null)
+- `updateCollection` server action in `src/actions/collections.ts` (session check, Zod validation with `fieldErrors`, `{ success, data, error }`) and `updateCollection` query in `src/lib/db/collections.ts` with `userId` in the where for ownership (P2025 → not found)
+- Delete opens a shadcn `AlertDialog` confirmation naming the collection, making clear its items are kept; destructive Delete with a "Deleting…" pending state
+- `deleteCollection` server action + query scoped to the user; only the collection and its `ItemCollection` links are removed — **items are never deleted**, they just no longer belong to that collection
+- After deleting from `/collections/[id]`, redirect to `/collections`; after editing, `router.refresh()`
+- "Collection updated" / "Collection deleted" toasts, error toasts on failure
+- `CollectionCard` (on `/collections` and the dashboard) gets a 3-dots (`MoreHorizontal`) button opening a shadcn dropdown with Edit, Delete and Favorite
+  - Edit and Delete open the same dialogs as the detail page
+  - Favorite is display only (no action yet)
+  - Clicking anywhere else on the card navigates to `/collections/[id]`
+  - Opening the menu or using its items must not trigger card navigation
+- `router.refresh()` updates the dashboard grid, collection stats, sidebar favorites/recents and the `/collections` list
+- Unit tests for the new schema, query functions and server actions
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- `ItemCollection` already cascades on collection delete (`onDelete: Cascade` on the collection relation), while `Item` has no relation back that would delete it, so a plain `collection.delete` keeps items intact. Verify in tests that only the collection is deleted.
+- `CollectionCard` is currently a `<Link>` wrapping the whole card. Nesting a button inside a link is invalid HTML, so restructure: make the card a positioned container with the link as a stretched overlay (or the card body) and the menu button as a sibling above it, rather than calling `preventDefault` inside the link.
+- `CollectionCard` is a server component; the menu and dialogs need a small client component (e.g. `CollectionActionsMenu`) so the card itself can stay server-rendered.
+- Share the edit and delete dialogs between the detail page and the card menu (e.g. `EditCollectionDialog`, `DeleteCollectionDialog` in `src/components/collections/`), reusing `CreateCollectionDialog`'s field patterns and `COLLECTION_NAME_MAX`/`COLLECTION_DESCRIPTION_MAX`.
+- Favorite toggling (server action, persistence) is out of scope for this feature.
 
 ## History
 

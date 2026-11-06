@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { Prisma } from "@/generated/prisma/client";
 import {
   createCollection,
+  deleteCollection,
   getAllCollections,
   getCollection,
   getCollectionOptions,
   ownsCollections,
+  updateCollection,
 } from "@/lib/db/collections";
 import { prisma } from "@/lib/prisma";
 
@@ -13,6 +16,8 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     collection: {
       create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
       count: vi.fn(),
@@ -22,6 +27,12 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 const mockPrisma = vi.mocked(prisma, { deep: true });
+
+const notFoundError = () =>
+  new Prisma.PrismaClientKnownRequestError("Record not found", {
+    code: "P2025",
+    clientVersion: "test",
+  });
 
 describe("createCollection", () => {
   it("creates the collection for the given user", async () => {
@@ -159,5 +170,66 @@ describe("getCollection", () => {
 
     await expect(getCollection("user-1", "col-other")).resolves.toBeNull();
     expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateCollection", () => {
+  it("updates the collection scoped to the user", async () => {
+    const updated = { id: "col-1", name: "Renamed", description: null };
+    mockPrisma.collection.update.mockResolvedValue(updated as never);
+
+    const result = await updateCollection("user-1", "col-1", {
+      name: "Renamed",
+      description: null,
+    });
+
+    expect(result).toEqual(updated);
+    expect(mockPrisma.collection.update).toHaveBeenCalledWith({
+      where: { id: "col-1", userId: "user-1" },
+      data: { name: "Renamed", description: null },
+      select: { id: true, name: true, description: true },
+    });
+  });
+
+  it("returns null for unknown or other users' collections", async () => {
+    mockPrisma.collection.update.mockRejectedValue(notFoundError());
+
+    await expect(
+      updateCollection("user-1", "col-other", { name: "x", description: null }),
+    ).resolves.toBeNull();
+  });
+
+  it("rethrows other errors", async () => {
+    mockPrisma.collection.update.mockRejectedValue(new Error("db down"));
+
+    await expect(
+      updateCollection("user-1", "col-1", { name: "x", description: null }),
+    ).rejects.toThrow("db down");
+  });
+});
+
+describe("deleteCollection", () => {
+  it("deletes only the collection, scoped to the user", async () => {
+    mockPrisma.collection.delete.mockResolvedValue({ id: "col-1" } as never);
+
+    await expect(deleteCollection("user-1", "col-1")).resolves.toEqual({
+      id: "col-1",
+    });
+    expect(mockPrisma.collection.delete).toHaveBeenCalledWith({
+      where: { id: "col-1", userId: "user-1" },
+      select: { id: true },
+    });
+  });
+
+  it("returns null for unknown or other users' collections", async () => {
+    mockPrisma.collection.delete.mockRejectedValue(notFoundError());
+
+    await expect(deleteCollection("user-1", "col-other")).resolves.toBeNull();
+  });
+
+  it("rethrows other errors", async () => {
+    mockPrisma.collection.delete.mockRejectedValue(new Error("db down"));
+
+    await expect(deleteCollection("user-1", "col-1")).rejects.toThrow("db down");
   });
 });

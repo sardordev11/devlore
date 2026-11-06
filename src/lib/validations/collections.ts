@@ -3,7 +3,10 @@ import { z } from "zod";
 export const COLLECTION_NAME_MAX = 100;
 export const COLLECTION_DESCRIPTION_MAX = 500;
 
-export const createCollectionSchema = z.object({
+export const collectionIdSchema = z.string().min(1).max(100);
+
+// Name and description, shared by create and edit.
+const collectionFieldsSchema = z.object({
   name: z
     .string()
     .trim()
@@ -21,4 +24,8 @@ export const createCollectionSchema = z.object({
     .transform((value) => (value ? value : null)),
 });
 
+export const createCollectionSchema = collectionFieldsSchema;
+export const updateCollectionSchema = collectionFieldsSchema;
+
 export type CreateCollectionInput = z.output<typeof createCollectionSchema>;
+export type UpdateCollectionInput = z.output<typeof updateCollectionSchema>;

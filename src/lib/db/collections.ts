@@ -1,8 +1,12 @@
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
+import { isPrismaError, PRISMA_ERROR } from "@/lib/db/prisma-errors";
 import { prisma } from "@/lib/prisma";
-import type { CreateCollectionInput } from "@/lib/validations/collections";
+import type {
+  CreateCollectionInput,
+  UpdateCollectionInput,
+} from "@/lib/validations/collections";
 
 export interface CollectionType {
   id: string;
@@ -196,6 +200,41 @@ export async function createCollection(
     data: { userId, name: input.name, description: input.description },
     select: { id: true, name: true, description: true },
   });
+}
+
+// Returns null when the collection doesn't exist or belongs to another user.
+export async function updateCollection(
+  userId: string,
+  collectionId: string,
+  input: UpdateCollectionInput,
+): Promise<CreatedCollection | null> {
+  try {
+    return await prisma.collection.update({
+      where: { id: collectionId, userId },
+      data: { name: input.name, description: input.description },
+      select: { id: true, name: true, description: true },
+    });
+  } catch (error) {
+    if (isPrismaError(error, PRISMA_ERROR.notFound)) return null;
+    throw error;
+  }
+}
+
+// Deletes only the collection. Its ItemCollection links cascade, the items stay.
+// Returns null when the collection doesn't exist or belongs to another user.
+export async function deleteCollection(
+  userId: string,
+  collectionId: string,
+): Promise<{ id: string } | null> {
+  try {
+    return await prisma.collection.delete({
+      where: { id: collectionId, userId },
+      select: { id: true },
+    });
+  } catch (error) {
+    if (isPrismaError(error, PRISMA_ERROR.notFound)) return null;
+    throw error;
+  }
 }
 
 export interface CollectionOption {
