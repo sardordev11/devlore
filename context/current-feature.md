@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Editor Preferences Settings
 
 <!-- Feature Name -->
 
@@ -6,15 +6,34 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Editor Preferences section on `/settings`
+- Font size dropdown
+- Tab size dropdown
+- Word wrap toggle (default: on)
+- Minimap toggle (default: off)
+- Theme dropdown: vs-dark, monokai, github-dark (default: vs-dark)
+- Preferences stored in a JSON column `editorPreferences` on the `User` model
+- Prisma migration created and applied (`prisma migrate dev`, never `db push`)
+- Server action to update preferences (session check, Zod validation, `{ success, data, error }`)
+- Settings applied to the Monaco `CodeEditor` component
+- Auto-save on change (no save button), success toast on save
+- `EditorPreferencesContext` providing preferences to client components
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/editor-settings-spec.md`
+- Spec doesn't list font size and tab size options or defaults; pick sensible ones (e.g. font sizes 12–20, tab sizes 2/4/8) and keep them in one shared constants/Zod file
+- Missing or invalid stored JSON should fall back to defaults
+- Monaco currently uses a custom `devlore-dark` theme (extends `vs-dark`); monokai and github-dark need to be defined as custom themes in `beforeMount`
+- Unit tests for the Zod schema/defaults, query function and server action
 
 ## History
 

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { DashboardSection } from "@/components/dashboard/DashboardSection";
 import { ChangePasswordDialog } from "@/components/settings/ChangePasswordDialog";
 import { DeleteAccountDialog } from "@/components/settings/DeleteAccountDialog";
+import { EditorPreferencesForm } from "@/components/settings/EditorPreferencesForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAccountSettings } from "@/lib/db/settings";
 
@@ -21,8 +22,16 @@ export default async function SettingsPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
       <header>
         <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="mt-1 text-muted-foreground">Manage your account</p>
+        <p className="mt-1 text-muted-foreground">Manage your editor and account</p>
       </header>
+
+      <DashboardSection title="Editor">
+        <Card>
+          <CardContent>
+            <EditorPreferencesForm />
+          </CardContent>
+        </Card>
+      </DashboardSection>
 
       <DashboardSection title="Account">
         <Card>

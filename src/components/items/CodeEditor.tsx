@@ -1,32 +1,23 @@
 "use client";
 
-import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import { useState } from "react";
 
 import { EditorFrame } from "@/components/items/EditorFrame";
+import {
+  defineMonacoThemes,
+  getMonacoThemeName,
+  THEME_FRAME_CLASSES,
+} from "@/components/items/monaco-themes";
+import { useEditorPreferences } from "@/components/settings/EditorPreferencesContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toMonacoLanguage } from "@/lib/code-language";
 
 const MAX_HEIGHT = 400;
 const MIN_HEIGHT = 80;
-const LINE_HEIGHT = 19;
+// Monaco line height relative to the font size (19px at the default 13px).
+const LINE_HEIGHT_RATIO = 1.45;
 const VERTICAL_PADDING = 24;
-const THEME_NAME = "devlore-dark";
-
-// vs-dark with subtle translucent scrollbar sliders that blend into the frame.
-const defineTheme: BeforeMount = (monaco) => {
-  monaco.editor.defineTheme(THEME_NAME, {
-    base: "vs-dark",
-    inherit: true,
-    rules: [],
-    colors: {
-      "scrollbar.shadow": "#00000000",
-      "scrollbarSlider.background": "#ffffff1a",
-      "scrollbarSlider.hoverBackground": "#ffffff33",
-      "scrollbarSlider.activeBackground": "#ffffff4d",
-    },
-  });
-};
 
 interface CodeEditorProps {
   value: string;
@@ -41,13 +32,17 @@ interface CodeEditorProps {
   invalid?: boolean;
 }
 
+function getLineHeight(fontSize: number) {
+  return Math.round(fontSize * LINE_HEIGHT_RATIO);
+}
+
 function clampHeight(height: number) {
   return Math.min(Math.max(height, MIN_HEIGHT), MAX_HEIGHT);
 }
 
 // Rough first-paint height until Monaco reports the real content height.
-function estimateHeight(value: string) {
-  return clampHeight(value.split("\n").length * LINE_HEIGHT + VERTICAL_PADDING);
+function estimateHeight(value: string, lineHeight: number) {
+  return clampHeight(value.split("\n").length * lineHeight + VERTICAL_PADDING);
 }
 
 export function CodeEditor({
@@ -60,7 +55,9 @@ export function CodeEditor({
   ariaLabel = "Code editor",
   invalid = false,
 }: CodeEditorProps) {
-  const [height, setHeight] = useState(() => estimateHeight(value));
+  const { preferences } = useEditorPreferences();
+  const lineHeight = getLineHeight(preferences.fontSize);
+  const [height, setHeight] = useState(() => estimateHeight(value, lineHeight));
   const monacoLanguage = toMonacoLanguage(language, fallbackLanguage);
 
   // Grow with the content up to MAX_HEIGHT, then scroll inside the editor.
@@ -93,11 +90,12 @@ export function CodeEditor({
       headerActions={languageLabel}
       copyValue={value}
       invalid={invalid}
+      className={THEME_FRAME_CLASSES[preferences.theme]}
     >
       <Editor
         height={height}
-        theme={THEME_NAME}
-        beforeMount={defineTheme}
+        theme={getMonacoThemeName(preferences.theme)}
+        beforeMount={defineMonacoThemes}
         language={monacoLanguage}
         value={value}
         onChange={(next) => onChange?.(next ?? "")}
@@ -107,13 +105,13 @@ export function CodeEditor({
           readOnly: readOnly || disabled,
           domReadOnly: readOnly || disabled,
           ariaLabel,
-          fontSize: 13,
-          lineHeight: LINE_HEIGHT,
+          fontSize: preferences.fontSize,
+          lineHeight,
           fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-          minimap: { enabled: false },
+          minimap: { enabled: preferences.minimap },
           scrollBeyondLastLine: false,
-          wordWrap: "on",
-          tabSize: 2,
+          wordWrap: preferences.wordWrap ? "on" : "off",
+          tabSize: preferences.tabSize,
           padding: { top: 12, bottom: 12 },
           renderLineHighlight: readOnly ? "none" : "line",
           automaticLayout: true,

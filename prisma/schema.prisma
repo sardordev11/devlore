@@ -20,6 +20,9 @@ model User {
   image         String?
   passwordHash  String? // null for OAuth-only users
 
+  // Monaco settings (font size, tab size, word wrap, minimap, theme); null uses defaults
+  editorPreferences Json?
+
   // Billing
   isPro                Boolean @default(false)
   stripeCustomerId     String? @unique

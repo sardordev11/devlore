@@ -14,6 +14,8 @@ interface EditorFrameProps {
   headerActions?: React.ReactNode;
   copyValue: string;
   invalid?: boolean;
+  // Extra classes for the outer frame, e.g. a theme background.
+  className?: string;
   children: React.ReactNode;
 }
 
@@ -23,6 +25,7 @@ export function EditorFrame({
   headerActions,
   copyValue,
   invalid = false,
+  className,
   children,
 }: EditorFrameProps) {
   const [copied, setCopied] = useState(false);
@@ -43,6 +46,7 @@ export function EditorFrame({
       className={cn(
         "overflow-hidden rounded-lg border bg-[#1e1e1e] transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
         invalid && "border-destructive/50 ring-3 ring-destructive/40",
+        className,
       )}
     >
       <div className="flex items-center justify-between gap-2 border-b bg-[#2d2d2d] px-2 py-1">
