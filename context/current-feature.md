@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: New Item Refresh Fix
 
 <!-- Feature Name -->
 
@@ -6,15 +6,24 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- After creating an item from the New Item dialog, the current page (e.g. `/collections/[id]`, `/items/[type]`, dashboard) shows the new item when the "Item created" toast appears, without a reload
+- Refresh from the `createItem` server action with `refresh()` from `next/cache`, so the updated page comes back in the action's response instead of a separate client `router.refresh()` round trip after the toast
+- Remove `router.refresh()` from `CreateItemDialog`
+- Unit tests: `createItem` action calls `refresh()` on success only
+- Don't touch the Favorite button
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Measured in the browser: the toast showed after the action returned, then `router.refresh()` streamed the re-rendered page ~1.8s later, so the page showed "0 items" under an "Item created" toast.
+- With `refresh()` in the action the separate refresh request is gone, but Next still resolves the action result before the refreshed tree finishes streaming, so in dev the item can appear ~1.3s after the toast (mostly Neon latency in dev). Option 1 chosen: keep the server-side `refresh()` only; no optimistic UI.
 
 ## History
 

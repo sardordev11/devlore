@@ -1,3 +1,4 @@
+import { refresh } from "next/cache";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { auth } from "@/auth";
@@ -11,6 +12,7 @@ import {
 import { deleteFile } from "@/lib/r2";
 import { createItem, deleteItem, updateItem } from "@/actions/items";
 
+vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/r2", async (importOriginal) => ({
   isOwnedFileKey: (await importOriginal<typeof import("@/lib/r2")>())
@@ -37,6 +39,7 @@ const mockDeleteItemQuery = vi.mocked(deleteItemQuery);
 const mockDeleteFile = vi.mocked(deleteFile);
 const mockIsFileKeyInUse = vi.mocked(isFileKeyInUse);
 const mockOwnsCollections = vi.mocked(ownsCollections);
+const mockRefresh = vi.mocked(refresh);
 
 const date = new Date("2026-01-15T00:00:00Z");
 
@@ -128,6 +131,8 @@ describe("createItem", () => {
         updatedAt: "2026-01-15T00:00:00.000Z",
       },
     });
+    // The refreshed page comes back with the action's response.
+    expect(mockRefresh).toHaveBeenCalledOnce();
   });
 
   it("checks the collections belong to the session user", async () => {
@@ -153,6 +158,7 @@ describe("createItem", () => {
       fieldErrors: { collectionIds: ["Collection not found"] },
     });
     expect(mockCreateItemQuery).not.toHaveBeenCalled();
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 
   it("returns an error when the type is missing from the database", async () => {
@@ -160,6 +166,7 @@ describe("createItem", () => {
 
     const result = await createItem(input);
     expect(result).toEqual({ success: false, error: "Item type not found" });
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 
   it("returns a friendly error when the database fails", async () => {
@@ -171,6 +178,7 @@ describe("createItem", () => {
       success: false,
       error: "Couldn't create the item. Please try again.",
     });
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 });
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
@@ -40,7 +39,6 @@ interface CreateItemDialogProps {
 }
 
 export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const initialType = defaultType ?? "snippets";
@@ -96,7 +94,6 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
       toast.success("Item created");
       setOpen(false);
       reset();
-      router.refresh();
     });
   }
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { z } from "zod";
 
 import { auth } from "@/auth";
@@ -107,6 +108,9 @@ export async function createItem(data: unknown): Promise<CreateItemResult> {
     const item = await createItemQuery(userId, parsed.data);
     if (!item) return fail({ success: false, error: "Item type not found" });
 
+    // Send the refreshed page back with this response, so the new item shows
+    // up together with the success toast instead of a round trip later.
+    refresh();
     return { success: true, data: toItemDetailJson(item) };
   } catch (error) {
     console.error("Create item failed:", error);
