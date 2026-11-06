@@ -13,7 +13,6 @@ export default function ProfileLoading() {
         <Skeleton className="h-24 rounded-xl" />
       </div>
       <Skeleton className="h-32 rounded-xl" />
-      <Skeleton className="h-36 rounded-xl" />
     </div>
   );
 }

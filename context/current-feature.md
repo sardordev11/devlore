@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Settings Page
 
 <!-- Feature Name -->
 
@@ -6,15 +6,29 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- New protected `/settings` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell` via its own layout)
+- Server-side session check on the page with a sign-in redirect (`callbackUrl=/settings`), fetched per request (`connection()`)
+- "Settings" link in the user dropdown at the bottom of the sidebar (`SidebarUser`), between Profile and Sign out
+- Move the Account section (Change password + Delete account) from `/profile` to `/settings`
+  - Change password still shown only for users with a `passwordHash`
+  - Delete account flow unchanged (type "delete", cascade, sign out)
+- `/profile` keeps the user card and Usage section only
+- Loading skeleton for `/settings`
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- The spec says "delete account and forgot password", but the profile's Account section holds **Change password** and Delete account; Forgot password lives on `/sign-in`. Interpreting it as Change password.
+- Reuse existing `ChangePasswordDialog` and `DeleteAccountDialog` (consider moving them from `src/components/profile/` to `src/components/settings/`) and the existing `changePassword`/`deleteAccount` server actions — no new actions needed.
+- Settings needs `hasPassword`; reuse `getProfile` or add a small scoped query.
+- Routes table in `project-overview.md` already lists `/settings` (theme, export) — only the account actions are in scope now; theme and export are not.
 
 ## History
 

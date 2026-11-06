@@ -15,8 +15,6 @@ export interface Profile {
   email: string;
   image: string | null;
   createdAt: Date;
-  // OAuth-only users have no password to change.
-  hasPassword: boolean;
   itemCount: number;
   collectionCount: number;
   types: ProfileTypeCount[];
@@ -31,7 +29,6 @@ export async function getProfile(userId: string): Promise<Profile | null> {
         email: true,
         image: true,
         createdAt: true,
-        passwordHash: true,
         _count: { select: { items: true, collections: true } },
       },
     }),
@@ -50,10 +47,9 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   ]);
   if (!user) return null;
 
-  const { passwordHash, _count, ...info } = user;
+  const { _count, ...info } = user;
   return {
     ...info,
-    hasPassword: passwordHash !== null,
     itemCount: _count.items,
     collectionCount: _count.collections,
     types: types.map(({ _count, ...type }) => ({

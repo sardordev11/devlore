@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronsUpDownIcon, LogOutIcon, UserIcon } from "lucide-react";
+import {
+  ChevronsUpDownIcon,
+  LogOutIcon,
+  SettingsIcon,
+  UserIcon,
+} from "lucide-react";
 
 import { signOutUser } from "@/actions/auth";
 import {
@@ -83,6 +88,13 @@ export function SidebarUser({ user }: SidebarUserProps) {
             >
               <UserIcon />
               Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              render={<Link href="/settings" />}
+              onClick={() => setOpenMobile(false)}
+            >
+              <SettingsIcon />
+              Settings
             </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onClick={() => signOutUser()}>
               <LogOutIcon />
