@@ -1,32 +1,20 @@
-# Current Feature: Pagination
+# Current Feature
+
+<!-- Feature Name -->
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Paginate `/items/[type]` and `/collections/[id]` with numbered page links
-- Pagination controls at the bottom with page numbers plus Prev/Next links
-- Prev/Next disabled (greyed out) when there is no previous/next page
-- Constants: `ITEMS_PER_PAGE = 21`, `COLLECTIONS_PER_PAGE = 21`
-- Dashboard limits as constants: `DASHBOARD_COLLECTIONS_LIMIT = 6`, `DASHBOARD_RECENT_ITEMS_LIMIT = 10`
-- Only fetch the rows a page needs (`skip`/`take` plus a count), never all resources at once
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/pagination-spec.md`
-- 21 per page fits the 3-column grid (7 full rows) on `xl`
-- `COLLECTIONS_PER_PAGE` implies the `/collections` list should be paginated too, though the spec only names `/items/[type]` and `/collections/[id]`; confirm before starting
-- Page number likely from a `?page=` search param; out-of-range or invalid pages need defined behavior (clamp or 404)
-- Existing ordering must stay stable across pages (pinned first, then most recently used; add `id` as a tiebreaker)
-- `/items/files` uses `FileRow` and `/items/images` uses `ImageCard`; pagination applies to them as well
 
 ## History
 
@@ -72,3 +60,4 @@ In Progress
 - **Collection Actions** — Favorite, Edit and Delete buttons in the `/collections/[id]` header (`CollectionActions`) and a 3-dots dropdown on `CollectionCard` (`CollectionActionsMenu`) on `/collections` and the dashboard, both opening shared controlled dialogs in `src/components/collections/`; Favorite is display only (filled yellow star when `isFavorite`, no toggle yet); `EditCollectionDialog` with Name and Description prefilled (form mounted only while open), "Collection updated" toast and `router.refresh()`; `DeleteCollectionDialog` (`AlertDialog` naming the collection and saying its items are kept, "Deleting…" state, "Collection deleted" toast, optional `redirectTo` used by the detail page to go back to `/collections`); `CollectionCard` restructured so the title link stretches over the card with `::after` and the menu button sits above it (no button nested in a link, focus ring via `has-[a:focus-visible]`); `updateCollectionSchema` (same rules as create via a shared fields schema) and `collectionIdSchema` in `src/lib/validations/collections.ts`; `updateCollection` and `deleteCollection` server actions in `src/actions/collections.ts` (session check, id validation, `fieldErrors`, "Collection not found") and queries in `src/lib/db/collections.ts` with `userId` in the where (P2025 → null), delete removing only the collection and cascading its `ItemCollection` links; `CollectionMeta` type in `src/types/collections.ts`; unit tests for the schemas, queries and actions; checked in the browser at 1440px (card menu, edit from the card, card click navigation, delete from the detail page with redirect, item kept after delete, dashboard menus) (Completed)
 - **New Item Refresh Fix** — after creating an item from the New Item dialog the page showed stale data under the "Item created" toast because `CreateItemDialog` called `router.refresh()` only after the toast, adding a separate round trip (~1.8s in dev); `createItem` in `src/actions/items.ts` now calls `refresh()` from `next/cache` on success so the refreshed page comes back with the action's response, and the client `router.refresh()` was removed; Next still resolves the action result before the refreshed tree finishes streaming, so in dev (Neon latency) the item can still appear ~1.3s after the toast; optimistic UI considered and not done; unit tests check `refresh()` runs only on success; checked in the browser on `/collections/[id]` (Completed)
 - **Global Search** — Cmd+K / Ctrl+K command palette (shadcn `Command` via `cmdk`, added with `input-group`) in `src/components/search/`: `SearchTrigger` replaces the top bar search input (button styled like the input, "⌘ K" or "Ctrl K" hint by platform via `useSyncExternalStore`, also used as the Suspense fallback), `GlobalSearch` loads the search data per request in a Suspense boundary, `CommandPalette` toggles on the shortcut and shows Items (type-tinted icon, title, one-line preview) and Collections (folder icon, item count) groups with arrow-key navigation; selecting an item opens the item drawer (`ItemDrawerProvider` moved up in `AppShell` to wrap the top bar), selecting a collection navigates to `/collections/[id]`; data loaded with the page and filtered on the client, refreshed by `router.refresh()`/`refresh()` like the rest of the page; `getSearchItems` in `src/lib/db/items.ts` (user's items, most recently used first) and the existing `getAllCollections`; `getContentPreview` in `src/lib/search.ts` (content, URL or file name, whitespace collapsed, 120 chars with an ellipsis); `scoreSearchMatch` in `src/lib/search-score.ts` replacing cmdk's filter, which matched letters scattered across words ("test" matched most items): every query word must match, fuzzy matching only within one word starting with the same letter ("dckr" → "docker"), previews by substring only, word-start > substring > fuzzy and title > type > preview ranking; initials like "crp" no longer match; unit tests for all three; checked in the browser (shortcut, top bar click, fuzzy search, Enter to drawer and to a collection page) (Completed)
+- **Pagination** — numbered page links with Prev/Next at the bottom of `/items/[type]` (including the Files list and Images gallery), `/collections/[id]` and `/collections` (also paginated since the spec defines `COLLECTIONS_PER_PAGE`), via `PaginationControls` in `src/components/pagination/` on the shadcn `pagination` component (its broken `cn` import fixed, links switched to `next/link`), hidden for a single page, Prev/Next greyed out with `aria-disabled` and no href at the ends; `src/lib/pagination.ts` with `ITEMS_PER_PAGE`/`COLLECTIONS_PER_PAGE` (21), `DASHBOARD_COLLECTIONS_LIMIT` (6) and `DASHBOARD_RECENT_ITEMS_LIMIT` (10) now used as the dashboard query defaults, `parsePage` (invalid values → 1, capped at `MAX_PAGE`), `getPageCount`, `getPageOffset`, `getPageNumbers` (first, last and neighbors with ellipses, a single skipped page shown instead of an ellipsis) and `getPageHref` (page 1 is the bare path); `getItemsByTypeSlug` and `getItemsByCollection` in `src/lib/db/items.ts` and a new `getCollectionsPage` in `src/lib/db/collections.ts` fetch only one page with `skip`/`take` plus a `count`, sort orders end with `id` so pages never overlap, `getAllCollections` kept for the command palette; out-of-range pages redirect to the last page, headers show the total count; unit tests for the utilities and queries; checked in the browser at 1440px with the page size temporarily set to 2 (Completed)
