@@ -3,18 +3,33 @@ import { connection } from "next/server";
 
 import { auth } from "@/auth";
 import { CollectionCard } from "@/components/dashboard/CollectionCard";
-import { getAllCollections } from "@/lib/db/collections";
+import { PaginationControls } from "@/components/pagination/PaginationControls";
+import { getCollectionsPage } from "@/lib/db/collections";
+import {
+  COLLECTIONS_PER_PAGE,
+  getPageCount,
+  getPageHref,
+  parsePage,
+} from "@/lib/pagination";
 
-export default async function CollectionsPage() {
+const PATHNAME = "/collections";
+
+export default async function CollectionsPage({
+  searchParams,
+}: PageProps<"/collections">) {
   // User data must be fetched per request, not prerendered at build time.
   await connection();
+  const page = parsePage((await searchParams).page);
   const session = await auth();
   if (!session?.user?.id) {
-    redirect(`/sign-in?callbackUrl=${encodeURIComponent("/collections")}`);
+    redirect(`/sign-in?callbackUrl=${encodeURIComponent(PATHNAME)}`);
   }
 
-  const collections = await getAllCollections(session.user.id);
-  const countLabel = `${collections.length} ${collections.length === 1 ? "collection" : "collections"}`;
+  const { collections, total } = await getCollectionsPage(session.user.id, page);
+  const pageCount = getPageCount(total, COLLECTIONS_PER_PAGE);
+  if (page > pageCount) redirect(getPageHref(PATHNAME, pageCount));
+
+  const countLabel = `${total} ${total === 1 ? "collection" : "collections"}`;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
@@ -34,6 +49,8 @@ export default async function CollectionsPage() {
           No collections yet.
         </p>
       )}
+
+      <PaginationControls pathname={PATHNAME} page={page} pageCount={pageCount} />
     </div>
   );
 }

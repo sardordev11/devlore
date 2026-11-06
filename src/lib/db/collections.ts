@@ -2,6 +2,11 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { isPrismaError, PRISMA_ERROR } from "@/lib/db/prisma-errors";
+import {
+  COLLECTIONS_PER_PAGE,
+  DASHBOARD_COLLECTIONS_LIMIT,
+  getPageOffset,
+} from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import type {
   CreateCollectionInput,
@@ -31,6 +36,11 @@ export interface CollectionSummary {
 export interface CollectionStats {
   collections: number;
   favoriteCollections: number;
+}
+
+export interface CollectionPage {
+  collections: CollectionSummary[];
+  total: number;
 }
 
 export interface SidebarCollections {
@@ -119,7 +129,7 @@ async function toCollectionSummaries(
 
 export async function getRecentCollections(
   userId: string,
-  limit = 6,
+  limit = DASHBOARD_COLLECTIONS_LIMIT,
 ): Promise<CollectionSummary[]> {
   const collections = await prisma.collection.findMany({
     where: { userId },
@@ -157,18 +167,46 @@ export async function getSidebarCollections(
   return { favorites, recents };
 }
 
-// Every collection of the user for /collections, favorites first.
+// Favorites first, then most recently updated; id breaks ties so pages never overlap.
+const LISTING_ORDER = [
+  { isFavorite: "desc" },
+  { updatedAt: "desc" },
+  { id: "asc" },
+] satisfies Prisma.CollectionOrderByWithRelationInput[];
+
+// Every collection of the user for the command palette, favorites first.
 export async function getAllCollections(
   userId: string,
 ): Promise<CollectionSummary[]> {
   const collections = await prisma.collection.findMany({
     where: { userId },
-    orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }],
+    orderBy: LISTING_ORDER,
     include: COLLECTION_SUMMARY_INCLUDE,
   });
 
   const [all] = await toCollectionSummaries(collections);
   return all;
+}
+
+// One page of the user's collections for /collections, plus the total count.
+export async function getCollectionsPage(
+  userId: string,
+  page = 1,
+): Promise<CollectionPage> {
+  const where = { userId };
+  const [rows, total] = await Promise.all([
+    prisma.collection.findMany({
+      where,
+      orderBy: LISTING_ORDER,
+      skip: getPageOffset(page, COLLECTIONS_PER_PAGE),
+      take: COLLECTIONS_PER_PAGE,
+      include: COLLECTION_SUMMARY_INCLUDE,
+    }),
+    prisma.collection.count({ where }),
+  ]);
+
+  const [collections] = await toCollectionSummaries(rows);
+  return { collections, total };
 }
 
 // Returns null when the collection doesn't exist or belongs to another user.

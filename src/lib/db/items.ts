@@ -4,6 +4,11 @@ import { Prisma } from "@/generated/prisma/client";
 import type { ContentType } from "@/generated/prisma/client";
 import { getCopyValue } from "@/lib/copy-value";
 import { isPrismaError, PRISMA_ERROR } from "@/lib/db/prisma-errors";
+import {
+  DASHBOARD_RECENT_ITEMS_LIMIT,
+  getPageOffset,
+  ITEMS_PER_PAGE,
+} from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { getFileUrl } from "@/lib/r2";
 import { getContentPreview } from "@/lib/search";
@@ -70,6 +75,13 @@ export interface ItemTypeListing {
     color: string;
   };
   items: ItemSummary[];
+  // All of the type's items, not just this page.
+  total: number;
+}
+
+export interface ItemPage {
+  items: ItemSummary[];
+  total: number;
 }
 
 export interface ItemStats {
@@ -109,6 +121,13 @@ const ITEM_SUMMARY_SELECT = {
 const RECENT_ORDER = [
   { lastUsedAt: { sort: "desc", nulls: "last" } },
   { updatedAt: "desc" },
+] satisfies Prisma.ItemOrderByWithRelationInput[];
+
+// Pinned items stay at the top; id breaks ties so pages never overlap or skip rows.
+const LISTING_ORDER = [
+  { isPinned: "desc" },
+  ...RECENT_ORDER,
+  { id: "asc" },
 ] satisfies Prisma.ItemOrderByWithRelationInput[];
 
 const ITEM_DETAIL_SELECT = {
@@ -186,7 +205,7 @@ export async function getPinnedItems(userId: string): Promise<ItemSummary[]> {
 
 export async function getRecentItems(
   userId: string,
-  limit = 10,
+  limit = DASHBOARD_RECENT_ITEMS_LIMIT,
 ): Promise<ItemSummary[]> {
   const items = await prisma.item.findMany({
     where: { userId },
@@ -198,10 +217,31 @@ export async function getRecentItems(
   return items.map(toItemSummary);
 }
 
+// One page of the user's items matching `where`, plus the total count.
+async function getItemPage(
+  where: Prisma.ItemWhereInput,
+  page: number,
+): Promise<ItemPage> {
+  const [items, total] = await Promise.all([
+    prisma.item.findMany({
+      where,
+      orderBy: LISTING_ORDER,
+      skip: getPageOffset(page, ITEMS_PER_PAGE),
+      take: ITEMS_PER_PAGE,
+      select: ITEM_SUMMARY_SELECT,
+    }),
+    prisma.item.count({ where }),
+  ]);
+
+  return { items: items.map(toItemSummary), total };
+}
+
+// One page of the user's items of a type, pinned first then most recently used.
 // Returns null when no system type or custom type of this user has the slug.
 export async function getItemsByTypeSlug(
   userId: string,
   slug: string,
+  page = 1,
 ): Promise<ItemTypeListing | null> {
   const found = await prisma.itemType.findFirst({
     where: { slug, OR: [{ isSystem: true }, { userId }] },
@@ -212,28 +252,19 @@ export async function getItemsByTypeSlug(
   if (!found) return null;
 
   const { id: typeId, ...type } = found;
-  const items = await prisma.item.findMany({
-    where: { userId, typeId },
-    // Pinned items stay at the top.
-    orderBy: [{ isPinned: "desc" }, ...RECENT_ORDER],
-    select: ITEM_SUMMARY_SELECT,
-  });
-
-  return { type, items: items.map(toItemSummary) };
+  return { type, ...(await getItemPage({ userId, typeId }, page)) };
 }
 
-// The user's items in one collection, pinned first then most recently used.
+// One page of the user's items in a collection, pinned first then most recently used.
 export async function getItemsByCollection(
   userId: string,
   collectionId: string,
-): Promise<ItemSummary[]> {
-  const items = await prisma.item.findMany({
-    where: { userId, collections: { some: { collectionId } } },
-    orderBy: [{ isPinned: "desc" }, ...RECENT_ORDER],
-    select: ITEM_SUMMARY_SELECT,
-  });
-
-  return items.map(toItemSummary);
+  page = 1,
+): Promise<ItemPage> {
+  return getItemPage(
+    { userId, collections: { some: { collectionId } } },
+    page,
+  );
 }
 
 // Every item of the user for the command palette, most recently used first.

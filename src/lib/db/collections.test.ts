@@ -7,6 +7,7 @@ import {
   getAllCollections,
   getCollection,
   getCollectionOptions,
+  getCollectionsPage,
   ownsCollections,
   updateCollection,
 } from "@/lib/db/collections";
@@ -126,7 +127,11 @@ describe("getAllCollections", () => {
     ]);
     const [args] = mockPrisma.collection.findMany.mock.calls[0];
     expect(args?.where).toEqual({ userId: "user-1" });
-    expect(args?.orderBy).toEqual([{ isFavorite: "desc" }, { updatedAt: "desc" }]);
+    expect(args?.orderBy).toEqual([
+      { isFavorite: "desc" },
+      { updatedAt: "desc" },
+      { id: "asc" },
+    ]);
   });
 
   it("returns an empty list without the type query", async () => {
@@ -134,6 +139,40 @@ describe("getAllCollections", () => {
 
     await expect(getAllCollections("user-1")).resolves.toEqual([]);
     expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("getCollectionsPage", () => {
+  it("fetches only the requested page and the total count", async () => {
+    mockPrisma.collection.findMany.mockResolvedValue([COLLECTION_ROW] as never);
+    mockPrisma.collection.count.mockResolvedValue(43 as never);
+    mockPrisma.$queryRaw.mockResolvedValue([] as never);
+
+    const result = await getCollectionsPage("user-1", 3);
+
+    expect(result.total).toBe(43);
+    expect(result.collections).toEqual([
+      expect.objectContaining({ id: "col-1", itemCount: 3 }),
+    ]);
+    const [args] = mockPrisma.collection.findMany.mock.calls[0];
+    expect(args?.where).toEqual({ userId: "user-1" });
+    expect(args?.skip).toBe(42);
+    expect(args?.take).toBe(21);
+    expect(mockPrisma.collection.count).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+    });
+  });
+
+  it("starts at the first page by default", async () => {
+    mockPrisma.collection.findMany.mockResolvedValue([] as never);
+    mockPrisma.collection.count.mockResolvedValue(0 as never);
+
+    await expect(getCollectionsPage("user-1")).resolves.toEqual({
+      collections: [],
+      total: 0,
+    });
+    const [args] = mockPrisma.collection.findMany.mock.calls[0];
+    expect(args?.skip).toBe(0);
   });
 });
 

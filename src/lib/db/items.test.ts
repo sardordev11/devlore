@@ -7,6 +7,7 @@ import {
   getItemDetail,
   getItemFile,
   getItemsByCollection,
+  getItemsByTypeSlug,
   getSearchItems,
   isFileKeyInUse,
   updateItem,
@@ -22,6 +23,7 @@ vi.mock("@/lib/prisma", () => ({
     item: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -430,30 +432,39 @@ describe("deleteItem", () => {
   });
 });
 
+const SUMMARY_ROW = {
+  id: "item-1",
+  title: "useAuth Hook",
+  description: null,
+  isFavorite: false,
+  isPinned: true,
+  lastUsedAt: null,
+  createdAt,
+  fileUrl: null,
+  fileName: null,
+  fileSize: null,
+  contentType: "TEXT",
+  content: "export function useAuth() {}",
+  url: null,
+  type: { id: "type-1", name: "snippet", icon: "Code", color: "#3b82f6" },
+  tags: [{ name: "auth" }],
+};
+
+const LISTING_ORDER = [
+  { isPinned: "desc" },
+  { lastUsedAt: { sort: "desc", nulls: "last" } },
+  { updatedAt: "desc" },
+  { id: "asc" },
+];
+
 describe("getItemsByCollection", () => {
-  it("lists the user's items in the collection, pinned first", async () => {
-    mockPrisma.item.findMany.mockResolvedValue([
-      {
-        id: "item-1",
-        title: "useAuth Hook",
-        description: null,
-        isFavorite: false,
-        isPinned: true,
-        lastUsedAt: null,
-        createdAt,
-        fileUrl: null,
-        fileName: null,
-        fileSize: null,
-        contentType: "TEXT",
-        content: "export function useAuth() {}",
-        url: null,
-        type: { id: "type-1", name: "snippet", icon: "Code", color: "#3b82f6" },
-        tags: [{ name: "auth" }],
-      },
-    ] as never);
+  it("lists one page of the user's items in the collection, pinned first", async () => {
+    mockPrisma.item.findMany.mockResolvedValue([SUMMARY_ROW] as never);
+    mockPrisma.item.count.mockResolvedValue(25 as never);
 
-    const items = await getItemsByCollection("user-1", "col-1");
+    const { items, total } = await getItemsByCollection("user-1", "col-1", 2);
 
+    expect(total).toBe(25);
     expect(items).toEqual([
       expect.objectContaining({
         id: "item-1",
@@ -462,16 +473,50 @@ describe("getItemsByCollection", () => {
       }),
     ]);
     expect(items[0]).not.toHaveProperty("content");
-    const [args] = mockPrisma.item.findMany.mock.calls[0];
-    expect(args?.where).toEqual({
+    const where = {
       userId: "user-1",
       collections: { some: { collectionId: "col-1" } },
+    };
+    const [args] = mockPrisma.item.findMany.mock.calls[0];
+    expect(args?.where).toEqual(where);
+    expect(args?.orderBy).toEqual(LISTING_ORDER);
+    expect(args?.skip).toBe(21);
+    expect(args?.take).toBe(21);
+    expect(mockPrisma.item.count).toHaveBeenCalledWith({ where });
+  });
+});
+
+describe("getItemsByTypeSlug", () => {
+  const TYPE = { name: "snippet", slug: "snippets", icon: "Code", color: "#3b82f6" };
+
+  it("returns null without querying items when no type has the slug", async () => {
+    mockPrisma.itemType.findFirst.mockResolvedValue(null);
+
+    await expect(getItemsByTypeSlug("user-1", "nope")).resolves.toBeNull();
+    expect(mockPrisma.item.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.item.count).not.toHaveBeenCalled();
+  });
+
+  it("returns the type with one page of the user's items and the total", async () => {
+    mockPrisma.itemType.findFirst.mockResolvedValue({ id: "type-1", ...TYPE } as never);
+    mockPrisma.item.findMany.mockResolvedValue([SUMMARY_ROW] as never);
+    mockPrisma.item.count.mockResolvedValue(1 as never);
+
+    const listing = await getItemsByTypeSlug("user-1", "snippets");
+
+    expect(listing).toEqual({
+      type: TYPE,
+      items: [expect.objectContaining({ id: "item-1" })],
+      total: 1,
     });
-    expect(args?.orderBy).toEqual([
-      { isPinned: "desc" },
-      { lastUsedAt: { sort: "desc", nulls: "last" } },
-      { updatedAt: "desc" },
-    ]);
+    const [args] = mockPrisma.item.findMany.mock.calls[0];
+    expect(args?.where).toEqual({ userId: "user-1", typeId: "type-1" });
+    expect(args?.orderBy).toEqual(LISTING_ORDER);
+    expect(args?.skip).toBe(0);
+    expect(args?.take).toBe(21);
+    expect(mockPrisma.item.count).toHaveBeenCalledWith({
+      where: { userId: "user-1", typeId: "type-1" },
+    });
   });
 });
 

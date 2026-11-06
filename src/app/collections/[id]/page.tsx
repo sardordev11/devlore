@@ -5,31 +5,44 @@ import { connection } from "next/server";
 import { auth } from "@/auth";
 import { CollectionActions } from "@/components/collections/CollectionActions";
 import { ItemCard } from "@/components/dashboard/ItemCard";
+import { PaginationControls } from "@/components/pagination/PaginationControls";
 import { getCollection } from "@/lib/db/collections";
 import { getItemsByCollection } from "@/lib/db/items";
+import {
+  getPageCount,
+  getPageHref,
+  ITEMS_PER_PAGE,
+  parsePage,
+} from "@/lib/pagination";
 import { getTypeTint } from "@/lib/type-icons";
 
 const DEFAULT_ACCENT = "#6b7280";
 
 export default async function CollectionPage({
   params,
+  searchParams,
 }: PageProps<"/collections/[id]">) {
   // User data must be fetched per request, not prerendered at build time.
   await connection();
   const { id } = await params;
+  const page = parsePage((await searchParams).page);
   const session = await auth();
   if (!session?.user?.id) {
     redirect(`/sign-in?callbackUrl=${encodeURIComponent(`/collections/${id}`)}`);
   }
 
   // Both queries are scoped to the user, so they can run together.
-  const [collection, items] = await Promise.all([
+  const [collection, { items, total }] = await Promise.all([
     getCollection(session.user.id, id),
-    getItemsByCollection(session.user.id, id),
+    getItemsByCollection(session.user.id, id, page),
   ]);
   if (!collection) notFound();
 
-  const countLabel = `${items.length} ${items.length === 1 ? "item" : "items"}`;
+  const pathname = `/collections/${collection.id}`;
+  const pageCount = getPageCount(total, ITEMS_PER_PAGE);
+  if (page > pageCount) redirect(getPageHref(pathname, pageCount));
+
+  const countLabel = `${total} ${total === 1 ? "item" : "items"}`;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
@@ -79,6 +92,8 @@ export default async function CollectionPage({
           No items in this collection yet.
         </p>
       )}
+
+      <PaginationControls pathname={pathname} page={page} pageCount={pageCount} />
     </div>
   );
 }

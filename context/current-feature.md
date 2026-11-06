@@ -1,20 +1,32 @@
-# Current Feature
-
-<!-- Feature Name -->
+# Current Feature: Pagination
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Paginate `/items/[type]` and `/collections/[id]` with numbered page links
+- Pagination controls at the bottom with page numbers plus Prev/Next links
+- Prev/Next disabled (greyed out) when there is no previous/next page
+- Constants: `ITEMS_PER_PAGE = 21`, `COLLECTIONS_PER_PAGE = 21`
+- Dashboard limits as constants: `DASHBOARD_COLLECTIONS_LIMIT = 6`, `DASHBOARD_RECENT_ITEMS_LIMIT = 10`
+- Only fetch the rows a page needs (`skip`/`take` plus a count), never all resources at once
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/pagination-spec.md`
+- 21 per page fits the 3-column grid (7 full rows) on `xl`
+- `COLLECTIONS_PER_PAGE` implies the `/collections` list should be paginated too, though the spec only names `/items/[type]` and `/collections/[id]`; confirm before starting
+- Page number likely from a `?page=` search param; out-of-range or invalid pages need defined behavior (clamp or 404)
+- Existing ordering must stay stable across pages (pinned first, then most recently used; add `id` as a tiebreaker)
+- `/items/files` uses `FileRow` and `/items/images` uses `ImageCard`; pagination applies to them as well
 
 ## History
 

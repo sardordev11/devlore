@@ -7,27 +7,40 @@ import { FileRow } from "@/components/dashboard/FileRow";
 import { ImageCard } from "@/components/dashboard/ImageCard";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
+import { PaginationControls } from "@/components/pagination/PaginationControls";
 import { getItemsByTypeSlug } from "@/lib/db/items";
+import {
+  getPageCount,
+  getPageHref,
+  ITEMS_PER_PAGE,
+  parsePage,
+} from "@/lib/pagination";
 import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
 import { isCreatableTypeSlug } from "@/lib/validations/items";
 
 export default async function ItemsByTypePage({
   params,
+  searchParams,
 }: PageProps<"/items/[type]">) {
   // User data must be fetched per request, not prerendered at build time.
   await connection();
   const { type: slug } = await params;
+  const page = parsePage((await searchParams).page);
   const session = await auth();
   if (!session?.user?.id) {
     redirect(`/sign-in?callbackUrl=${encodeURIComponent(`/items/${slug}`)}`);
   }
 
-  const listing = await getItemsByTypeSlug(session.user.id, slug);
+  const listing = await getItemsByTypeSlug(session.user.id, slug, page);
   if (!listing) notFound();
 
-  const { type, items } = listing;
+  const { type, items, total } = listing;
+  const pathname = `/items/${type.slug}`;
+  const pageCount = getPageCount(total, ITEMS_PER_PAGE);
+  if (page > pageCount) redirect(getPageHref(pathname, pageCount));
+
   const title = type.slug.charAt(0).toUpperCase() + type.slug.slice(1);
-  const countLabel = `${items.length} ${items.length === 1 ? type.name : type.slug}`;
+  const countLabel = `${total} ${total === 1 ? type.name : type.slug}`;
   const isGallery = type.slug === "images";
   const isFileList = type.slug === "files";
 
@@ -83,6 +96,8 @@ export default async function ItemsByTypePage({
           No {type.slug} yet.
         </p>
       )}
+
+      <PaginationControls pathname={pathname} page={page} pageCount={pageCount} />
     </div>
   );
 }
