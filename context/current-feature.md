@@ -1,4 +1,4 @@
-# Current Feature: New Item Refresh Fix
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,24 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- After creating an item from the New Item dialog, the current page (e.g. `/collections/[id]`, `/items/[type]`, dashboard) shows the new item when the "Item created" toast appears, without a reload
-- Refresh from the `createItem` server action with `refresh()` from `next/cache`, so the updated page comes back in the action's response instead of a separate client `router.refresh()` round trip after the toast
-- Remove `router.refresh()` from `CreateItemDialog`
-- Unit tests: `createItem` action calls `refresh()` on success only
-- Don't touch the Favorite button
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Measured in the browser: the toast showed after the action returned, then `router.refresh()` streamed the re-rendered page ~1.8s later, so the page showed "0 items" under an "Item created" toast.
-- With `refresh()` in the action the separate refresh request is gone, but Next still resolves the action result before the refreshed tree finishes streaming, so in dev the item can appear ~1.3s after the toast (mostly Neon latency in dev). Option 1 chosen: keep the server-side `refresh()` only; no optimistic UI.
 
 ## History
 
@@ -67,3 +58,4 @@ In Progress
 - **Add Items to Collections** — Collections multi-select (`CollectionPicker` in `src/components/items/`, shadcn dropdown-menu checkbox items, no new components) in `CreateItemDialog` for every type and in `ItemEditForm` preselected with the item's collections, replacing the read-only Collections section while editing (`showCollections` prop on `ItemMetaSections`); options loaded on mount by `useCollectionOptions` (`src/hooks/use-collection-options.ts`) via a `getCollectionOptions` server action and query scoped to the user (sorted by name), with loading, error and "No collections yet" states; `collectionIds` in `createItemSchema` (default `[]`) and `updateItemSchema` (omitted leaves collections unchanged, `[]` removes all), deduped and capped at `MAX_ITEM_COLLECTIONS` (100); `ownsCollections` in `src/lib/db/collections.ts` checked by the `createItem`/`updateItem` actions before writing ("Collection not found" field error, uploaded file removed on create); `createItem` query creates the `ItemCollection` rows and `updateItem` replaces them via `deleteMany` + `connectOrCreate`, keeping `addedAt` for existing links; `router.refresh()` updates the drawer, dashboard cards and sidebar counts; unit tests for the schemas, queries and actions; not checked in the browser (Playwright browser was in use) (Completed)
 - **Collection Pages** — protected `/collections` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing all of the user's collections as `CollectionCard`s (favorites first, then most recently updated) via `getAllCollections` in `src/lib/db/collections.ts`, header with the collection count, empty state and loading skeleton; protected `/collections/[id]` route with a folder icon tinted by the collection's accent color, name, favorite star, item count and description, items as `ItemCard`s for every type (collections mix types, so no `ImageCard`/`FileRow`) opening the item drawer, pinned first then most recently used via `getItemsByCollection` in `src/lib/db/items.ts`, collection via `getCollection` (`findFirst` on id + user id, both queries run in parallel), 404 for unknown or other users' collections, empty state and loading skeleton; existing sidebar and card links to `/collections` and `/collections/[id]` now resolve; unit tests for the three query functions; checked in the browser at 1440px (list, detail, drawer, empty collection, 404) (Completed)
 - **Collection Actions** — Favorite, Edit and Delete buttons in the `/collections/[id]` header (`CollectionActions`) and a 3-dots dropdown on `CollectionCard` (`CollectionActionsMenu`) on `/collections` and the dashboard, both opening shared controlled dialogs in `src/components/collections/`; Favorite is display only (filled yellow star when `isFavorite`, no toggle yet); `EditCollectionDialog` with Name and Description prefilled (form mounted only while open), "Collection updated" toast and `router.refresh()`; `DeleteCollectionDialog` (`AlertDialog` naming the collection and saying its items are kept, "Deleting…" state, "Collection deleted" toast, optional `redirectTo` used by the detail page to go back to `/collections`); `CollectionCard` restructured so the title link stretches over the card with `::after` and the menu button sits above it (no button nested in a link, focus ring via `has-[a:focus-visible]`); `updateCollectionSchema` (same rules as create via a shared fields schema) and `collectionIdSchema` in `src/lib/validations/collections.ts`; `updateCollection` and `deleteCollection` server actions in `src/actions/collections.ts` (session check, id validation, `fieldErrors`, "Collection not found") and queries in `src/lib/db/collections.ts` with `userId` in the where (P2025 → null), delete removing only the collection and cascading its `ItemCollection` links; `CollectionMeta` type in `src/types/collections.ts`; unit tests for the schemas, queries and actions; checked in the browser at 1440px (card menu, edit from the card, card click navigation, delete from the detail page with redirect, item kept after delete, dashboard menus) (Completed)
+- **New Item Refresh Fix** — after creating an item from the New Item dialog the page showed stale data under the "Item created" toast because `CreateItemDialog` called `router.refresh()` only after the toast, adding a separate round trip (~1.8s in dev); `createItem` in `src/actions/items.ts` now calls `refresh()` from `next/cache` on success so the refreshed page comes back with the action's response, and the client `router.refresh()` was removed; Next still resolves the action result before the refreshed tree finishes streaming, so in dev (Neon latency) the item can still appear ~1.3s after the toast; optimistic UI considered and not done; unit tests check `refresh()` runs only on success; checked in the browser on `/collections/[id]` (Completed)
