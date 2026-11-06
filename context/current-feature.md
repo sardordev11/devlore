@@ -1,4 +1,4 @@
-# Current Feature: Collection Actions (Edit, Delete, Favorite)
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,38 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- `/collections/[id]` header gets Edit, Delete and Favorite buttons
-- Favorite is display only for now: icon/button reflects `isFavorite` (filled yellow star when favorited) but doesn't toggle anything
-- Edit opens a modal (shadcn `Dialog`) to edit the collection's metadata: Name (required) and Description (optional), prefilled with current values
-- `updateCollectionSchema` in `src/lib/validations/collections.ts` reusing the create rules (trimmed name 1–100, description up to 500, blank description → null)
-- `updateCollection` server action in `src/actions/collections.ts` (session check, Zod validation with `fieldErrors`, `{ success, data, error }`) and `updateCollection` query in `src/lib/db/collections.ts` with `userId` in the where for ownership (P2025 → not found)
-- Delete opens a shadcn `AlertDialog` confirmation naming the collection, making clear its items are kept; destructive Delete with a "Deleting…" pending state
-- `deleteCollection` server action + query scoped to the user; only the collection and its `ItemCollection` links are removed — **items are never deleted**, they just no longer belong to that collection
-- After deleting from `/collections/[id]`, redirect to `/collections`; after editing, `router.refresh()`
-- "Collection updated" / "Collection deleted" toasts, error toasts on failure
-- `CollectionCard` (on `/collections` and the dashboard) gets a 3-dots (`MoreHorizontal`) button opening a shadcn dropdown with Edit, Delete and Favorite
-  - Edit and Delete open the same dialogs as the detail page
-  - Favorite is display only (no action yet)
-  - Clicking anywhere else on the card navigates to `/collections/[id]`
-  - Opening the menu or using its items must not trigger card navigation
-- `router.refresh()` updates the dashboard grid, collection stats, sidebar favorites/recents and the `/collections` list
-- Unit tests for the new schema, query functions and server actions
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- `ItemCollection` already cascades on collection delete (`onDelete: Cascade` on the collection relation), while `Item` has no relation back that would delete it, so a plain `collection.delete` keeps items intact. Verify in tests that only the collection is deleted.
-- `CollectionCard` is currently a `<Link>` wrapping the whole card. Nesting a button inside a link is invalid HTML, so restructure: make the card a positioned container with the link as a stretched overlay (or the card body) and the menu button as a sibling above it, rather than calling `preventDefault` inside the link.
-- `CollectionCard` is a server component; the menu and dialogs need a small client component (e.g. `CollectionActionsMenu`) so the card itself can stay server-rendered.
-- Share the edit and delete dialogs between the detail page and the card menu (e.g. `EditCollectionDialog`, `DeleteCollectionDialog` in `src/components/collections/`), reusing `CreateCollectionDialog`'s field patterns and `COLLECTION_NAME_MAX`/`COLLECTION_DESCRIPTION_MAX`.
-- Favorite toggling (server action, persistence) is out of scope for this feature.
 
 ## History
 
@@ -80,3 +57,4 @@ In Progress
 - **Collection Create** — the top bar's "New Collection" button opens a shadcn `Dialog` (`CreateCollectionDialog` in `src/components/collections/`) with a required Name and optional Description; `createCollectionSchema` in `src/lib/validations/collections.ts` (trimmed name 1–100 chars, description up to 500, blank description stored as null, `COLLECTION_NAME_MAX`/`COLLECTION_DESCRIPTION_MAX` shared with the inputs' `maxLength`); `createCollection` server action in `src/actions/collections.ts` (session check, Zod validation with `fieldErrors`, `{ success, data, error }`, user id only from the session); `createCollection` query in `src/lib/db/collections.ts` scoped to the user, no default type; "Collection created" toast, dialog closes and resets, `router.refresh()` updates the dashboard grid, collection stats and sidebar recents; inline field errors and error toast on failure, Create disabled without a name and "Creating…" while pending; unit tests for the schema, query function and server action; checked in the browser (new collection appeared in the grid and sidebar, Collections stat 5 → 6) (Completed)
 - **Add Items to Collections** — Collections multi-select (`CollectionPicker` in `src/components/items/`, shadcn dropdown-menu checkbox items, no new components) in `CreateItemDialog` for every type and in `ItemEditForm` preselected with the item's collections, replacing the read-only Collections section while editing (`showCollections` prop on `ItemMetaSections`); options loaded on mount by `useCollectionOptions` (`src/hooks/use-collection-options.ts`) via a `getCollectionOptions` server action and query scoped to the user (sorted by name), with loading, error and "No collections yet" states; `collectionIds` in `createItemSchema` (default `[]`) and `updateItemSchema` (omitted leaves collections unchanged, `[]` removes all), deduped and capped at `MAX_ITEM_COLLECTIONS` (100); `ownsCollections` in `src/lib/db/collections.ts` checked by the `createItem`/`updateItem` actions before writing ("Collection not found" field error, uploaded file removed on create); `createItem` query creates the `ItemCollection` rows and `updateItem` replaces them via `deleteMany` + `connectOrCreate`, keeping `addedAt` for existing links; `router.refresh()` updates the drawer, dashboard cards and sidebar counts; unit tests for the schemas, queries and actions; not checked in the browser (Playwright browser was in use) (Completed)
 - **Collection Pages** — protected `/collections` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`) listing all of the user's collections as `CollectionCard`s (favorites first, then most recently updated) via `getAllCollections` in `src/lib/db/collections.ts`, header with the collection count, empty state and loading skeleton; protected `/collections/[id]` route with a folder icon tinted by the collection's accent color, name, favorite star, item count and description, items as `ItemCard`s for every type (collections mix types, so no `ImageCard`/`FileRow`) opening the item drawer, pinned first then most recently used via `getItemsByCollection` in `src/lib/db/items.ts`, collection via `getCollection` (`findFirst` on id + user id, both queries run in parallel), 404 for unknown or other users' collections, empty state and loading skeleton; existing sidebar and card links to `/collections` and `/collections/[id]` now resolve; unit tests for the three query functions; checked in the browser at 1440px (list, detail, drawer, empty collection, 404) (Completed)
+- **Collection Actions** — Favorite, Edit and Delete buttons in the `/collections/[id]` header (`CollectionActions`) and a 3-dots dropdown on `CollectionCard` (`CollectionActionsMenu`) on `/collections` and the dashboard, both opening shared controlled dialogs in `src/components/collections/`; Favorite is display only (filled yellow star when `isFavorite`, no toggle yet); `EditCollectionDialog` with Name and Description prefilled (form mounted only while open), "Collection updated" toast and `router.refresh()`; `DeleteCollectionDialog` (`AlertDialog` naming the collection and saying its items are kept, "Deleting…" state, "Collection deleted" toast, optional `redirectTo` used by the detail page to go back to `/collections`); `CollectionCard` restructured so the title link stretches over the card with `::after` and the menu button sits above it (no button nested in a link, focus ring via `has-[a:focus-visible]`); `updateCollectionSchema` (same rules as create via a shared fields schema) and `collectionIdSchema` in `src/lib/validations/collections.ts`; `updateCollection` and `deleteCollection` server actions in `src/actions/collections.ts` (session check, id validation, `fieldErrors`, "Collection not found") and queries in `src/lib/db/collections.ts` with `userId` in the where (P2025 → null), delete removing only the collection and cascading its `ItemCollection` links; `CollectionMeta` type in `src/types/collections.ts`; unit tests for the schemas, queries and actions; checked in the browser at 1440px (card menu, edit from the card, card click navigation, delete from the detail page with redirect, item kept after delete, dashboard menus) (Completed)
