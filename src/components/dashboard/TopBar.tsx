@@ -1,9 +1,6 @@
-import { Search } from "lucide-react";
-
 import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
-import { Input } from "@/components/ui/input";
-import { Kbd } from "@/components/ui/kbd";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function TopBar() {
@@ -16,16 +13,7 @@ export function TopBar() {
         </span>
         <span className="hidden text-lg font-bold sm:inline">DevLore</span>
       </div>
-      <div className="relative w-full">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search items..."
-          aria-label="Search items"
-          className="pr-12 pl-8"
-        />
-        <Kbd className="absolute top-1/2 right-2 -translate-y-1/2">⌘ K</Kbd>
-      </div>
+      <GlobalSearch />
       <div className="flex items-center justify-end gap-2">
         <CreateCollectionDialog />
         <CreateItemDialog />

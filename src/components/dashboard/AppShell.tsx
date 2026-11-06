@@ -13,13 +13,16 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <TooltipProvider>
       <SidebarProvider className="h-dvh flex-col">
-        <TopBar />
-        <div className="relative flex min-h-0 flex-1">
-          <AppSidebar />
-          <SidebarInset className="min-w-0 overflow-y-auto p-6">
-            <ItemDrawerProvider>{children}</ItemDrawerProvider>
-          </SidebarInset>
-        </div>
+        {/* Wraps the top bar too, so the command palette can open items. */}
+        <ItemDrawerProvider>
+          <TopBar />
+          <div className="relative flex min-h-0 flex-1">
+            <AppSidebar />
+            <SidebarInset className="min-w-0 overflow-y-auto p-6">
+              {children}
+            </SidebarInset>
+          </div>
+        </ItemDrawerProvider>
       </SidebarProvider>
     </TooltipProvider>
   );

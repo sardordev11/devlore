@@ -7,6 +7,7 @@ import {
   getItemDetail,
   getItemFile,
   getItemsByCollection,
+  getSearchItems,
   isFileKeyInUse,
   updateItem,
 } from "@/lib/db/items";
@@ -471,5 +472,84 @@ describe("getItemsByCollection", () => {
       { lastUsedAt: { sort: "desc", nulls: "last" } },
       { updatedAt: "desc" },
     ]);
+  });
+});
+
+describe("getSearchItems", () => {
+  it("scopes to the user and maps rows to search items with a preview", async () => {
+    mockPrisma.item.findMany.mockResolvedValue([
+      {
+        id: "item-1",
+        title: "useAuth Hook",
+        contentType: "TEXT",
+        content: "export function\n  useAuth() {}",
+        url: null,
+        fileName: null,
+        type: { name: "snippet", icon: "Code", color: "#3b82f6" },
+      },
+      {
+        id: "item-2",
+        title: "Next.js docs",
+        contentType: "URL",
+        content: null,
+        url: "https://nextjs.org/docs",
+        fileName: null,
+        type: { name: "link", icon: "Link", color: "#10b981" },
+      },
+    ] as never);
+
+    const items = await getSearchItems("user-1");
+
+    expect(mockPrisma.item.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "user-1" } }),
+    );
+    expect(items).toEqual([
+      {
+        id: "item-1",
+        title: "useAuth Hook",
+        preview: "export function useAuth() {}",
+        type: { name: "snippet", icon: "Code", color: "#3b82f6" },
+      },
+      {
+        id: "item-2",
+        title: "Next.js docs",
+        preview: "https://nextjs.org/docs",
+        type: { name: "link", icon: "Link", color: "#10b981" },
+      },
+    ]);
+  });
+});
+
+describe("getSearchItems for files", () => {
+  it("orders by recent use and previews files by their file name", async () => {
+    mockPrisma.item.findMany.mockResolvedValue([
+      {
+        id: "item-3",
+        title: "Architecture diagram",
+        contentType: "FILE",
+        content: null,
+        url: null,
+        fileName: "architecture.pdf",
+        type: { name: "file", icon: "File", color: "#6b7280" },
+      },
+    ] as never);
+
+    const [item] = await getSearchItems("user-1");
+
+    expect(mockPrisma.item.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [
+          { lastUsedAt: { sort: "desc", nulls: "last" } },
+          { updatedAt: "desc" },
+        ],
+      }),
+    );
+    expect(item.preview).toBe("architecture.pdf");
+  });
+
+  it("returns an empty list when the user has no items", async () => {
+    mockPrisma.item.findMany.mockResolvedValue([]);
+
+    await expect(getSearchItems("user-1")).resolves.toEqual([]);
   });
 });

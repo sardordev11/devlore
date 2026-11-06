@@ -6,7 +6,9 @@ import { getCopyValue } from "@/lib/copy-value";
 import { isPrismaError, PRISMA_ERROR } from "@/lib/db/prisma-errors";
 import { prisma } from "@/lib/prisma";
 import { getFileUrl } from "@/lib/r2";
+import { getContentPreview } from "@/lib/search";
 import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
+import type { SearchItem } from "@/types/search";
 
 interface ItemSummaryType {
   id: string;
@@ -232,6 +234,30 @@ export async function getItemsByCollection(
   });
 
   return items.map(toItemSummary);
+}
+
+// Every item of the user for the command palette, most recently used first.
+export async function getSearchItems(userId: string): Promise<SearchItem[]> {
+  const items = await prisma.item.findMany({
+    where: { userId },
+    orderBy: RECENT_ORDER,
+    select: {
+      id: true,
+      title: true,
+      contentType: true,
+      content: true,
+      url: true,
+      fileName: true,
+      type: { select: { name: true, icon: true, color: true } },
+    },
+  });
+
+  return items.map(({ id, title, type, ...source }) => ({
+    id,
+    title,
+    preview: getContentPreview(source),
+    type,
+  }));
 }
 
 // Returns null when the item doesn't exist or belongs to another user.
