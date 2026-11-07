@@ -1,4 +1,4 @@
-# Current Feature: Favorites Page
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,30 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Star icon button in the TopBar linking to `/favorites`
-- Protected `/favorites` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`)
-- Fetch all of the signed-in user's favorited items and collections
-- Compact list view (VS Code/terminal style, not cards)
-- Each row: type icon, title, type badge, date added
-- Separate Items and Collections sections, each with a count
-- Clicking an item opens the `ItemDrawer`; clicking a collection navigates to `/collections/[id]`
-- Empty state when there are no favorites
-- Sorted by most recently favorited (`updatedAt` desc)
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- UI style: monospace or semi-monospace font, minimal padding, high density, subtle hover states, no cards or heavy borders, clean lines only
-- Spec: `context/features/favorites-spec.md`
-- There's no `favoritedAt` field, so "most recently favorited" uses `updatedAt` as the spec says (any edit also bumps it)
-- Favorite toggling is still display only in the drawer and on collections, so favorites currently come from seed data or the database
 
 ## History
 
@@ -78,3 +63,4 @@ In Progress
 - **Pagination** — numbered page links with Prev/Next at the bottom of `/items/[type]` (including the Files list and Images gallery), `/collections/[id]` and `/collections` (also paginated since the spec defines `COLLECTIONS_PER_PAGE`), via `PaginationControls` in `src/components/pagination/` on the shadcn `pagination` component (its broken `cn` import fixed, links switched to `next/link`), hidden for a single page, Prev/Next greyed out with `aria-disabled` and no href at the ends; `src/lib/pagination.ts` with `ITEMS_PER_PAGE`/`COLLECTIONS_PER_PAGE` (21), `DASHBOARD_COLLECTIONS_LIMIT` (6) and `DASHBOARD_RECENT_ITEMS_LIMIT` (10) now used as the dashboard query defaults, `parsePage` (invalid values → 1, capped at `MAX_PAGE`), `getPageCount`, `getPageOffset`, `getPageNumbers` (first, last and neighbors with ellipses, a single skipped page shown instead of an ellipsis) and `getPageHref` (page 1 is the bare path); `getItemsByTypeSlug` and `getItemsByCollection` in `src/lib/db/items.ts` and a new `getCollectionsPage` in `src/lib/db/collections.ts` fetch only one page with `skip`/`take` plus a `count`, sort orders end with `id` so pages never overlap, `getAllCollections` kept for the command palette; out-of-range pages redirect to the last page, headers show the total count; unit tests for the utilities and queries; checked in the browser at 1440px with the page size temporarily set to 2 (Completed)
 - **Settings Page** — protected `/settings` route (added to the `src/proxy.ts` matcher, session check with a `callbackUrl=/settings` sign-in redirect, wrapped in `AppShell`) with the Account section moved from `/profile`: Change password (only for users with a `passwordHash`) and Delete account, flows and server actions unchanged; "Settings" link in the sidebar user menu between Profile and Sign out; `ChangePasswordDialog` and `DeleteAccountDialog` moved to `src/components/settings/`; `getAccountSettings` in `src/lib/db/settings.ts` (just `hasPassword`, so the page skips the profile stats) with unit tests, `hasPassword` dropped from `getProfile`; `/profile` now shows only the user card and Usage, with a shorter skeleton; settings loading skeleton; the spec's "forgot password" read as Change password since Forgot password lives on `/sign-in`; checked in the browser (menu link, settings page, profile without account actions, delete dialog) (Completed)
 - **Editor Preferences Settings** — Editor section on `/settings` (above Account) with Font size (12/13/14/15/16/18/20px, default 13) and Tab size (2/4/8, default 2) shadcn selects, Word wrap (default on) and Minimap (default off) switches and a Theme select (VS Dark, Monokai, GitHub Dark; default vs-dark), each change auto-saved with an "Editor preferences saved" toast and no save button; `editorPreferences Json?` column on `User` via the `add_user_editor_preferences` migration; options, defaults, the strict `editorPreferencesSchema` and `parseEditorPreferences` (null, partial or invalid stored JSON falls back to defaults per field) in `src/lib/editor-preferences.ts`; `getEditorPreferences`/`updateEditorPreferences` queries in `src/lib/db/settings.ts` (P2025 → null) and an `updateEditorPreferences` server action in `src/actions/settings.ts` (session check, Zod validation, user id only from the session, `{ success, data, error }`); `EditorPreferencesContext` (`src/components/settings/`) provided by `AppShell` with an unawaited `loadEditorPreferences()` promise read via `use()` so the shell isn't blocked, optimistic updates rolled back with an error toast if the latest save fails; `CodeEditor` applies font size (line height scaled), tab size, word wrap, minimap and theme, with Monokai and GitHub Dark Monaco themes plus the existing scrollbar styling in `src/components/items/monaco-themes.ts` and a theme-matched frame background via a new `className` prop on `EditorFrame`; shadcn select and switch added (broken `cn` import fixed); settings loading skeleton updated; unit tests for the schema and fallback, queries and action; checked in the browser at 1440px and 390px (auto-save toast, persistence after reload, Monokai/16px/minimap in the drawer, GitHub Dark in the New Item editor) (Completed)
+- **Favorites Page** — star icon button in the TopBar (ghost icon `Button` rendering a `next/link`) linking to a protected `/favorites` route (added to the `src/proxy.ts` matcher, session check with a `callbackUrl=/favorites` sign-in redirect, wrapped in `AppShell`) with a filled yellow star next to the title and an item/collection count; `getFavoriteItems` in `src/lib/db/items.ts` and `getFavoriteCollections` in `src/lib/db/collections.ts` (reusing the grouped type-count query for the accent color), both scoped to the user, `isFavorite` only, sorted by `updatedAt` desc then `id` since there's no `favoritedAt`, run in parallel; compact monospace Items and Collections sections (`FavoritesSection` in `src/components/favorites/`, line-separated, counts in the headers, one-line empty message per section) of dense `FavoriteRow`s with the type-colored icon, title, a type-colored outline badge (type name for items, item count tinted by the accent color for collections; hidden below `sm`) and the date; item rows open the item drawer via `ItemDrawerTrigger`, collection rows link to `/collections/[id]`; "No favorites yet" empty state; dates shown as "Today, 3:42 PM", "Yesterday", "4 days ago", "Last week", "2 weeks ago", "5 months ago", "1 year ago" via `formatRelativeDate` in `src/lib/format-date.ts` (calendar days in the local time zone, future dates as today), rendered by a client `RelativeTime` with the full date on hover and a shared per-minute clock from `useNow` (`src/hooks/use-now.ts`, `useSyncExternalStore`, plain UTC date during server render and hydration); loading skeleton; unit tests for both queries and the relative formatter; checked in the browser at 1440px and 390px (drawer from a row, collection navigation; empty state not seen since the demo user has favorites) (Completed)
