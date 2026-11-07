@@ -1,30 +1,20 @@
-# Current Feature: Pinned Items
+# Current Feature
+
+<!-- Feature Name -->
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- `toggleItemPin` server action (session check, Zod validation, user id only from the session, `{ success, data, error }`)
-- Pin button in the item drawer becomes clickable (it exists but has no `onClick`)
-- Optimistic UI: the pin state flips immediately and rolls back on failure
-- Toast on success and on error
-- Pinned items sort to the top of listings and appear in the dashboard's Pinned section
-- Follow the Favorite button pattern (`FavoriteButton`, `useFavoriteToggle`, `toggleItemFavorite`)
-- Items only, not collections
-- Pin icon on `ItemCard` stays a static indicator (no toggle on cards)
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/pinned-spec.md`
-- Listings already sort pinned first (`/items/[type]`, `/collections/[id]`) and the dashboard already has a Pinned section, so the main work is the toggle plus a refresh after it
 
 ## History
 
@@ -76,3 +66,4 @@ In Progress
 - **Favorites Page** — star icon button in the TopBar (ghost icon `Button` rendering a `next/link`) linking to a protected `/favorites` route (added to the `src/proxy.ts` matcher, session check with a `callbackUrl=/favorites` sign-in redirect, wrapped in `AppShell`) with a filled yellow star next to the title and an item/collection count; `getFavoriteItems` in `src/lib/db/items.ts` and `getFavoriteCollections` in `src/lib/db/collections.ts` (reusing the grouped type-count query for the accent color), both scoped to the user, `isFavorite` only, sorted by `updatedAt` desc then `id` since there's no `favoritedAt`, run in parallel; compact monospace Items and Collections sections (`FavoritesSection` in `src/components/favorites/`, line-separated, counts in the headers, one-line empty message per section) of dense `FavoriteRow`s with the type-colored icon, title, a type-colored outline badge (type name for items, item count tinted by the accent color for collections; hidden below `sm`) and the date; item rows open the item drawer via `ItemDrawerTrigger`, collection rows link to `/collections/[id]`; "No favorites yet" empty state; dates shown as "Today, 3:42 PM", "Yesterday", "4 days ago", "Last week", "2 weeks ago", "5 months ago", "1 year ago" via `formatRelativeDate` in `src/lib/format-date.ts` (calendar days in the local time zone, future dates as today), rendered by a client `RelativeTime` with the full date on hover and a shared per-minute clock from `useNow` (`src/hooks/use-now.ts`, `useSyncExternalStore`, plain UTC date during server render and hydration); loading skeleton; unit tests for both queries and the relative formatter; checked in the browser at 1440px and 390px (drawer from a row, collection navigation; empty state not seen since the demo user has favorites) (Completed)
 - **Favorite Toggle** — star toggle for items and collections in the item drawer (labelled Favorite button), the `/collections/[id]` header, the `CollectionCard` 3-dots menu and as an icon button on `ItemCard`, `ImageCard`, `FileRow` and `CollectionCard` (replacing the display-only star indicators; filled yellow when favorited, muted outline otherwise), all via a shared `FavoriteButton` in `src/components/favorites/` that stops click and keydown propagation so the drawer and card link don't fire; `useFavoriteToggle` hook (`src/hooks/use-favorite-toggle.ts`) flips the star immediately, rolls back with an error toast on failure, ignores clicks while a save is pending and follows the prop after the refresh; "Added to favorites" / "Removed from favorites" toasts; `toggleItemFavorite` in `src/actions/items.ts` and `toggleCollectionFavorite` in `src/actions/collections.ts` (session check, id schema plus `z.boolean()` for the new value, user id only from the session, `{ success, data, error }` via a shared `FavoriteResult` in `src/types/favorites.ts`, "Item not found" / "Collection not found", `refresh()` from `next/cache` on success); `setItemFavorite`/`setCollectionFavorite` queries setting an explicit value with `userId` in the where (P2025 → null); the drawer updates its item via a new `onUpdated` prop on `ItemDrawerActions`; Files list header spacer widened for the extra button; toggling bumps `updatedAt`, so toggled items and collections move up in `updatedAt`-sorted lists; unit tests for the queries and actions; checked in the browser at 1440px (dashboard collection card with stats and sidebar updating, drawer both ways, file row star without opening the drawer, collection header) (Completed)
 - **Favorites Sorting** — "Sort by" shadcn `Select` next to the `/favorites` header with Date (default, newest first), Name (A–Z, case-insensitive, natural numbers, ties newest first) and Type (by type name, newest first within a type; collections by their dominant type, empty ones last), applied to both Items and Collections on the client via `sortFavorites` in `src/lib/favorites-sort.ts`; new client `FavoritesList` (`src/components/favorites/`) receiving serializable `FavoriteEntry` rows (`src/types/favorites.ts`, ISO dates; `FavoriteRow` now takes a date string) mapped by the server page, item rows still opening the drawer and collection rows linking to `/collections/[id]`; the sort is kept in `?sort=name|type` (bare URL for Date) via `history.replaceState` with no server round trip, and in a `favorites-sort` cookie (path `/favorites`, 1 year) the server falls back to when there's no valid `?sort=` (`resolveFavoriteSort`), so reloads, Back and returning via the top bar star keep the last choice without a Date flash; `FavoritesList` keyed by the resolved sort; loading skeleton gains the select placeholder; unit tests for sorting, `parseFavoriteSort`, `resolveFavoriteSort`, `getFavoriteSortHref` and `getFavoriteSortCookie`; checked in the browser at 1440px and 390px (all three sorts, drawer from a sorted row, Back from a collection, leaving and returning via the star, fresh load from the cookie) (Completed)
+- **Pinned Items** — Pin toggle in the item drawer via `PinButton` (`src/components/items/PinButton.tsx`, labelled "Pin" / "Pinned") and a `usePinToggle` hook (`src/hooks/use-pin-toggle.ts`) following the favorite pattern: flips immediately, rolls back with an error toast on failure, ignores clicks while a save is pending and follows the prop after the refresh; "Item pinned" / "Item unpinned" toasts; `toggleItemPin` in `src/actions/items.ts` (session check, `itemIdSchema` plus `z.boolean()`, user id only from the session, `{ success, data, error }` via a new `PinResult` in `src/types/items.ts`, "Item not found", `refresh()` from `next/cache` on success); `setItemPinned` query with `userId` in the where (P2025 → null); the drawer updates its item through the existing `onUpdated`; listings already sort pinned first (`LISTING_ORDER`) and the dashboard Pinned section uses `getPinnedItems`, so no query changes; card pin icons stay static; the "DL DevLore" brand in the TopBar now links to `/dashboard`; pinning bumps `updatedAt`; unit tests for the query and action; checked in the browser (pin in the drawer, pinned item first on `/items/commands` after reload, unpin toast, brand link) (Completed)
