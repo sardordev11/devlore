@@ -10,6 +10,7 @@ import {
   deleteItem as deleteItemQuery,
   isFileKeyInUse,
   setItemFavorite,
+  setItemPinned,
   updateItem as updateItemQuery,
   type ItemDetail,
 } from "@/lib/db/items";
@@ -20,7 +21,11 @@ import {
   updateItemSchema,
 } from "@/lib/validations/items";
 import type { FavoriteResult } from "@/types/favorites";
-import type { ItemDetailJson, ItemDetailResponse } from "@/types/items";
+import type {
+  ItemDetailJson,
+  ItemDetailResponse,
+  PinResult,
+} from "@/types/items";
 
 type CreateItemResult =
   | ItemDetailResponse
@@ -188,6 +193,36 @@ export async function toggleItemFavorite(
     return {
       success: false,
       error: "Couldn't update favorites. Please try again.",
+    };
+  }
+}
+
+// Like toggleItemFavorite, takes the new value rather than flipping the stored one.
+export async function toggleItemPin(
+  itemId: unknown,
+  isPinned: unknown,
+): Promise<PinResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in" };
+  }
+
+  const id = itemIdSchema.safeParse(itemId);
+  if (!id.success) return { success: false, error: "Item not found" };
+  const value = z.boolean().safeParse(isPinned);
+  if (!value.success) return { success: false, error: "Invalid pin value" };
+
+  try {
+    const item = await setItemPinned(session.user.id, id.data, value.data);
+    if (!item) return { success: false, error: "Item not found" };
+
+    refresh();
+    return { success: true, data: item };
+  } catch (error) {
+    console.error("Toggle item pin failed:", error);
+    return {
+      success: false,
+      error: "Couldn't update the pin. Please try again.",
     };
   }
 }

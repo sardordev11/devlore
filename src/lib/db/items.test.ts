@@ -12,6 +12,7 @@ import {
   getSearchItems,
   isFileKeyInUse,
   setItemFavorite,
+  setItemPinned,
   updateItem,
 } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
@@ -651,6 +652,44 @@ describe("setItemFavorite", () => {
     mockPrisma.item.update.mockRejectedValue(new Error("db down"));
 
     await expect(setItemFavorite("user-1", "item-1", true)).rejects.toThrow(
+      "db down",
+    );
+  });
+});
+
+describe("setItemPinned", () => {
+  it("sets the given value on the user's item", async () => {
+    mockPrisma.item.update.mockResolvedValue({
+      id: "item-1",
+      isPinned: true,
+    } as never);
+
+    await expect(setItemPinned("user-1", "item-1", true)).resolves.toEqual({
+      id: "item-1",
+      isPinned: true,
+    });
+    expect(mockPrisma.item.update).toHaveBeenCalledWith({
+      where: { id: "item-1", userId: "user-1" },
+      data: { isPinned: true },
+      select: { id: true, isPinned: true },
+    });
+  });
+
+  it("returns null for unknown or other users' items", async () => {
+    mockPrisma.item.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Record not found", {
+        code: "P2025",
+        clientVersion: "test",
+      }),
+    );
+
+    await expect(setItemPinned("user-1", "item-other", false)).resolves.toBeNull();
+  });
+
+  it("rethrows other errors", async () => {
+    mockPrisma.item.update.mockRejectedValue(new Error("db down"));
+
+    await expect(setItemPinned("user-1", "item-1", true)).rejects.toThrow(
       "db down",
     );
   });

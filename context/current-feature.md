@@ -1,20 +1,30 @@
-# Current Feature
-
-<!-- Feature Name -->
+# Current Feature: Pinned Items
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- `toggleItemPin` server action (session check, Zod validation, user id only from the session, `{ success, data, error }`)
+- Pin button in the item drawer becomes clickable (it exists but has no `onClick`)
+- Optimistic UI: the pin state flips immediately and rolls back on failure
+- Toast on success and on error
+- Pinned items sort to the top of listings and appear in the dashboard's Pinned section
+- Follow the Favorite button pattern (`FavoriteButton`, `useFavoriteToggle`, `toggleItemFavorite`)
+- Items only, not collections
+- Pin icon on `ItemCard` stays a static indicator (no toggle on cards)
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/pinned-spec.md`
+- Listings already sort pinned first (`/items/[type]`, `/collections/[id]`) and the dashboard already has a Pinned section, so the main work is the toggle plus a refresh after it
 
 ## History
 

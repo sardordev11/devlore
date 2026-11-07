@@ -8,6 +8,7 @@ import {
   deleteItem as deleteItemQuery,
   isFileKeyInUse,
   setItemFavorite,
+  setItemPinned,
   updateItem as updateItemQuery,
 } from "@/lib/db/items";
 import { deleteFile } from "@/lib/r2";
@@ -15,6 +16,7 @@ import {
   createItem,
   deleteItem,
   toggleItemFavorite,
+  toggleItemPin,
   updateItem,
 } from "@/actions/items";
 
@@ -36,6 +38,7 @@ vi.mock("@/lib/db/items", () => ({
   deleteItem: vi.fn(),
   isFileKeyInUse: vi.fn(),
   setItemFavorite: vi.fn(),
+  setItemPinned: vi.fn(),
 }));
 
 // auth() is overloaded (session getter and middleware wrapper), so cast the mock
@@ -48,6 +51,7 @@ const mockIsFileKeyInUse = vi.mocked(isFileKeyInUse);
 const mockOwnsCollections = vi.mocked(ownsCollections);
 const mockRefresh = vi.mocked(refresh);
 const mockSetItemFavorite = vi.mocked(setItemFavorite);
+const mockSetItemPinned = vi.mocked(setItemPinned);
 
 const date = new Date("2026-01-15T00:00:00Z");
 
@@ -512,6 +516,66 @@ describe("toggleItemFavorite", () => {
     expect(result).toEqual({
       success: false,
       error: "Couldn't update favorites. Please try again.",
+    });
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+});
+
+describe("toggleItemPin", () => {
+  beforeEach(() => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+  });
+
+  it("requires a session", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await toggleItemPin("item-1", true);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in" });
+    expect(mockSetItemPinned).not.toHaveBeenCalled();
+  });
+
+  it.each([["", true], [123, true], ["item-1", "yes"], ["item-1", undefined]])(
+    "rejects invalid input %j, %j",
+    async (itemId, isPinned) => {
+      const result = await toggleItemPin(itemId, isPinned);
+
+      expect(result.success).toBe(false);
+      expect(mockSetItemPinned).not.toHaveBeenCalled();
+    },
+  );
+
+  it("sets the value for the session user and refreshes the page", async () => {
+    mockSetItemPinned.mockResolvedValue({ id: "item-1", isPinned: true });
+
+    const result = await toggleItemPin("item-1", true);
+
+    expect(result).toEqual({
+      success: true,
+      data: { id: "item-1", isPinned: true },
+    });
+    expect(mockSetItemPinned).toHaveBeenCalledWith("user-1", "item-1", true);
+    expect(mockRefresh).toHaveBeenCalledOnce();
+  });
+
+  it("returns not found for unknown or other users' items", async () => {
+    mockSetItemPinned.mockResolvedValue(null);
+
+    const result = await toggleItemPin("item-other", false);
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
+  it("returns a friendly error when the query fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockSetItemPinned.mockRejectedValue(new Error("db down"));
+
+    const result = await toggleItemPin("item-1", true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Couldn't update the pin. Please try again.",
     });
     expect(mockRefresh).not.toHaveBeenCalled();
   });

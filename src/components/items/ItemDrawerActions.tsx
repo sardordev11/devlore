@@ -1,13 +1,13 @@
 "use client";
 
-import { CopyIcon, DownloadIcon, PencilIcon, PinIcon } from "lucide-react";
+import { CopyIcon, DownloadIcon, PencilIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { DeleteItemDialog } from "@/components/items/DeleteItemDialog";
+import { PinButton } from "@/components/items/PinButton";
 import { Button } from "@/components/ui/button";
 import { getCopyValue } from "@/lib/copy-value";
-import { cn } from "@/lib/utils";
 import type { ItemDetailJson } from "@/types/items";
 
 interface ItemDrawerActionsProps {
@@ -17,7 +17,6 @@ interface ItemDrawerActionsProps {
   onUpdated: (item: ItemDetailJson) => void;
 }
 
-// Pin is display only until its feature lands.
 export function ItemDrawerActions({
   item,
   onEdit,
@@ -45,15 +44,11 @@ export function ItemDrawerActions({
         variant="label"
         onChange={(isFavorite) => onUpdated({ ...item, isFavorite })}
       />
-      <Button
-        variant="ghost"
-        size="sm"
-        aria-pressed={item.isPinned}
-        className={cn(!item.isPinned && "text-muted-foreground")}
-      >
-        <PinIcon className={cn(item.isPinned && "fill-current")} />
-        Pin
-      </Button>
+      <PinButton
+        id={item.id}
+        isPinned={item.isPinned}
+        onChange={(isPinned) => onUpdated({ ...item, isPinned })}
+      />
       <Button
         variant="ghost"
         size="sm"

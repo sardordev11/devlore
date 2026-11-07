@@ -12,10 +12,16 @@ export function TopBar() {
     <header className="grid h-14 shrink-0 grid-cols-[1fr_minmax(0,28rem)_1fr] items-center gap-4 border-b px-4">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
-        <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-          DL
-        </span>
-        <span className="hidden text-lg font-bold sm:inline">DevLore</span>
+        <Link
+          href="/dashboard"
+          aria-label="DevLore dashboard"
+          className="flex items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+            DL
+          </span>
+          <span className="hidden text-lg font-bold sm:inline">DevLore</span>
+        </Link>
       </div>
       <GlobalSearch />
       <div className="flex items-center justify-end gap-2">

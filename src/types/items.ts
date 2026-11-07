@@ -6,5 +6,9 @@ export type ItemDetailJson = Omit<ItemDetail, "createdAt" | "updatedAt"> & {
   updatedAt: string;
 };
 
+export type PinResult =
+  | { success: true; data: { id: string; isPinned: boolean } }
+  | { success: false; error: string };
+
 export type ItemDetailResponse =
   { success: true; data: ItemDetailJson } | { success: false; error: string };

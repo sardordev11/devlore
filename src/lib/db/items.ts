@@ -455,6 +455,23 @@ export async function setItemFavorite(
   }
 }
 
+export async function setItemPinned(
+  userId: string,
+  itemId: string,
+  isPinned: boolean,
+): Promise<{ id: string; isPinned: boolean } | null> {
+  try {
+    return await prisma.item.update({
+      where: { id: itemId, userId },
+      data: { isPinned },
+      select: { id: true, isPinned: true },
+    });
+  } catch (error) {
+    if (isPrismaError(error, PRISMA_ERROR.notFound)) return null;
+    throw error;
+  }
+}
+
 // Returns the deleted item's file URL (if any) so the caller can remove the file,
 // or null when the item doesn't exist or belongs to another user.
 // Collection links cascade; tags are left in place.
