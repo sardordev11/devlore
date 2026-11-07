@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Favorites Page
 
 <!-- Feature Name -->
 
@@ -6,15 +6,30 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Star icon button in the TopBar linking to `/favorites`
+- Protected `/favorites` route (added to the `src/proxy.ts` matcher, wrapped in `AppShell`)
+- Fetch all of the signed-in user's favorited items and collections
+- Compact list view (VS Code/terminal style, not cards)
+- Each row: type icon, title, type badge, date added
+- Separate Items and Collections sections, each with a count
+- Clicking an item opens the `ItemDrawer`; clicking a collection navigates to `/collections/[id]`
+- Empty state when there are no favorites
+- Sorted by most recently favorited (`updatedAt` desc)
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- UI style: monospace or semi-monospace font, minimal padding, high density, subtle hover states, no cards or heavy borders, clean lines only
+- Spec: `context/features/favorites-spec.md`
+- There's no `favoritedAt` field, so "most recently favorited" uses `updatedAt` as the spec says (any edit also bumps it)
+- Favorite toggling is still display only in the drawer and on collections, so favorites currently come from seed data or the database
 
 ## History
 

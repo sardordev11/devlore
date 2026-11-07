@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma/client";
 import {
   createItem,
   deleteItem,
+  getFavoriteItems,
   getItemDetail,
   getItemFile,
   getItemsByCollection,
@@ -456,6 +457,23 @@ const LISTING_ORDER = [
   { updatedAt: "desc" },
   { id: "asc" },
 ];
+
+describe("getFavoriteItems", () => {
+  it("lists the user's favorite items, most recently updated first", async () => {
+    const favorite = {
+      id: "item-1",
+      title: "useAuth Hook",
+      updatedAt: createdAt,
+      type: { id: "type-1", name: "snippet", icon: "Code", color: "#3b82f6" },
+    };
+    mockPrisma.item.findMany.mockResolvedValue([favorite] as never);
+
+    await expect(getFavoriteItems("user-1")).resolves.toEqual([favorite]);
+    const [args] = mockPrisma.item.findMany.mock.calls[0];
+    expect(args?.where).toEqual({ userId: "user-1", isFavorite: true });
+    expect(args?.orderBy).toEqual([{ updatedAt: "desc" }, { id: "asc" }]);
+  });
+});
 
 describe("getItemsByCollection", () => {
   it("lists one page of the user's items in the collection, pinned first", async () => {

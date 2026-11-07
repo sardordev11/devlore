@@ -1,6 +1,10 @@
+import { StarIcon } from "lucide-react";
+import Link from "next/link";
+
 import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
+import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function TopBar() {
@@ -15,6 +19,16 @@ export function TopBar() {
       </div>
       <GlobalSearch />
       <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          nativeButton={false}
+          aria-label="Favorites"
+          title="Favorites"
+          render={<Link href="/favorites" />}
+        >
+          <StarIcon />
+        </Button>
         <CreateCollectionDialog />
         <CreateItemDialog />
       </div>

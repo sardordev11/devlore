@@ -8,6 +8,7 @@ import {
   getCollection,
   getCollectionOptions,
   getCollectionsPage,
+  getFavoriteCollections,
   ownsCollections,
   updateCollection,
 } from "@/lib/db/collections";
@@ -138,6 +139,40 @@ describe("getAllCollections", () => {
     mockPrisma.collection.findMany.mockResolvedValue([] as never);
 
     await expect(getAllCollections("user-1")).resolves.toEqual([]);
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("getFavoriteCollections", () => {
+  it("lists the user's favorite collections, most recently updated first", async () => {
+    const updatedAt = new Date("2026-02-01T00:00:00Z");
+    mockPrisma.collection.findMany.mockResolvedValue([
+      { ...COLLECTION_ROW, updatedAt },
+    ] as never);
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { collectionId: "col-1", ...SNIPPET_TYPE, itemCount: 3 },
+    ] as never);
+
+    const result = await getFavoriteCollections("user-1");
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: "col-1",
+        name: "React Patterns",
+        itemCount: 3,
+        accentColor: "#3b82f6",
+        updatedAt,
+      }),
+    ]);
+    const [args] = mockPrisma.collection.findMany.mock.calls[0];
+    expect(args?.where).toEqual({ userId: "user-1", isFavorite: true });
+    expect(args?.orderBy).toEqual([{ updatedAt: "desc" }, { id: "asc" }]);
+  });
+
+  it("returns an empty list without the type query", async () => {
+    mockPrisma.collection.findMany.mockResolvedValue([] as never);
+
+    await expect(getFavoriteCollections("user-1")).resolves.toEqual([]);
     expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
   });
 });

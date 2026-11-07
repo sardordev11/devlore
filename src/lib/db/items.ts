@@ -267,6 +267,27 @@ export async function getItemsByCollection(
   );
 }
 
+export interface FavoriteItem {
+  id: string;
+  title: string;
+  updatedAt: Date;
+  type: ItemSummaryType;
+}
+
+// Every favorite item of the user, most recently updated first (there's no favoritedAt).
+export async function getFavoriteItems(userId: string): Promise<FavoriteItem[]> {
+  return prisma.item.findMany({
+    where: { userId, isFavorite: true },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    select: {
+      id: true,
+      title: true,
+      updatedAt: true,
+      type: { select: { id: true, name: true, icon: true, color: true } },
+    },
+  });
+}
+
 // Every item of the user for the command palette, most recently used first.
 export async function getSearchItems(userId: string): Promise<SearchItem[]> {
   const items = await prisma.item.findMany({

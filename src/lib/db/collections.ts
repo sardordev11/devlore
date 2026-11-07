@@ -209,6 +209,27 @@ export async function getCollectionsPage(
   return { collections, total };
 }
 
+export interface FavoriteCollection extends CollectionSummary {
+  updatedAt: Date;
+}
+
+// Every favorite collection of the user, most recently updated first (there's no favoritedAt).
+export async function getFavoriteCollections(
+  userId: string,
+): Promise<FavoriteCollection[]> {
+  const rows = await prisma.collection.findMany({
+    where: { userId, isFavorite: true },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    include: COLLECTION_SUMMARY_INCLUDE,
+  });
+
+  const [summaries] = await toCollectionSummaries(rows);
+  return summaries.map((summary, i) => ({
+    ...summary,
+    updatedAt: rows[i].updatedAt,
+  }));
+}
+
 // Returns null when the collection doesn't exist or belongs to another user.
 export async function getCollection(
   userId: string,
