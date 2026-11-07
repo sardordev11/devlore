@@ -8,7 +8,8 @@ interface FavoriteRowProps {
   color: string;
   title: string;
   badge: string;
-  date: Date;
+  // ISO date string.
+  date: string;
 }
 
 // One dense, monospace row shared by favorite items and collections.
@@ -29,7 +30,7 @@ export function FavoriteRow({ icon, color, title, badge, date }: FavoriteRowProp
         {badge}
       </span>
       <RelativeTime
-        date={date.toISOString()}
+        date={date}
         className="w-32 shrink-0 text-right text-xs text-muted-foreground"
       />
     </div>

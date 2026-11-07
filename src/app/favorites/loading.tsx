@@ -3,10 +3,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function FavoritesLoading() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-      <header className="flex flex-col gap-2">
-        <Skeleton className="h-8 w-36" />
-        <Skeleton className="h-5 w-44" />
-      </header>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <header className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-36" />
+          <Skeleton className="h-5 w-44" />
+        </header>
+        <Skeleton className="h-7 w-36" />
+      </div>
 
       {[6, 3].map((rows, section) => (
         <div key={section} className="flex flex-col gap-2">

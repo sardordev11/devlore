@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Favorites Sorting
 
 <!-- Feature Name -->
 
@@ -6,15 +6,30 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Add a sort control to `/favorites` with three options: Name, Date and Type
+- Sorting happens on the client, with no extra requests or page reloads
+- Name sorts A–Z by item title / collection name (case-insensitive, locale-aware)
+- Date sorts newest first by `updatedAt` (the current order, so it's the default)
+- Type groups items by type name, then by date within a type; collections sort by their dominant (most-used) type, the one that sets their accent color, with empty collections last
+- The sort applies to both the Items and Collections sections
+- Item rows still open the item drawer and collection rows still link to `/collections/[id]`
+- Pure sort function(s) in `src/lib/` with unit tests
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- The page is a server component that fetches `getFavoriteItems` and `getFavoriteCollections`; the sorting needs a small client component that receives the serialized rows and renders them in order
+- Keep the compact monospace style of `FavoritesSection` / `FavoriteRow`; use the existing shadcn `Select` (already added) for the control
+- No new database queries or schema changes
+- Toggling a favorite bumps `updatedAt`, so Date order can change after a refresh — expected
+- The chosen sort is kept in the URL as `?sort=name|type` (Date is the default and leaves the URL bare): read on the server so the first render is already sorted, updated on the client with `history.replaceState` (no server round trip, no extra history entries), so reloads and Back keep the sort; also saved in a `favorites-sort` cookie (path `/favorites`, 1 year) that the server falls back to when there's no valid `?sort=`, so leaving the page and coming back via a bare `/favorites` link (e.g. the top bar star) keeps the last choice
 
 ## History
 
