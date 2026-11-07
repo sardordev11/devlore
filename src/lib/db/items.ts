@@ -436,6 +436,25 @@ export async function updateItem(
   }
 }
 
+// Sets an explicit value so repeated or out-of-order requests can't flip it the wrong way.
+// Returns null when the item doesn't exist or belongs to another user.
+export async function setItemFavorite(
+  userId: string,
+  itemId: string,
+  isFavorite: boolean,
+): Promise<{ id: string; isFavorite: boolean } | null> {
+  try {
+    return await prisma.item.update({
+      where: { id: itemId, userId },
+      data: { isFavorite },
+      select: { id: true, isFavorite: true },
+    });
+  } catch (error) {
+    if (isPrismaError(error, PRISMA_ERROR.notFound)) return null;
+    throw error;
+  }
+}
+
 // Returns the deleted item's file URL (if any) so the caller can remove the file,
 // or null when the item doesn't exist or belongs to another user.
 // Collection links cascade; tags are left in place.

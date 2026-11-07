@@ -279,6 +279,25 @@ export async function updateCollection(
   }
 }
 
+// Sets an explicit value so repeated or out-of-order requests can't flip it the wrong way.
+// Returns null when the collection doesn't exist or belongs to another user.
+export async function setCollectionFavorite(
+  userId: string,
+  collectionId: string,
+  isFavorite: boolean,
+): Promise<{ id: string; isFavorite: boolean } | null> {
+  try {
+    return await prisma.collection.update({
+      where: { id: collectionId, userId },
+      data: { isFavorite },
+      select: { id: true, isFavorite: true },
+    });
+  } catch (error) {
+    if (isPrismaError(error, PRISMA_ERROR.notFound)) return null;
+    throw error;
+  }
+}
+
 // Deletes only the collection. Its ItemCollection links cascade, the items stay.
 // Returns null when the collection doesn't exist or belongs to another user.
 export async function deleteCollection(

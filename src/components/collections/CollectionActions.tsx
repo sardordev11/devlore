@@ -1,12 +1,12 @@
 "use client";
 
-import { PencilIcon, StarIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 import { DeleteCollectionDialog } from "@/components/collections/DeleteCollectionDialog";
 import { EditCollectionDialog } from "@/components/collections/EditCollectionDialog";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { CollectionMeta } from "@/types/collections";
 
 interface CollectionActionsProps {
@@ -20,17 +20,12 @@ export function CollectionActions({ collection }: CollectionActionsProps) {
 
   return (
     <div className="flex shrink-0 items-center gap-1">
-      {/* Display only until favoriting collections is implemented. */}
-      <Button
-        variant="ghost"
+      <FavoriteButton
+        target="collection"
+        id={collection.id}
+        isFavorite={collection.isFavorite}
         size="icon-sm"
-        aria-label={collection.isFavorite ? "Unfavorite" : "Favorite"}
-        aria-pressed={collection.isFavorite}
-      >
-        <StarIcon
-          className={cn(collection.isFavorite && "fill-yellow-400 text-yellow-400")}
-        />
-      </Button>
+      />
       <Button
         variant="ghost"
         size="icon-sm"

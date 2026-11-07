@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { z } from "zod";
 
 import { auth } from "@/auth";
@@ -7,6 +8,7 @@ import {
   createCollection as createCollectionQuery,
   deleteCollection as deleteCollectionQuery,
   getCollectionOptions as getCollectionOptionsQuery,
+  setCollectionFavorite,
   updateCollection as updateCollectionQuery,
   type CollectionOption,
   type CreatedCollection,
@@ -16,6 +18,7 @@ import {
   createCollectionSchema,
   updateCollectionSchema,
 } from "@/lib/validations/collections";
+import type { FavoriteResult } from "@/types/favorites";
 
 const NOT_FOUND = "Collection not found";
 
@@ -126,6 +129,41 @@ export async function updateCollection(
     return {
       success: false,
       error: "Couldn't update the collection. Please try again.",
+    };
+  }
+}
+
+// Takes the new value rather than flipping the stored one, so the server
+// always ends up matching what the user sees.
+export async function toggleCollectionFavorite(
+  collectionId: unknown,
+  isFavorite: unknown,
+): Promise<FavoriteResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in" };
+  }
+
+  const id = collectionIdSchema.safeParse(collectionId);
+  if (!id.success) return { success: false, error: NOT_FOUND };
+  const value = z.boolean().safeParse(isFavorite);
+  if (!value.success) return { success: false, error: "Invalid favorite value" };
+
+  try {
+    const collection = await setCollectionFavorite(
+      session.user.id,
+      id.data,
+      value.data,
+    );
+    if (!collection) return { success: false, error: NOT_FOUND };
+
+    refresh();
+    return { success: true, data: collection };
+  } catch (error) {
+    console.error("Toggle collection favorite failed:", error);
+    return {
+      success: false,
+      error: "Couldn't update favorites. Please try again.",
     };
   }
 }

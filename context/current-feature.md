@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Favorite Toggle
 
 <!-- Feature Name -->
 
@@ -6,15 +6,30 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Item drawer: the Favorite button in `ItemDrawerActions` (display only today) toggles `isFavorite`, star turns filled yellow / back immediately
+- Collection page: the Favorite button in the `/collections/[id]` header (`CollectionActions`, display only today) toggles the collection's `isFavorite`
+- Cards: a star toggle button on `ItemCard`, `ImageCard`, `FileRow` and `CollectionCard` (filled yellow when favorited, outline otherwise) that toggles without opening the drawer or following the card link (stop click/keydown propagation like `CopyButton`)
+- `toggleItemFavorite` and `toggleCollectionFavorite` server actions (session check, Zod id validation, user id only from the session, `{ success, data, error }`, "Item not found" / "Collection not found")
+- Query functions in `src/lib/db/items.ts` and `src/lib/db/collections.ts` with `userId` in the where for ownership (P2025 → null), setting an explicit `isFavorite` value rather than blindly flipping it
+- Optimistic UI with rollback and an error toast on failure; short toast on success ("Added to favorites" / "Removed from favorites")
+- Lists, dashboard, sidebar favorites, `/favorites` and the open drawer reflect the change after the action (`refresh()` from `next/cache`, matching `createItem`)
+- Unit tests for the queries and server actions
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Favorite stars are currently display only in `ItemDrawerActions`, `CollectionActions` and as indicators on `ItemCard`, `ImageCard`, `FileRow` and `CollectionCard`; `CollectionActionsMenu` also references `isFavorite`
+- Reuse a single `FavoriteButton` component across cards, drawer and collection header where the styling allows
+- `CollectionCard`'s title link stretches over the card via `::after`, so the star button must sit above it like the 3-dots menu
+- Pin stays display only (out of scope)
+- Favorites are sorted by `updatedAt`, so toggling will move items to the top of `/favorites`; acceptable since there is no `favoritedAt`
 
 ## History
 

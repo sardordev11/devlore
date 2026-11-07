@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useFavoriteToggle } from "@/hooks/use-favorite-toggle";
 import { cn } from "@/lib/utils";
 import type { CollectionMeta } from "@/types/collections";
 
@@ -28,6 +29,11 @@ export function CollectionActionsMenu({
 }: CollectionActionsMenuProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { isFavorite, toggle } = useFavoriteToggle({
+    target: "collection",
+    id: collection.id,
+    isFavorite: collection.isFavorite,
+  });
 
   return (
     <>
@@ -49,14 +55,11 @@ export function CollectionActionsMenu({
             <PencilIcon />
             Edit
           </DropdownMenuItem>
-          {/* Display only until favoriting collections is implemented. */}
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void toggle()}>
             <StarIcon
-              className={cn(
-                collection.isFavorite && "fill-yellow-400 text-yellow-400",
-              )}
+              className={cn(isFavorite && "fill-yellow-400 text-yellow-400")}
             />
-            {collection.isFavorite ? "Unfavorite" : "Favorite"}
+            {isFavorite ? "Unfavorite" : "Favorite"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>

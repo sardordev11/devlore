@@ -7,10 +7,16 @@ import {
   createItem as createItemQuery,
   deleteItem as deleteItemQuery,
   isFileKeyInUse,
+  setItemFavorite,
   updateItem as updateItemQuery,
 } from "@/lib/db/items";
 import { deleteFile } from "@/lib/r2";
-import { createItem, deleteItem, updateItem } from "@/actions/items";
+import {
+  createItem,
+  deleteItem,
+  toggleItemFavorite,
+  updateItem,
+} from "@/actions/items";
 
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
@@ -29,6 +35,7 @@ vi.mock("@/lib/db/items", () => ({
   updateItem: vi.fn(),
   deleteItem: vi.fn(),
   isFileKeyInUse: vi.fn(),
+  setItemFavorite: vi.fn(),
 }));
 
 // auth() is overloaded (session getter and middleware wrapper), so cast the mock
@@ -40,6 +47,7 @@ const mockDeleteFile = vi.mocked(deleteFile);
 const mockIsFileKeyInUse = vi.mocked(isFileKeyInUse);
 const mockOwnsCollections = vi.mocked(ownsCollections);
 const mockRefresh = vi.mocked(refresh);
+const mockSetItemFavorite = vi.mocked(setItemFavorite);
 
 const date = new Date("2026-01-15T00:00:00Z");
 
@@ -446,5 +454,65 @@ describe("deleteItem", () => {
       success: false,
       error: "Couldn't delete the item. Please try again.",
     });
+  });
+});
+
+describe("toggleItemFavorite", () => {
+  beforeEach(() => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+  });
+
+  it("requires a session", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await toggleItemFavorite("item-1", true);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in" });
+    expect(mockSetItemFavorite).not.toHaveBeenCalled();
+  });
+
+  it.each([["", true], [123, true], ["item-1", "yes"], ["item-1", undefined]])(
+    "rejects invalid input %j, %j",
+    async (itemId, isFavorite) => {
+      const result = await toggleItemFavorite(itemId, isFavorite);
+
+      expect(result.success).toBe(false);
+      expect(mockSetItemFavorite).not.toHaveBeenCalled();
+    },
+  );
+
+  it("sets the value for the session user and refreshes the page", async () => {
+    mockSetItemFavorite.mockResolvedValue({ id: "item-1", isFavorite: true });
+
+    const result = await toggleItemFavorite("item-1", true);
+
+    expect(result).toEqual({
+      success: true,
+      data: { id: "item-1", isFavorite: true },
+    });
+    expect(mockSetItemFavorite).toHaveBeenCalledWith("user-1", "item-1", true);
+    expect(mockRefresh).toHaveBeenCalledOnce();
+  });
+
+  it("returns not found for unknown or other users' items", async () => {
+    mockSetItemFavorite.mockResolvedValue(null);
+
+    const result = await toggleItemFavorite("item-other", false);
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
+  it("returns a friendly error when the query fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockSetItemFavorite.mockRejectedValue(new Error("db down"));
+
+    const result = await toggleItemFavorite("item-1", true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Couldn't update favorites. Please try again.",
+    });
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 });

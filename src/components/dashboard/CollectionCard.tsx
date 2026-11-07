@@ -1,7 +1,7 @@
-import { StarIcon } from "lucide-react";
 import Link from "next/link";
 
 import { CollectionActionsMenu } from "@/components/collections/CollectionActionsMenu";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { Card, CardContent } from "@/components/ui/card";
 import type { CollectionSummary } from "@/lib/db/collections";
 import { getTypeIcon } from "@/lib/type-icons";
@@ -32,18 +32,23 @@ export function CollectionCard({ collection }: CollectionCardProps) {
               {collection.name}
             </Link>
           </h3>
-          {collection.isFavorite && (
-            <StarIcon className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400" />
-          )}
-          <CollectionActionsMenu
-            collection={{
-              id: collection.id,
-              name: collection.name,
-              description: collection.description,
-              isFavorite: collection.isFavorite,
-            }}
-            className="relative z-10 -my-1 -mr-2 ml-auto shrink-0 text-muted-foreground"
-          />
+          <div className="relative z-10 -my-1 -mr-2 ml-auto flex shrink-0 items-center">
+            <FavoriteButton
+              target="collection"
+              id={collection.id}
+              isFavorite={collection.isFavorite}
+              size="icon-sm"
+            />
+            <CollectionActionsMenu
+              collection={{
+                id: collection.id,
+                name: collection.name,
+                description: collection.description,
+                isFavorite: collection.isFavorite,
+              }}
+              className="text-muted-foreground"
+            />
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">
           {collection.itemCount} {collection.itemCount === 1 ? "item" : "items"}

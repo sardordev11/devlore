@@ -1,14 +1,9 @@
 "use client";
 
-import {
-  CopyIcon,
-  DownloadIcon,
-  PencilIcon,
-  PinIcon,
-  StarIcon,
-} from "lucide-react";
+import { CopyIcon, DownloadIcon, PencilIcon, PinIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { DeleteItemDialog } from "@/components/items/DeleteItemDialog";
 import { Button } from "@/components/ui/button";
 import { getCopyValue } from "@/lib/copy-value";
@@ -19,13 +14,15 @@ interface ItemDrawerActionsProps {
   item: ItemDetailJson;
   onEdit: () => void;
   onDeleted: () => void;
+  onUpdated: (item: ItemDetailJson) => void;
 }
 
-// Favorite and Pin are display only until their features land.
+// Pin is display only until its feature lands.
 export function ItemDrawerActions({
   item,
   onEdit,
   onDeleted,
+  onUpdated,
 }: ItemDrawerActionsProps) {
   const copyValue = getCopyValue(item);
 
@@ -41,17 +38,13 @@ export function ItemDrawerActions({
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-6 pb-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        aria-pressed={item.isFavorite}
-        className={cn(
-          item.isFavorite && "text-yellow-400 hover:text-yellow-400",
-        )}
-      >
-        <StarIcon className={cn(item.isFavorite && "fill-yellow-400")} />
-        Favorite
-      </Button>
+      <FavoriteButton
+        target="item"
+        id={item.id}
+        isFavorite={item.isFavorite}
+        variant="label"
+        onChange={(isFavorite) => onUpdated({ ...item, isFavorite })}
+      />
       <Button
         variant="ghost"
         size="sm"

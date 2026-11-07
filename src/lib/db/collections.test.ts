@@ -10,6 +10,7 @@ import {
   getCollectionsPage,
   getFavoriteCollections,
   ownsCollections,
+  setCollectionFavorite,
   updateCollection,
 } from "@/lib/db/collections";
 import { prisma } from "@/lib/prisma";
@@ -305,5 +306,39 @@ describe("deleteCollection", () => {
     mockPrisma.collection.delete.mockRejectedValue(new Error("db down"));
 
     await expect(deleteCollection("user-1", "col-1")).rejects.toThrow("db down");
+  });
+});
+
+describe("setCollectionFavorite", () => {
+  it("sets the given value on the user's collection", async () => {
+    mockPrisma.collection.update.mockResolvedValue({
+      id: "col-1",
+      isFavorite: false,
+    } as never);
+
+    await expect(
+      setCollectionFavorite("user-1", "col-1", false),
+    ).resolves.toEqual({ id: "col-1", isFavorite: false });
+    expect(mockPrisma.collection.update).toHaveBeenCalledWith({
+      where: { id: "col-1", userId: "user-1" },
+      data: { isFavorite: false },
+      select: { id: true, isFavorite: true },
+    });
+  });
+
+  it("returns null for unknown or other users' collections", async () => {
+    mockPrisma.collection.update.mockRejectedValue(notFoundError());
+
+    await expect(
+      setCollectionFavorite("user-1", "col-other", true),
+    ).resolves.toBeNull();
+  });
+
+  it("rethrows other errors", async () => {
+    mockPrisma.collection.update.mockRejectedValue(new Error("db down"));
+
+    await expect(setCollectionFavorite("user-1", "col-1", true)).rejects.toThrow(
+      "db down",
+    );
   });
 });

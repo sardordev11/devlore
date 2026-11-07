@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { refresh } from "next/cache";
+
 import {
   createCollection,
   deleteCollection,
   getCollectionOptions,
+  toggleCollectionFavorite,
   updateCollection,
 } from "@/actions/collections";
 import { auth } from "@/auth";
@@ -11,14 +14,17 @@ import {
   createCollection as createCollectionQuery,
   deleteCollection as deleteCollectionQuery,
   getCollectionOptions as getCollectionOptionsQuery,
+  setCollectionFavorite,
   updateCollection as updateCollectionQuery,
 } from "@/lib/db/collections";
 
+vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/db/collections", () => ({
   createCollection: vi.fn(),
   deleteCollection: vi.fn(),
   getCollectionOptions: vi.fn(),
+  setCollectionFavorite: vi.fn(),
   updateCollection: vi.fn(),
 }));
 
@@ -28,6 +34,8 @@ const mockCreateCollectionQuery = vi.mocked(createCollectionQuery);
 const mockGetCollectionOptionsQuery = vi.mocked(getCollectionOptionsQuery);
 const mockUpdateCollectionQuery = vi.mocked(updateCollectionQuery);
 const mockDeleteCollectionQuery = vi.mocked(deleteCollectionQuery);
+const mockSetCollectionFavorite = vi.mocked(setCollectionFavorite);
+const mockRefresh = vi.mocked(refresh);
 
 const COLLECTION = {
   id: "col-1",
@@ -240,5 +248,72 @@ describe("deleteCollection", () => {
       success: false,
       error: "Couldn't delete the collection. Please try again.",
     });
+  });
+});
+
+describe("toggleCollectionFavorite", () => {
+  beforeEach(() => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+  });
+
+  it("requires a session", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await toggleCollectionFavorite("col-1", true);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in" });
+    expect(mockSetCollectionFavorite).not.toHaveBeenCalled();
+  });
+
+  it.each([["", true], [null, true], ["col-1", "true"], ["col-1", 1]])(
+    "rejects invalid input %j, %j",
+    async (collectionId, isFavorite) => {
+      const result = await toggleCollectionFavorite(collectionId, isFavorite);
+
+      expect(result.success).toBe(false);
+      expect(mockSetCollectionFavorite).not.toHaveBeenCalled();
+    },
+  );
+
+  it("sets the value for the session user and refreshes the page", async () => {
+    mockSetCollectionFavorite.mockResolvedValue({
+      id: "col-1",
+      isFavorite: false,
+    });
+
+    const result = await toggleCollectionFavorite("col-1", false);
+
+    expect(result).toEqual({
+      success: true,
+      data: { id: "col-1", isFavorite: false },
+    });
+    expect(mockSetCollectionFavorite).toHaveBeenCalledWith(
+      "user-1",
+      "col-1",
+      false,
+    );
+    expect(mockRefresh).toHaveBeenCalledOnce();
+  });
+
+  it("returns not found for unknown or other users' collections", async () => {
+    mockSetCollectionFavorite.mockResolvedValue(null);
+
+    const result = await toggleCollectionFavorite("col-other", true);
+
+    expect(result).toEqual({ success: false, error: "Collection not found" });
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
+  it("returns a friendly error when the query fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockSetCollectionFavorite.mockRejectedValue(new Error("db down"));
+
+    const result = await toggleCollectionFavorite("col-1", true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Couldn't update favorites. Please try again.",
+    });
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 });

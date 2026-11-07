@@ -92,6 +92,7 @@ function ItemDrawerBody({
             item={item}
             onEdit={() => setIsEditing(true)}
             onDeleted={onItemDeleted}
+            onUpdated={onItemUpdated}
           />
           <ItemDrawerDetails item={item} />
         </>

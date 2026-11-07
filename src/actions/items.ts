@@ -9,6 +9,7 @@ import {
   createItem as createItemQuery,
   deleteItem as deleteItemQuery,
   isFileKeyInUse,
+  setItemFavorite,
   updateItem as updateItemQuery,
   type ItemDetail,
 } from "@/lib/db/items";
@@ -18,6 +19,7 @@ import {
   itemIdSchema,
   updateItemSchema,
 } from "@/lib/validations/items";
+import type { FavoriteResult } from "@/types/favorites";
 import type { ItemDetailJson, ItemDetailResponse } from "@/types/items";
 
 type CreateItemResult =
@@ -156,6 +158,37 @@ export async function updateItem(
   } catch (error) {
     console.error("Update item failed:", error);
     return { success: false, error: "Couldn't save the item. Please try again." };
+  }
+}
+
+// Takes the new value rather than flipping the stored one, so the server
+// always ends up matching what the user sees.
+export async function toggleItemFavorite(
+  itemId: unknown,
+  isFavorite: unknown,
+): Promise<FavoriteResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in" };
+  }
+
+  const id = itemIdSchema.safeParse(itemId);
+  if (!id.success) return { success: false, error: "Item not found" };
+  const value = z.boolean().safeParse(isFavorite);
+  if (!value.success) return { success: false, error: "Invalid favorite value" };
+
+  try {
+    const item = await setItemFavorite(session.user.id, id.data, value.data);
+    if (!item) return { success: false, error: "Item not found" };
+
+    refresh();
+    return { success: true, data: item };
+  } catch (error) {
+    console.error("Toggle item favorite failed:", error);
+    return {
+      success: false,
+      error: "Couldn't update favorites. Please try again.",
+    };
   }
 }
 

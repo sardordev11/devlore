@@ -75,7 +75,7 @@ export default async function ItemsByTypePage({
               <span className="w-20 text-right">Size</span>
               <span className="w-28 text-right">Uploaded</span>
             </div>
-            <span className="w-16 shrink-0" />
+            <span className="w-24 shrink-0" />
           </div>
           {items.map((item) => (
             <FileRow key={item.id} item={item} />

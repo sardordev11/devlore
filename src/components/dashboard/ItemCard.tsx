@@ -1,6 +1,7 @@
-import { PinIcon, StarIcon } from "lucide-react";
+import { PinIcon } from "lucide-react";
 import { createElement } from "react";
 
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { CopyButton } from "@/components/items/CopyButton";
 import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import { Badge } from "@/components/ui/badge";
@@ -40,9 +41,6 @@ export function ItemCard({ item }: ItemCardProps) {
               {item.isPinned && (
                 <PinIcon className="size-3.5 shrink-0 text-muted-foreground" />
               )}
-              {item.isFavorite && (
-                <StarIcon className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400" />
-              )}
             </div>
             {item.description && (
               <p className="mt-0.5 truncate text-muted-foreground">
@@ -67,13 +65,17 @@ export function ItemCard({ item }: ItemCardProps) {
             >
               {formatDate(date, "short")}
             </time>
-            {item.copyValue && (
-              <CopyButton
-                value={item.copyValue}
+            <div className="-mr-1.5 flex items-center">
+              <FavoriteButton
+                target="item"
+                id={item.id}
+                isFavorite={item.isFavorite}
                 size="icon-sm"
-                className="-mr-1.5"
               />
-            )}
+              {item.copyValue && (
+                <CopyButton value={item.copyValue} size="icon-sm" />
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

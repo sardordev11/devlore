@@ -1,6 +1,7 @@
-import { PinIcon, StarIcon } from "lucide-react";
+import { PinIcon } from "lucide-react";
 import { createElement } from "react";
 
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { CopyButton } from "@/components/items/CopyButton";
 import { FileDownloadButton } from "@/components/items/FileDownloadButton";
 import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
@@ -36,9 +37,6 @@ export function FileRow({ item }: FileRowProps) {
               {item.isPinned && (
                 <PinIcon className="size-3.5 shrink-0 text-muted-foreground" />
               )}
-              {item.isFavorite && (
-                <StarIcon className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400" />
-              )}
             </div>
             {item.fileName && item.fileName !== item.title && (
               <p className="truncate text-xs text-muted-foreground">
@@ -62,6 +60,11 @@ export function FileRow({ item }: FileRowProps) {
         </div>
 
         <div className="flex shrink-0 items-center">
+          <FavoriteButton
+            target="item"
+            id={item.id}
+            isFavorite={item.isFavorite}
+          />
           {item.copyValue ? (
             <CopyButton value={item.copyValue} />
           ) : (

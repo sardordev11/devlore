@@ -1,5 +1,6 @@
-import { ImageIcon, PinIcon, StarIcon } from "lucide-react";
+import { ImageIcon, PinIcon } from "lucide-react";
 
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { CopyButton } from "@/components/items/CopyButton";
 import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
 import { Card } from "@/components/ui/card";
@@ -35,16 +36,17 @@ export function ImageCard({ item }: ImageCardProps) {
           {item.isPinned && (
             <PinIcon className="size-3.5 shrink-0 text-muted-foreground" />
           )}
-          {item.isFavorite && (
-            <StarIcon className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400" />
-          )}
-          {item.copyValue && (
-            <CopyButton
-              value={item.copyValue}
+          <div className="-my-1 -mr-1.5 ml-auto flex shrink-0 items-center">
+            <FavoriteButton
+              target="item"
+              id={item.id}
+              isFavorite={item.isFavorite}
               size="icon-sm"
-              className="-my-1 -mr-1.5 ml-auto"
             />
-          )}
+            {item.copyValue && (
+              <CopyButton value={item.copyValue} size="icon-sm" />
+            )}
+          </div>
         </div>
       </Card>
     </ItemDrawerTrigger>

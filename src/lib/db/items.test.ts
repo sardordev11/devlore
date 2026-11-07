@@ -11,6 +11,7 @@ import {
   getItemsByTypeSlug,
   getSearchItems,
   isFileKeyInUse,
+  setItemFavorite,
   updateItem,
 } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
@@ -614,5 +615,43 @@ describe("getSearchItems for files", () => {
     mockPrisma.item.findMany.mockResolvedValue([]);
 
     await expect(getSearchItems("user-1")).resolves.toEqual([]);
+  });
+});
+
+describe("setItemFavorite", () => {
+  it("sets the given value on the user's item", async () => {
+    mockPrisma.item.update.mockResolvedValue({
+      id: "item-1",
+      isFavorite: true,
+    } as never);
+
+    await expect(setItemFavorite("user-1", "item-1", true)).resolves.toEqual({
+      id: "item-1",
+      isFavorite: true,
+    });
+    expect(mockPrisma.item.update).toHaveBeenCalledWith({
+      where: { id: "item-1", userId: "user-1" },
+      data: { isFavorite: true },
+      select: { id: true, isFavorite: true },
+    });
+  });
+
+  it("returns null for unknown or other users' items", async () => {
+    mockPrisma.item.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Record not found", {
+        code: "P2025",
+        clientVersion: "test",
+      }),
+    );
+
+    await expect(setItemFavorite("user-1", "item-other", false)).resolves.toBeNull();
+  });
+
+  it("rethrows other errors", async () => {
+    mockPrisma.item.update.mockRejectedValue(new Error("db down"));
+
+    await expect(setItemFavorite("user-1", "item-1", true)).rejects.toThrow(
+      "db down",
+    );
   });
 });
