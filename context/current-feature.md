@@ -1,4 +1,4 @@
-# Current Feature: Homepage Mockup
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,37 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Static marketing homepage prototype in `prototypes/homepage/` with `index.html`, `styles.css` and `script.js` (no Next.js integration)
-- Dark theme using the spec's item type accent colors
-- Fixed top nav: logo, Features / Pricing links, Sign In / Get Started buttons; gets more opaque on scroll
-- Hero text: "Stop Losing Your Developer Knowledge" headline with gradient text, subheadline about scattered knowledge, CTA buttons
-- Hero visual, "chaos to order", three parts side by side:
-  - Chaos container ("Your knowledge today...") with 8 floating icons: Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark
-  - Icons animated with `requestAnimationFrame`: random drift, bounce off walls, subtle rotation and scale pulsing, repel from the mouse cursor
-  - Pulsing transform arrow in the center (CSS animation)
-  - Dashboard preview ("...with DevLore"): sidebar with nav items and a grid of item cards with type-colored top borders
-- Features: 6 cards in a grid (Code Snippets, AI Prompts, Instant Search, Commands, Files & Docs, Collections), each in its item type accent color
-- AI section: two columns, "Pro Feature" badge and AI capability checklist on the left, code editor mockup with an "AI Generated Tags" demo on the right
-- Pricing: Free ($0, 50 items, 3 collections) vs Pro ($8/mo, unlimited, AI features), Pro card highlighted with a "Most Popular" badge, monthly/yearly toggle ($72/yr)
-- CTA: "Ready to Organize Your Knowledge?" with a button
-- Footer: logo, link columns, copyright with the current year
-- Elements fade in when scrolled into view
-- Responsive: on mobile the chaos/arrow/dashboard stack vertically, the arrow rotates 90° to point down, grids go single column
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/homepage-mockup-spec.md`
-- The spec's palette differs from the app's type colors in `project-overview.md` (e.g. Prompt amber vs purple, Note green vs yellow, Command cyan vs orange, URL/Link indigo vs emerald, File slate vs gray); no answer given, so the spec's palette is used, defined once as CSS variables in `styles.css` so it's easy to swap
-- Plain HTML/CSS/JS prototype, so no unit tests apply (Vitest covers only server actions and `src/lib` utilities); verify in the browser at desktop and mobile widths
-- Brand logos (Notion, GitHub, Slack, VS Code) as simple inline SVG icons
 
 ## History
 
@@ -89,3 +67,4 @@ In Progress
 - **Favorite Toggle** — star toggle for items and collections in the item drawer (labelled Favorite button), the `/collections/[id]` header, the `CollectionCard` 3-dots menu and as an icon button on `ItemCard`, `ImageCard`, `FileRow` and `CollectionCard` (replacing the display-only star indicators; filled yellow when favorited, muted outline otherwise), all via a shared `FavoriteButton` in `src/components/favorites/` that stops click and keydown propagation so the drawer and card link don't fire; `useFavoriteToggle` hook (`src/hooks/use-favorite-toggle.ts`) flips the star immediately, rolls back with an error toast on failure, ignores clicks while a save is pending and follows the prop after the refresh; "Added to favorites" / "Removed from favorites" toasts; `toggleItemFavorite` in `src/actions/items.ts` and `toggleCollectionFavorite` in `src/actions/collections.ts` (session check, id schema plus `z.boolean()` for the new value, user id only from the session, `{ success, data, error }` via a shared `FavoriteResult` in `src/types/favorites.ts`, "Item not found" / "Collection not found", `refresh()` from `next/cache` on success); `setItemFavorite`/`setCollectionFavorite` queries setting an explicit value with `userId` in the where (P2025 → null); the drawer updates its item via a new `onUpdated` prop on `ItemDrawerActions`; Files list header spacer widened for the extra button; toggling bumps `updatedAt`, so toggled items and collections move up in `updatedAt`-sorted lists; unit tests for the queries and actions; checked in the browser at 1440px (dashboard collection card with stats and sidebar updating, drawer both ways, file row star without opening the drawer, collection header) (Completed)
 - **Favorites Sorting** — "Sort by" shadcn `Select` next to the `/favorites` header with Date (default, newest first), Name (A–Z, case-insensitive, natural numbers, ties newest first) and Type (by type name, newest first within a type; collections by their dominant type, empty ones last), applied to both Items and Collections on the client via `sortFavorites` in `src/lib/favorites-sort.ts`; new client `FavoritesList` (`src/components/favorites/`) receiving serializable `FavoriteEntry` rows (`src/types/favorites.ts`, ISO dates; `FavoriteRow` now takes a date string) mapped by the server page, item rows still opening the drawer and collection rows linking to `/collections/[id]`; the sort is kept in `?sort=name|type` (bare URL for Date) via `history.replaceState` with no server round trip, and in a `favorites-sort` cookie (path `/favorites`, 1 year) the server falls back to when there's no valid `?sort=` (`resolveFavoriteSort`), so reloads, Back and returning via the top bar star keep the last choice without a Date flash; `FavoritesList` keyed by the resolved sort; loading skeleton gains the select placeholder; unit tests for sorting, `parseFavoriteSort`, `resolveFavoriteSort`, `getFavoriteSortHref` and `getFavoriteSortCookie`; checked in the browser at 1440px and 390px (all three sorts, drawer from a sorted row, Back from a collection, leaving and returning via the star, fresh load from the cookie) (Completed)
 - **Pinned Items** — Pin toggle in the item drawer via `PinButton` (`src/components/items/PinButton.tsx`, labelled "Pin" / "Pinned") and a `usePinToggle` hook (`src/hooks/use-pin-toggle.ts`) following the favorite pattern: flips immediately, rolls back with an error toast on failure, ignores clicks while a save is pending and follows the prop after the refresh; "Item pinned" / "Item unpinned" toasts; `toggleItemPin` in `src/actions/items.ts` (session check, `itemIdSchema` plus `z.boolean()`, user id only from the session, `{ success, data, error }` via a new `PinResult` in `src/types/items.ts`, "Item not found", `refresh()` from `next/cache` on success); `setItemPinned` query with `userId` in the where (P2025 → null); the drawer updates its item through the existing `onUpdated`; listings already sort pinned first (`LISTING_ORDER`) and the dashboard Pinned section uses `getPinnedItems`, so no query changes; card pin icons stay static; the "DL DevLore" brand in the TopBar now links to `/dashboard`; pinning bumps `updatedAt`; unit tests for the query and action; checked in the browser (pin in the drawer, pinned item first on `/items/commands` after reload, unpin toast, brand link) (Completed)
+- **Homepage Mockup** — static marketing homepage prototype in `prototypes/homepage/` (`index.html`, `styles.css`, `script.js`; not wired into Next.js) from `context/features/homepage-mockup-spec.md`: fixed nav that turns opaque on scroll, "Stop Losing Your Developer Knowledge" hero with gradient text and CTAs, "chaos to order" visual with 8 inline-SVG icons (Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark) animated with `requestAnimationFrame` (drift, wall bounces, rotation and scale pulsing, cursor repulsion; paused off screen or in a hidden tab, static under `prefers-reduced-motion`), a pulsing CSS arrow and a dashboard preview with type-colored card borders; 6 type-colored feature cards, AI section with a "Pro Feature" checklist and a code editor mockup whose "AI Generated Tags" animate in, Free/Pro pricing with a "Most Popular" badge and a monthly/yearly switch ($8/mo or $72/yr), CTA, footer with the current year; scroll fade-ins via `IntersectionObserver`; on mobile the hero stacks, the arrow points down and grids go single column; the spec's palette (differs from the app's type colors) kept as CSS variables for easy swapping; checked in the browser at 1440px and 390px (icon motion and repulsion, toggle, reveals, no horizontal scroll) (Completed)
