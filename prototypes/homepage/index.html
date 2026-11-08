@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DevLore — Your Developer Knowledge Hub</title>
+    <meta
+      name="description"
+      content="One fast, searchable, AI-enhanced hub for your snippets, prompts, commands, notes, files, images and links."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Navigation -->
+    <header class="nav" id="nav">
+      <div class="container nav__inner">
+        <a href="#" class="logo" aria-label="DevLore home">
+          <span class="logo__mark">DL</span>
+          <span class="logo__text">DevLore</span>
+        </a>
+        <nav class="nav__links" aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+        </nav>
+        <div class="nav__actions">
+          <a href="/sign-in" class="btn btn--ghost">Sign In</a>
+          <a href="/sign-up" class="btn btn--primary">Get Started</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero__glow" aria-hidden="true"></div>
+        <div class="container">
+          <div class="hero__text reveal">
+            <span class="eyebrow">Your developer knowledge hub</span>
+            <h1 class="hero__title">
+              Stop Losing Your<br />
+              <span class="gradient-text">Developer Knowledge</span>
+            </h1>
+            <p class="hero__subtitle">
+              Snippets in VS Code, prompts in old chats, commands in bash history, links in a
+              hundred browser tabs. DevLore brings it all into one fast, searchable place.
+            </p>
+            <div class="hero__ctas">
+              <a href="/sign-up" class="btn btn--primary btn--lg">Get Started Free</a>
+              <a href="#features" class="btn btn--outline btn--lg">See Features</a>
+            </div>
+          </div>
+
+          <div class="hero__visual reveal">
+            <!-- Chaos -->
+            <div class="panel">
+              <p class="panel__label">Your knowledge today...</p>
+              <div class="chaos" id="chaos">
+                <div class="chaos__icon" data-name="Notion" title="Notion">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="3" fill="#fff" />
+                    <path d="M8 7.5v9M8 7.5l8 9M16 7.5v9" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div class="chaos__icon" data-name="GitHub" title="GitHub">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#f0f6fc" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.84c.85 0 1.7.11 2.5.34 1.9-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" />
+                  </svg>
+                </div>
+                <div class="chaos__icon" data-name="Slack" title="Slack">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9.5" y="2" width="3.5" height="9" rx="1.75" fill="#36c5f0" />
+                    <rect x="13" y="9.5" width="9" height="3.5" rx="1.75" fill="#2eb67d" />
+                    <rect x="11" y="13" width="3.5" height="9" rx="1.75" fill="#ecb22e" />
+                    <rect x="2" y="11" width="9" height="3.5" rx="1.75" fill="#e01e5a" />
+                  </svg>
+                </div>
+                <div class="chaos__icon" data-name="VS Code" title="VS Code">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#0065a9" d="M17 2.5 21.5 4.7v14.6L17 21.5 6.6 12Z" />
+                    <path fill="#007acc" d="M17 2.5v19L2.5 9.3l2-1.8L17 17V7L4.5 16.5l-2-1.8Z" />
+                    <path fill="#1f9cf0" d="M17 2.5 21.5 4.7v14.6L17 21.5Z" opacity=".9" />
+                  </svg>
+                </div>
+                <div class="chaos__icon" data-name="Browser tabs" title="Browser tabs">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="15" rx="2" />
+                    <path d="M3 9h18M7 5v4M12 5v4" />
+                  </svg>
+                </div>
+                <div class="chaos__icon" data-name="Terminal" title="Terminal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m5 7 5 5-5 5M12 18h7" />
+                  </svg>
+                </div>
+                <div class="chaos__icon" data-name="Text file" title="Text file">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z" />
+                    <path d="M14 3v6h6M8 13h8M8 17h5" />
+                  </svg>
+                </div>
+                <div class="chaos__icon" data-name="Bookmark" title="Bookmark">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Arrow -->
+            <div class="transform-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </div>
+
+            <!-- Dashboard preview -->
+            <div class="panel">
+              <p class="panel__label">...with DevLore</p>
+              <div class="preview" aria-label="DevLore dashboard preview">
+                <aside class="preview__sidebar">
+                  <div class="preview__brand"><span class="logo__mark logo__mark--sm">DL</span></div>
+                  <span class="preview__nav" data-type="snippet">Snippets</span>
+                  <span class="preview__nav" data-type="prompt">Prompts</span>
+                  <span class="preview__nav" data-type="command">Commands</span>
+                  <span class="preview__nav" data-type="note">Notes</span>
+                  <span class="preview__nav" data-type="file">Files</span>
+                  <span class="preview__nav" data-type="image">Images</span>
+                  <span class="preview__nav" data-type="url">Links</span>
+                </aside>
+                <div class="preview__main">
+                  <div class="preview__search">Search…</div>
+                  <div class="preview__grid">
+                    <div class="preview__card" data-type="snippet"><b>useDebounce</b><i></i><i></i></div>
+                    <div class="preview__card" data-type="prompt"><b>Code review</b><i></i><i></i></div>
+                    <div class="preview__card" data-type="command"><b>docker up</b><i></i><i></i></div>
+                    <div class="preview__card" data-type="note"><b>Auth notes</b><i></i><i></i></div>
+                    <div class="preview__card" data-type="url"><b>Next.js docs</b><i></i><i></i></div>
+                    <div class="preview__card" data-type="image"><b>Diagram</b><i></i><i></i></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="section" id="features">
+        <div class="container">
+          <div class="section__head reveal">
+            <span class="eyebrow">Features</span>
+            <h2 class="section__title">Everything you reach for, in one place</h2>
+            <p class="section__subtitle">
+              Every kind of developer knowledge gets a home, a color and a shortcut.
+            </p>
+          </div>
+          <div class="features">
+            <article class="feature reveal" data-type="snippet">
+              <div class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6" /></svg>
+              </div>
+              <h3>Code Snippets</h3>
+              <p>Save reusable code with syntax highlighting in a VS Code-style editor.</p>
+            </article>
+            <article class="feature reveal" data-type="prompt">
+              <div class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z" /></svg>
+              </div>
+              <h3>AI Prompts</h3>
+              <p>Keep your best prompts and system messages out of old chat threads.</p>
+            </article>
+            <article class="feature reveal" data-type="url">
+              <div class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+              </div>
+              <h3>Instant Search</h3>
+              <p>Hit <kbd>⌘K</kbd> and find anything by title, content, tag or type.</p>
+            </article>
+            <article class="feature reveal" data-type="command">
+              <div class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 7 5 5-5 5M12 18h7" /></svg>
+              </div>
+              <h3>Commands</h3>
+              <p>Stop digging through bash history. Copy the command you need in one click.</p>
+            </article>
+            <article class="feature reveal" data-type="file">
+              <div class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z" /><path d="M14 3v6h6" /></svg>
+              </div>
+              <h3>Files &amp; Docs</h3>
+              <p>Upload context files, configs, images and docs, then download them anywhere.</p>
+            </article>
+            <article class="feature reveal" data-type="note">
+              <div class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>
+              </div>
+              <h3>Collections</h3>
+              <p>Group items of any type. One snippet can live in as many collections as you like.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI -->
+      <section class="section section--alt">
+        <div class="container ai">
+          <div class="ai__text reveal">
+            <span class="badge badge--pro">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z" /></svg>
+              Pro Feature
+            </span>
+            <h2 class="section__title">Let AI do the busywork</h2>
+            <p class="section__subtitle">
+              DevLore reads what you save and helps you keep it organized and useful.
+            </p>
+            <ul class="checklist">
+              <li>Auto-tagging based on item content</li>
+              <li>Short summaries of notes, files and prompts</li>
+              <li>"Explain This Code" in plain English</li>
+              <li>Prompt optimizer for clearer, sharper prompts</li>
+            </ul>
+          </div>
+
+          <div class="editor reveal">
+            <div class="editor__bar">
+              <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+              <span class="editor__file">useDebounce.ts</span>
+            </div>
+<pre class="editor__code"><code><span class="tk-k">import</span> { useEffect, useState } <span class="tk-k">from</span> <span class="tk-s">"react"</span>;
+
+<span class="tk-k">export function</span> <span class="tk-f">useDebounce</span>&lt;T&gt;(value: T, delay = <span class="tk-n">300</span>) {
+  <span class="tk-k">const</span> [debounced, setDebounced] = <span class="tk-f">useState</span>(value);
+
+  <span class="tk-f">useEffect</span>(() =&gt; {
+    <span class="tk-k">const</span> id = <span class="tk-f">setTimeout</span>(() =&gt; <span class="tk-f">setDebounced</span>(value), delay);
+    <span class="tk-k">return</span> () =&gt; <span class="tk-f">clearTimeout</span>(id);
+  }, [value, delay]);
+
+  <span class="tk-k">return</span> debounced;
+}</code></pre>
+            <div class="editor__tags">
+              <span class="editor__tags-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z" /></svg>
+                AI Generated Tags
+              </span>
+              <div class="tags" id="ai-tags">
+                <span class="tag">react</span>
+                <span class="tag">hooks</span>
+                <span class="tag">typescript</span>
+                <span class="tag">debounce</span>
+                <span class="tag">performance</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pricing -->
+      <section class="section" id="pricing">
+        <div class="container">
+          <div class="section__head reveal">
+            <span class="eyebrow">Pricing</span>
+            <h2 class="section__title">Start free, upgrade when you need more</h2>
+            <div class="billing-toggle" role="group" aria-label="Billing period">
+              <span class="billing-toggle__label is-active" data-period-label="monthly">Monthly</span>
+              <button class="switch" id="billing-switch" type="button" role="switch" aria-checked="false" aria-label="Bill yearly">
+                <span class="switch__thumb"></span>
+              </button>
+              <span class="billing-toggle__label" data-period-label="yearly">
+                Yearly <span class="save">Save 25%</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="pricing">
+            <article class="plan reveal">
+              <h3 class="plan__name">Free</h3>
+              <p class="plan__desc">For trying DevLore out.</p>
+              <p class="plan__price"><span class="plan__amount">$0</span><span class="plan__period">/forever</span></p>
+              <ul class="checklist checklist--plan">
+                <li>50 items</li>
+                <li>3 collections</li>
+                <li>All system types except File &amp; Image</li>
+                <li>Instant search</li>
+              </ul>
+              <a href="/sign-up" class="btn btn--outline btn--block">Get Started</a>
+            </article>
+
+            <article class="plan plan--pro reveal">
+              <span class="plan__popular">Most Popular</span>
+              <h3 class="plan__name">Pro</h3>
+              <p class="plan__desc">For developers who live in their knowledge base.</p>
+              <p class="plan__price">
+                <span class="plan__amount" id="pro-amount">$8</span><span class="plan__period" id="pro-period">/month</span>
+              </p>
+              <p class="plan__note" id="pro-note">Billed monthly</p>
+              <ul class="checklist checklist--plan">
+                <li>Unlimited items &amp; collections</li>
+                <li>File &amp; image uploads</li>
+                <li>AI tagging, summaries &amp; code explanations</li>
+                <li>AI prompt optimizer</li>
+                <li>Export to JSON / ZIP</li>
+                <li>Priority support</li>
+              </ul>
+              <a href="/sign-up" class="btn btn--primary btn--block">Upgrade to Pro</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section class="section">
+        <div class="container">
+          <div class="cta reveal">
+            <h2 class="section__title">Ready to Organize Your Knowledge?</h2>
+            <p class="section__subtitle">Bring your snippets, prompts and commands home. It takes a minute.</p>
+            <a href="/sign-up" class="btn btn--primary btn--lg">Get Started Free</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer__inner">
+        <div class="footer__brand">
+          <a href="#" class="logo">
+            <span class="logo__mark">DL</span>
+            <span class="logo__text">DevLore</span>
+          </a>
+          <p>One hub for all your developer knowledge.</p>
+        </div>
+        <div class="footer__cols">
+          <div>
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#">Changelog</a>
+          </div>
+          <div>
+            <h4>Resources</h4>
+            <a href="#">Docs</a>
+            <a href="#">Blog</a>
+            <a href="#">Support</a>
+          </div>
+          <div>
+            <h4>Company</h4>
+            <a href="#">About</a>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+          </div>
+        </div>
+      </div>
+      <div class="container footer__bottom">
+        <p>&copy; <span id="year">2026</span> DevLore. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

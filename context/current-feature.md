@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Homepage Mockup
 
 <!-- Feature Name -->
 
@@ -6,15 +6,37 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Static marketing homepage prototype in `prototypes/homepage/` with `index.html`, `styles.css` and `script.js` (no Next.js integration)
+- Dark theme using the spec's item type accent colors
+- Fixed top nav: logo, Features / Pricing links, Sign In / Get Started buttons; gets more opaque on scroll
+- Hero text: "Stop Losing Your Developer Knowledge" headline with gradient text, subheadline about scattered knowledge, CTA buttons
+- Hero visual, "chaos to order", three parts side by side:
+  - Chaos container ("Your knowledge today...") with 8 floating icons: Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark
+  - Icons animated with `requestAnimationFrame`: random drift, bounce off walls, subtle rotation and scale pulsing, repel from the mouse cursor
+  - Pulsing transform arrow in the center (CSS animation)
+  - Dashboard preview ("...with DevLore"): sidebar with nav items and a grid of item cards with type-colored top borders
+- Features: 6 cards in a grid (Code Snippets, AI Prompts, Instant Search, Commands, Files & Docs, Collections), each in its item type accent color
+- AI section: two columns, "Pro Feature" badge and AI capability checklist on the left, code editor mockup with an "AI Generated Tags" demo on the right
+- Pricing: Free ($0, 50 items, 3 collections) vs Pro ($8/mo, unlimited, AI features), Pro card highlighted with a "Most Popular" badge, monthly/yearly toggle ($72/yr)
+- CTA: "Ready to Organize Your Knowledge?" with a button
+- Footer: logo, link columns, copyright with the current year
+- Elements fade in when scrolled into view
+- Responsive: on mobile the chaos/arrow/dashboard stack vertically, the arrow rotates 90° to point down, grids go single column
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/homepage-mockup-spec.md`
+- The spec's palette differs from the app's type colors in `project-overview.md` (e.g. Prompt amber vs purple, Note green vs yellow, Command cyan vs orange, URL/Link indigo vs emerald, File slate vs gray); no answer given, so the spec's palette is used, defined once as CSS variables in `styles.css` so it's easy to swap
+- Plain HTML/CSS/JS prototype, so no unit tests apply (Vitest covers only server actions and `src/lib` utilities); verify in the browser at desktop and mobile widths
+- Brand logos (Notion, GitHub, Slack, VS Code) as simple inline SVG icons
 
 ## History
 
