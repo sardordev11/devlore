@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
+import { LogoMark } from "@/components/home/Logo";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -18,9 +19,7 @@ export function TopBar() {
           aria-label="DevLore dashboard"
           className="flex items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-            DL
-          </span>
+          <LogoMark />
           <span className="hidden text-lg font-bold sm:inline">DevLore</span>
         </Link>
       </div>

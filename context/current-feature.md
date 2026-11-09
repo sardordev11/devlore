@@ -2,32 +2,33 @@
 
 <!-- Feature Name -->
 
-Mobile UI Review Fixes
+Auth Nav and Folder Logo
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-Fix the four "worth fixing" items from the UI reviewer:
-
-1. **Homepage mobile nav** — below `md` the Features and Pricing links are hidden with no replacement; add a menu button that opens a shadcn `Sheet` with the section links (closes on link click).
-2. **Search trigger** — drop the duplicated "(⌘ K)" from the label, show a shorter "Search…" label on mobile and hide the kbd hint below `sm`.
-3. **Dashboard touch targets** — icon buttons (favorite star, copy, card 3-dots menu, file download, sidebar toggle) grow to 40px on touch devices (`pointer-coarse:`), desktop sizes unchanged.
-4. **Homepage touch targets** — CTA buttons 44px tall on mobile (36px from `md`), larger pricing switch hit area, taller footer link hit areas on mobile.
+1. **Homepage nav on auth pages** — `/sign-in` and `/sign-up` show the homepage top nav (`HomeNav`: logo, Features / Pricing links, Sign In, Get Started, mobile menu) above the form, replacing the small centered logo link in `src/app/(auth)/layout.tsx`.
+2. **Folder logo mark** — replace the "DL" box with a Lucide `Folder` icon as the logo mark: in the homepage `LogoMark` (`src/components/home/Logo.tsx`, so the homepage nav, footer and dashboard preview pick it up) and in the dashboard `TopBar` brand.
+3. **Remove the DL box** — no "DL" letter box left in the homepage nav, auth nav or dashboard top bar.
 
 ## Notes
 
 <!-- Any extra notes -->
 
-- Touch-target sizing uses the `pointer-coarse:` variant so mouse users keep the compact layout.
-- The nav (logo, Sign In, Get Started, menu) didn't fit below 400px, so the "DevLore" wordmark hides there (`Logo compact`), leaving the DL mark.
-- Bigger file-row buttons made the size and date wrap, so that line is now `whitespace-nowrap`.
+- The homepage logo was a blue-gradient "DL" box, not a folder icon; confirmed with the user to use a Lucide `Folder` icon everywhere instead.
+- Section links (Features, Pricing) are `#features`/`#pricing` anchors; on the auth pages they need to point to `/#features` and `/#pricing` to work.
+- The `(auth)` route group is split into `(with-nav)` (sign-in, sign-up: `HomeNav` plus a centered form with `pt-24`) and `(plain)` (forgot-password, reset-password, verify-email: the old centered logo, now with the folder mark). URLs are unchanged.
+- `SECTION_LINKS` are now `/#features` and `/#pricing`. The homepage sections stream in after a Suspense boundary, so arriving at `/#features` didn't scroll, not even on a direct load. `ScrollToHash` (client, rendered with the sections) scrolls to the hash once they mount.
+- Existing Next.js behavior, not fixed: clicking a hash link while the URL already has a hash gives `/#pricing#features`. Scrolling still works, and the hero's plain `#features` link does the same.
+- On request, the Features and Pricing links are centered in `HomeNav` from `md` up: a `grid-cols-[1fr_auto_1fr]` grid with equal outer columns, so they sit at the page center whatever the logo and button widths. Below `md` the nav keeps its flex layout and the menu button.
+- `LogoMark` is the Lucide `FolderIcon` with a 20% accent-blue fill and a stroke in the surrounding text color (`currentColor`), so its outline matches the white "DevLore" wordmark. The dashboard `TopBar` reuses it from `src/components/home/Logo.tsx`.
 
 ## History
 

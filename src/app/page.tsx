@@ -10,6 +10,7 @@ import { Hero } from "@/components/home/Hero";
 import { HomeFooter } from "@/components/home/HomeFooter";
 import { HomeNav } from "@/components/home/HomeNav";
 import { PricingSection } from "@/components/home/PricingSection";
+import { ScrollToHash } from "@/components/home/ScrollToHash";
 import { getPlanHref } from "@/lib/homepage";
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ async function HomeContent() {
         <CtaSection />
       </main>
       <HomeFooter year={new Date().getFullYear()} />
+      <ScrollToHash />
     </>
   );
 }

@@ -1,17 +1,18 @@
+import { FolderIcon } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
 export function LogoMark({ small = false }: { small?: boolean }) {
   return (
-    <span
+    <FolderIcon
+      aria-hidden="true"
       className={cn(
-        "grid shrink-0 place-items-center bg-home-gradient font-extrabold tracking-wide text-white",
-        small ? "size-5.5 rounded-md text-[9px]" : "size-7.5 rounded-lg text-xs",
+        // Stroke follows the surrounding text color, so it matches the "DevLore" wordmark.
+        "shrink-0 fill-home-accent/20",
+        small ? "size-5" : "size-7",
       )}
-    >
-      DL
-    </span>
+    />
   );
 }
 
