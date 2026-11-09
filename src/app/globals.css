@@ -48,6 +48,47 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Marketing homepage (`/`) colors and animations. */
+@theme {
+    --color-home-bg: #09090b;
+    --color-home-bg-alt: #0e0e12;
+    --color-home-surface: #131318;
+    --color-home-surface-2: #1a1a21;
+    --color-home-features: #15151b;
+    --color-home-accent: #3b82f6;
+    --color-home-accent-hover: #2563eb;
+    --color-home-accent-light: #60a5fa;
+
+    --animate-arrow-pulse: arrow-pulse 2s ease-in-out infinite;
+    --animate-tag-in: tag-in 0.4s ease both;
+
+    @keyframes arrow-pulse {
+        0%, 100% {
+            scale: 1;
+            box-shadow: 0 0 0 0 rgb(59 130 246 / 0.55);
+        }
+        50% {
+            scale: 1.08;
+            box-shadow: 0 0 0 14px rgb(59 130 246 / 0);
+        }
+    }
+
+    @keyframes tag-in {
+        from {
+            opacity: 0;
+            transform: translateY(6px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+}
+
+@utility bg-home-gradient {
+    background-image: linear-gradient(90deg, var(--color-home-accent-light), var(--color-home-accent));
+}
+
 :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
