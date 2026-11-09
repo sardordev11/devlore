@@ -1,4 +1,4 @@
-# Current Feature
+# Current Feature: Homepage
 
 <!-- Feature Name -->
 
@@ -6,15 +6,42 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-Completed
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Replace the placeholder `src/app/page.tsx` with the real marketing homepage, rebuilt from `prototypes/homepage/` with Tailwind CSS v4 and shadcn/ui, matching its layout, copy and animations
+- `/` stays public (not in the `src/proxy.ts` matcher); `page.tsx` is a server component that composes the sections, sets `metadata` (title and description from the prototype) and reads the session via `auth()` to pass `isSignedIn` down
+- Sections in `src/components/home/`: `HomeNav`, `Hero`, `ChaosVisual`, `DashboardPreview`, `FeaturesSection`, `AiSection`, `PricingSection`, `CtaSection`, `HomeFooter`
+- Server components by default; client only for nav scroll state (`HomeNav` or a `NavScrollBackground` wrapper), `ChaosVisual`, `PricingToggle`, `Reveal` (fade-in on scroll, used by every section) and `AiTags` (staggered entrance, CSS-only inside `Reveal` if simpler)
+- Footer year from `new Date().getFullYear()` on the server
+- Tailwind utilities only (no port of `styles.css`, no inline styles beyond `ChaosVisual` transforms and dynamic type colors); shadcn `Button` (`render={<Link />}` for links), `Badge`, `Card`, `Switch` where they fit; Geist / Geist Mono fonts
+- Homepage-only colors (accent `#3b82f6`, `#2563eb` hover, light-to-blue gradient, section backgrounds) as `@theme` tokens in `src/app/globals.css`; keyframes (arrow pulse, reveal fade, tag pop-in) in `globals.css`; `prefers-reduced-motion` respected (`ChaosVisual` static)
+- Responsive like the prototype: hero visual stacks with the arrow pointing down, grids single column, no horizontal scroll at 390px
+- Data-driven sections: features, chaos icons, preview sidebar/cards, AI checklist, pricing plans and footer links as typed constant arrays in `src/lib/homepage.ts` (or next to their component), rendered with `.map()`
+- Feature cards and the dashboard preview use the app's type colors and Lucide icons via `getTypeIcon` / `getTypeTint` from `src/lib/type-icons.ts`
+- One `PLAN_PRICES` constant (`$8/month`, `$72/year`, "$6/month, billed yearly", "Save 25%") shared by the toggle and the plan cards
+- Shared `SectionHeading` (eyebrow, title, subtitle), `Checklist` and `Logo` (nav and footer) components; brand SVGs (Notion, GitHub, Slack, VS Code) in one `chaos-icons.tsx`
+- `useChaosAnimation` hook in `src/hooks/`: `requestAnimationFrame` loop with drift, wall bounces, rotation/scale pulse and cursor repulsion; pauses off screen (`IntersectionObserver`) and in hidden tabs; re-measures on resize; cleans up listeners and the frame on unmount; writes transforms through refs, not state
+- Links by session:
+  - Logo → `/`; nav and footer "Features" / "Pricing" → `#features` / `#pricing`; hero "See Features" → `#features`
+  - Nav "Sign In" → `/sign-in` and "Get Started" → `/sign-up`, the same when signed in (no Dashboard button in the nav)
+  - Hero and bottom CTA "Get Started Free" → `/sign-up` always (CTA section has no frame)
+  - Free "Get Started" and Pro "Upgrade to Pro" → `/sign-up`, or `/dashboard` when signed in
+- Smooth anchor scrolling (`scroll-smooth` on `html`) with `scroll-mt` on sections for the fixed nav
+- Footer keeps only Features, Pricing, Sign In and Sign Up (placeholder links dropped)
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `context/features/homepage-spec.md`
+- `prototypes/homepage/` stays in place as a reference and is not changed
+- Out of scope: Stripe checkout / billing page, light-mode homepage
+- Unit tests only if new utilities land in `src/lib` (e.g. price/link helpers)
+- Browser check at 1440px and 390px, signed out and signed in: every link target, pricing toggle, chaos animation and cursor repulsion, reveals, nav opacity on scroll, reduced motion
 
 ## History
 
