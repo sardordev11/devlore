@@ -1,4 +1,4 @@
-# Current Feature: Homepage
+# Current Feature
 
 <!-- Feature Name -->
 
@@ -6,42 +6,15 @@
 
 <!-- Not Started|In Progress|Completed -->
 
-In Progress
+Completed
 
 ## Goals
 
 <!-- Goals & requirements -->
 
-- Replace the placeholder `src/app/page.tsx` with the real marketing homepage, rebuilt from `prototypes/homepage/` with Tailwind CSS v4 and shadcn/ui, matching its layout, copy and animations
-- `/` stays public (not in the `src/proxy.ts` matcher); `page.tsx` is a server component that composes the sections, sets `metadata` (title and description from the prototype) and reads the session via `auth()` to pass `isSignedIn` down
-- Sections in `src/components/home/`: `HomeNav`, `Hero`, `ChaosVisual`, `DashboardPreview`, `FeaturesSection`, `AiSection`, `PricingSection`, `CtaSection`, `HomeFooter`
-- Server components by default; client only for nav scroll state (`HomeNav` or a `NavScrollBackground` wrapper), `ChaosVisual`, `PricingToggle`, `Reveal` (fade-in on scroll, used by every section) and `AiTags` (staggered entrance, CSS-only inside `Reveal` if simpler)
-- Footer year from `new Date().getFullYear()` on the server
-- Tailwind utilities only (no port of `styles.css`, no inline styles beyond `ChaosVisual` transforms and dynamic type colors); shadcn `Button` (`render={<Link />}` for links), `Badge`, `Card`, `Switch` where they fit; Geist / Geist Mono fonts
-- Homepage-only colors (accent `#3b82f6`, `#2563eb` hover, light-to-blue gradient, section backgrounds) as `@theme` tokens in `src/app/globals.css`; keyframes (arrow pulse, reveal fade, tag pop-in) in `globals.css`; `prefers-reduced-motion` respected (`ChaosVisual` static)
-- Responsive like the prototype: hero visual stacks with the arrow pointing down, grids single column, no horizontal scroll at 390px
-- Data-driven sections: features, chaos icons, preview sidebar/cards, AI checklist, pricing plans and footer links as typed constant arrays in `src/lib/homepage.ts` (or next to their component), rendered with `.map()`
-- Feature cards and the dashboard preview use the app's type colors and Lucide icons via `getTypeIcon` / `getTypeTint` from `src/lib/type-icons.ts`
-- One `PLAN_PRICES` constant (`$8/month`, `$72/year`, "$6/month, billed yearly", "Save 25%") shared by the toggle and the plan cards
-- Shared `SectionHeading` (eyebrow, title, subtitle), `Checklist` and `Logo` (nav and footer) components; brand SVGs (Notion, GitHub, Slack, VS Code) in one `chaos-icons.tsx`
-- `useChaosAnimation` hook in `src/hooks/`: `requestAnimationFrame` loop with drift, wall bounces, rotation/scale pulse and cursor repulsion; pauses off screen (`IntersectionObserver`) and in hidden tabs; re-measures on resize; cleans up listeners and the frame on unmount; writes transforms through refs, not state
-- Links by session:
-  - Logo → `/`; nav and footer "Features" / "Pricing" → `#features` / `#pricing`; hero "See Features" → `#features`
-  - Nav "Sign In" → `/sign-in` and "Get Started" → `/sign-up`, the same when signed in (no Dashboard button in the nav)
-  - Hero and bottom CTA "Get Started Free" → `/sign-up` always (CTA section has no frame)
-  - Free "Get Started" and Pro "Upgrade to Pro" → `/sign-up`, or `/dashboard` when signed in
-- Smooth anchor scrolling (`scroll-smooth` on `html`) with `scroll-mt` on sections for the fixed nav
-- Footer keeps only Features, Pricing, Sign In and Sign Up (placeholder links dropped)
-
 ## Notes
 
 <!-- Any extra notes -->
-
-- Spec: `context/features/homepage-spec.md`
-- `prototypes/homepage/` stays in place as a reference and is not changed
-- Out of scope: Stripe checkout / billing page, light-mode homepage
-- Unit tests only if new utilities land in `src/lib` (e.g. price/link helpers)
-- Browser check at 1440px and 390px, signed out and signed in: every link target, pricing toggle, chaos animation and cursor repulsion, reveals, nav opacity on scroll, reduced motion
 
 ## History
 
@@ -96,3 +69,4 @@ In Progress
 - **Pinned Items** — Pin toggle in the item drawer via `PinButton` (`src/components/items/PinButton.tsx`, labelled "Pin" / "Pinned") and a `usePinToggle` hook (`src/hooks/use-pin-toggle.ts`) following the favorite pattern: flips immediately, rolls back with an error toast on failure, ignores clicks while a save is pending and follows the prop after the refresh; "Item pinned" / "Item unpinned" toasts; `toggleItemPin` in `src/actions/items.ts` (session check, `itemIdSchema` plus `z.boolean()`, user id only from the session, `{ success, data, error }` via a new `PinResult` in `src/types/items.ts`, "Item not found", `refresh()` from `next/cache` on success); `setItemPinned` query with `userId` in the where (P2025 → null); the drawer updates its item through the existing `onUpdated`; listings already sort pinned first (`LISTING_ORDER`) and the dashboard Pinned section uses `getPinnedItems`, so no query changes; card pin icons stay static; the "DL DevLore" brand in the TopBar now links to `/dashboard`; pinning bumps `updatedAt`; unit tests for the query and action; checked in the browser (pin in the drawer, pinned item first on `/items/commands` after reload, unpin toast, brand link) (Completed)
 - **Homepage Mockup** — static marketing homepage prototype in `prototypes/homepage/` (`index.html`, `styles.css`, `script.js`; not wired into Next.js) from `context/features/homepage-mockup-spec.md`: fixed nav that turns opaque on scroll, "Stop Losing Your Developer Knowledge" hero with gradient text and CTAs, "chaos to order" visual with 8 inline-SVG icons (Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark) animated with `requestAnimationFrame` (drift, wall bounces, rotation and scale pulsing, cursor repulsion; paused off screen or in a hidden tab, static under `prefers-reduced-motion`), a pulsing CSS arrow and a dashboard preview with type-colored card borders; 6 type-colored feature cards, AI section with a "Pro Feature" checklist and a code editor mockup whose "AI Generated Tags" animate in, Free/Pro pricing with a "Most Popular" badge and a monthly/yearly switch ($8/mo or $72/yr), CTA, footer with the current year; scroll fade-ins via `IntersectionObserver`; on mobile the hero stacks, the arrow points down and grids go single column; the spec's palette (differs from the app's type colors) kept as CSS variables for easy swapping; checked in the browser at 1440px and 390px (icon motion and repulsion, toggle, reveals, no horizontal scroll) (Completed)
 - **Homepage Colors** — homepage prototype accent switched from indigo/purple to the snippet blue (`#3b82f6`): `--accent` now points at `--snippet`, `--gradient` is a light-to-snippet blue (hero "Developer Knowledge" text, logo mark, arrow, "Most Popular" badge), primary buttons solid blue with white text and a `#2563eb` hover, indigo glows and shadows replaced with blue; features section gets a lighter `--bg-features` background with borders (`section--features`) and `--surface-2` cards; pink glows removed from the chaos box and the "Ready to Organize Your Knowledge?" CTA; the Link type's indigo kept as a type color; checked in the browser at 1440px (Completed)
+- **Homepage** — real marketing homepage at `/` replacing the placeholder, rebuilt from `prototypes/homepage/` (left unchanged) with Tailwind CSS v4 and shadcn/ui from `context/features/homepage-spec.md`: sections in `src/components/home/` (`HomeNav`, `Hero`, `ChaosVisual`, `DashboardPreview`, `FeaturesSection`, `AiSection`, `PricingSection`, `CtaSection`, `HomeFooter`) plus shared `Container`, `Logo`/`LogoMark`, `CtaLink` (shadcn `Button` rendering a `next/link`), `SectionHeading` and `Checklist`; client only for `NavScrollBackground` (opaque after scrolling, `useSyncExternalStore`), `ChaosVisual`, `PricingToggle` (shadcn `Switch`, plan cards on shadcn `Card`) and `Reveal` (fade-in on scroll via `IntersectionObserver`, exposes `data-visible` so the AI tags pop in with CSS only); `useChaosAnimation` in `src/hooks/` (`requestAnimationFrame` drift, wall bounces, rotation/scale pulse and cursor repulsion written to the DOM through refs, paused off screen and in hidden tabs, `ResizeObserver` re-measuring, full cleanup, placed once and static under reduced motion); brand SVGs (Notion, GitHub, Slack, VS Code) plus Lucide icons in `chaos-icons.tsx`; content in `src/lib/homepage.ts` (`HOME_TYPES` matching the seeded type colors and icons used via `getTypeIcon`/`getTypeTint` for feature cards and the dashboard preview, features, AI checklist and tags, `PLANS`, `PLAN_PRICES` with `getProPrice` and a computed `YEARLY_SAVINGS_PERCENT`, nav/footer links, `getPlanHref`) with unit tests; homepage colors, a `bg-home-gradient` utility and the arrow-pulse and tag-in keyframes as `@theme` tokens in `globals.css`; `scroll-smooth` on `html` with `scroll-mt-16` on `#features`/`#pricing`; `page.tsx` sets the title and description, reads the session in a Suspense boundary after `connection()` (`auth()` otherwise hit a prerender error), and only the Free/Pro plan buttons depend on it (`/dashboard` when signed in, `/sign-up` otherwise); on request the nav always shows an outlined Sign In and Get Started (no Dashboard button), the hero and bottom CTA always show Get Started Free, the CTA section lost its frame, and the "Pro Feature" badge is solid light orange (`orange-300`) with black text; footer keeps only Features, Pricing, Sign In and Sign Up, year from the server; checked in the browser at 1440px and 390px, signed out and signed in (all link targets, anchors below the fixed nav, pricing toggle, icon motion and repulsion, reveals, nav opacity, reduced motion, no horizontal scroll) (Completed)
