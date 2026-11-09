@@ -68,7 +68,7 @@ export function PricingToggle({ planHref }: { planHref: string }) {
           checked={yearly}
           onCheckedChange={(checked) => setPeriod(checked ? "yearly" : "monthly")}
           aria-label="Bill yearly"
-          className="data-checked:bg-home-accent"
+          className="after:-inset-y-3 data-checked:bg-home-accent"
         />
         <span className={yearly ? "text-foreground" : "text-zinc-500"}>
           Yearly

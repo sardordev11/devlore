@@ -2,6 +2,8 @@
 
 <!-- Feature Name -->
 
+Mobile UI Review Fixes
+
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
@@ -12,9 +14,20 @@ Completed
 
 <!-- Goals & requirements -->
 
+Fix the four "worth fixing" items from the UI reviewer:
+
+1. **Homepage mobile nav** — below `md` the Features and Pricing links are hidden with no replacement; add a menu button that opens a shadcn `Sheet` with the section links (closes on link click).
+2. **Search trigger** — drop the duplicated "(⌘ K)" from the label, show a shorter "Search…" label on mobile and hide the kbd hint below `sm`.
+3. **Dashboard touch targets** — icon buttons (favorite star, copy, card 3-dots menu, file download, sidebar toggle) grow to 40px on touch devices (`pointer-coarse:`), desktop sizes unchanged.
+4. **Homepage touch targets** — CTA buttons 44px tall on mobile (36px from `md`), larger pricing switch hit area, taller footer link hit areas on mobile.
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Touch-target sizing uses the `pointer-coarse:` variant so mouse users keep the compact layout.
+- The nav (logo, Sign In, Get Started, menu) didn't fit below 400px, so the "DevLore" wordmark hides there (`Logo compact`), leaving the DL mark.
+- Bigger file-row buttons made the size and date wrap, so that line is now `whitespace-nowrap`.
 
 ## History
 
@@ -70,3 +83,4 @@ Completed
 - **Homepage Mockup** — static marketing homepage prototype in `prototypes/homepage/` (`index.html`, `styles.css`, `script.js`; not wired into Next.js) from `context/features/homepage-mockup-spec.md`: fixed nav that turns opaque on scroll, "Stop Losing Your Developer Knowledge" hero with gradient text and CTAs, "chaos to order" visual with 8 inline-SVG icons (Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark) animated with `requestAnimationFrame` (drift, wall bounces, rotation and scale pulsing, cursor repulsion; paused off screen or in a hidden tab, static under `prefers-reduced-motion`), a pulsing CSS arrow and a dashboard preview with type-colored card borders; 6 type-colored feature cards, AI section with a "Pro Feature" checklist and a code editor mockup whose "AI Generated Tags" animate in, Free/Pro pricing with a "Most Popular" badge and a monthly/yearly switch ($8/mo or $72/yr), CTA, footer with the current year; scroll fade-ins via `IntersectionObserver`; on mobile the hero stacks, the arrow points down and grids go single column; the spec's palette (differs from the app's type colors) kept as CSS variables for easy swapping; checked in the browser at 1440px and 390px (icon motion and repulsion, toggle, reveals, no horizontal scroll) (Completed)
 - **Homepage Colors** — homepage prototype accent switched from indigo/purple to the snippet blue (`#3b82f6`): `--accent` now points at `--snippet`, `--gradient` is a light-to-snippet blue (hero "Developer Knowledge" text, logo mark, arrow, "Most Popular" badge), primary buttons solid blue with white text and a `#2563eb` hover, indigo glows and shadows replaced with blue; features section gets a lighter `--bg-features` background with borders (`section--features`) and `--surface-2` cards; pink glows removed from the chaos box and the "Ready to Organize Your Knowledge?" CTA; the Link type's indigo kept as a type color; checked in the browser at 1440px (Completed)
 - **Homepage** — real marketing homepage at `/` replacing the placeholder, rebuilt from `prototypes/homepage/` (left unchanged) with Tailwind CSS v4 and shadcn/ui from `context/features/homepage-spec.md`: sections in `src/components/home/` (`HomeNav`, `Hero`, `ChaosVisual`, `DashboardPreview`, `FeaturesSection`, `AiSection`, `PricingSection`, `CtaSection`, `HomeFooter`) plus shared `Container`, `Logo`/`LogoMark`, `CtaLink` (shadcn `Button` rendering a `next/link`), `SectionHeading` and `Checklist`; client only for `NavScrollBackground` (opaque after scrolling, `useSyncExternalStore`), `ChaosVisual`, `PricingToggle` (shadcn `Switch`, plan cards on shadcn `Card`) and `Reveal` (fade-in on scroll via `IntersectionObserver`, exposes `data-visible` so the AI tags pop in with CSS only); `useChaosAnimation` in `src/hooks/` (`requestAnimationFrame` drift, wall bounces, rotation/scale pulse and cursor repulsion written to the DOM through refs, paused off screen and in hidden tabs, `ResizeObserver` re-measuring, full cleanup, placed once and static under reduced motion); brand SVGs (Notion, GitHub, Slack, VS Code) plus Lucide icons in `chaos-icons.tsx`; content in `src/lib/homepage.ts` (`HOME_TYPES` matching the seeded type colors and icons used via `getTypeIcon`/`getTypeTint` for feature cards and the dashboard preview, features, AI checklist and tags, `PLANS`, `PLAN_PRICES` with `getProPrice` and a computed `YEARLY_SAVINGS_PERCENT`, nav/footer links, `getPlanHref`) with unit tests; homepage colors, a `bg-home-gradient` utility and the arrow-pulse and tag-in keyframes as `@theme` tokens in `globals.css`; `scroll-smooth` on `html` with `scroll-mt-16` on `#features`/`#pricing`; `page.tsx` sets the title and description, reads the session in a Suspense boundary after `connection()` (`auth()` otherwise hit a prerender error), and only the Free/Pro plan buttons depend on it (`/dashboard` when signed in, `/sign-up` otherwise); on request the nav always shows an outlined Sign In and Get Started (no Dashboard button), the hero and bottom CTA always show Get Started Free, the CTA section lost its frame, and the "Pro Feature" badge is solid light orange (`orange-300`) with black text; footer keeps only Features, Pricing, Sign In and Sign Up, year from the server; checked in the browser at 1440px and 390px, signed out and signed in (all link targets, anchors below the fixed nav, pricing toggle, icon motion and repulsion, reveals, nav opacity, reduced motion, no horizontal scroll) (Completed)
+- **Mobile UI Review Fixes** — the four "worth fixing" items from a UI reviewer pass: homepage menu button below `md` (`MobileNavMenu`, shadcn `Sheet` with the Features and Pricing links, closing on link click) since the inline section links were hidden on mobile, with the "DevLore" wordmark hidden below 400px (`Logo compact`) so the nav fits next to Sign In and Get Started; `SearchTrigger` label no longer repeats the shortcut, reads "Search…" with the kbd hint hidden below `sm`; dashboard icon buttons (favorite star, copy, card 3-dots, file download, sidebar toggles) grow to 40px on touch screens via `TOUCH_ICON_BUTTON` (`pointer-coarse:size-10`) in `src/lib/touch-target.ts`, with the `FileRow` spacers and Files list header spacer (`TOUCH_ICON_ROW_SPACER`) matching and the row's size/date kept on one line; homepage `CtaLink` 44px tall below `md`, footer links with 40px tap areas on mobile and a larger pricing switch hit area; checked in the browser at 360px, 390px and 430px with touch emulation and at 1440px with a mouse (desktop unchanged) (Completed)

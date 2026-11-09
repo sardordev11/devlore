@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFavoriteToggle } from "@/hooks/use-favorite-toggle";
+import { TOUCH_ICON_BUTTON } from "@/lib/touch-target";
 import { cn } from "@/lib/utils";
 import type { CollectionMeta } from "@/types/collections";
 
@@ -44,7 +45,7 @@ export function CollectionActionsMenu({
               variant="ghost"
               size="icon-sm"
               aria-label={`Actions for ${collection.name}`}
-              className={className}
+              className={cn(TOUCH_ICON_BUTTON, className)}
             />
           }
         >

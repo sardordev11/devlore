@@ -15,6 +15,7 @@ import {
   ITEMS_PER_PAGE,
   parsePage,
 } from "@/lib/pagination";
+import { TOUCH_ICON_ROW_SPACER } from "@/lib/touch-target";
 import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
 import { isCreatableTypeSlug } from "@/lib/validations/items";
 
@@ -75,7 +76,7 @@ export default async function ItemsByTypePage({
               <span className="w-20 text-right">Size</span>
               <span className="w-28 text-right">Uploaded</span>
             </div>
-            <span className="w-24 shrink-0" />
+            <span className={`shrink-0 ${TOUCH_ICON_ROW_SPACER}`} />
           </div>
           {items.map((item) => (
             <FileRow key={item.id} item={item} />

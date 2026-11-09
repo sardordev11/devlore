@@ -14,6 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TOUCH_ICON_BUTTON } from "@/lib/touch-target";
 import { auth } from "@/auth";
 
 // Fixed widths: SidebarMenuSkeleton's random width can't be prerendered.
@@ -61,7 +62,7 @@ export function AppSidebar() {
         <span className="px-2 text-sm font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
           Navigation
         </span>
-        <SidebarTrigger className="text-muted-foreground" />
+        <SidebarTrigger className={`text-muted-foreground ${TOUCH_ICON_BUTTON}`} />
       </SidebarHeader>
 
       <SidebarContent>

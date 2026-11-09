@@ -6,12 +6,13 @@ import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { TOUCH_ICON_BUTTON } from "@/lib/touch-target";
 
 export function TopBar() {
   return (
     <header className="grid h-14 shrink-0 grid-cols-[1fr_minmax(0,28rem)_1fr] items-center gap-4 border-b px-4">
       <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
+        <SidebarTrigger className={`md:hidden ${TOUCH_ICON_BUTTON}`} />
         <Link
           href="/dashboard"
           aria-label="DevLore dashboard"

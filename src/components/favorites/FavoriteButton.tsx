@@ -7,6 +7,7 @@ import {
   useFavoriteToggle,
   type FavoriteTarget,
 } from "@/hooks/use-favorite-toggle";
+import { TOUCH_ICON_BUTTON } from "@/lib/touch-target";
 import { cn } from "@/lib/utils";
 
 interface FavoriteButtonProps {
@@ -54,6 +55,7 @@ export function FavoriteButton({
       onKeyDown={(event) => event.stopPropagation()}
       className={cn(
         "shrink-0",
+        variant === "icon" && TOUCH_ICON_BUTTON,
         isFavorite
           ? "text-yellow-400 hover:text-yellow-400"
           : "text-muted-foreground",

@@ -13,7 +13,8 @@ const VARIANTS = {
 } as const;
 
 const SIZES = {
-  default: "h-9 px-4 text-sm",
+  // 44px tap target on mobile, compact from md up.
+  default: "h-11 px-4 text-sm md:h-9",
   lg: "h-12 px-6 text-[15px]",
 } as const;
 

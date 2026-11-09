@@ -15,15 +15,16 @@ export function LogoMark({ small = false }: { small?: boolean }) {
   );
 }
 
-export function Logo() {
+// "compact" hides the wordmark on very narrow screens (the nav needs the room).
+export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link
       href="/"
       aria-label="DevLore home"
-      className="inline-flex items-center gap-2.5 rounded-md text-[17px] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-home-accent"
+      className="inline-flex shrink-0 items-center gap-2.5 rounded-md text-[17px] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-home-accent"
     >
       <LogoMark />
-      DevLore
+      <span className={cn(compact && "max-[399px]:hidden")}>DevLore</span>
     </Link>
   );
 }

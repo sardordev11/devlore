@@ -14,13 +14,13 @@ export function HomeFooter({ year }: { year: number }) {
         </div>
         <div className="flex flex-wrap gap-10 md:gap-18">
           {FOOTER_COLUMNS.map((column) => (
-            <div key={column.title} className="flex flex-col gap-2.5 text-sm">
+            <div key={column.title} className="flex flex-col text-sm md:gap-2.5">
               <h2 className="mb-1 text-[13px] font-semibold">{column.title}</h2>
               {column.links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="w-fit rounded-sm text-zinc-500 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-home-accent"
+                  className="w-fit rounded-sm py-2.5 text-zinc-500 md:py-0 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-home-accent"
                 >
                   {link.label}
                 </Link>

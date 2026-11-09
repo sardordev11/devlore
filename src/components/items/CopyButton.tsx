@@ -4,6 +4,7 @@ import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { TOUCH_ICON_BUTTON } from "@/lib/touch-target";
 import { cn } from "@/lib/utils";
 
 interface CopyButtonProps {
@@ -36,7 +37,7 @@ export function CopyButton({
       title="Copy"
       onClick={handleClick}
       onKeyDown={(event) => event.stopPropagation()}
-      className={cn("shrink-0 text-muted-foreground", className)}
+      className={cn("shrink-0 text-muted-foreground", TOUCH_ICON_BUTTON, className)}
     >
       <CopyIcon />
     </Button>

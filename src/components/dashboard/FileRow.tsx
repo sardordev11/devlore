@@ -9,7 +9,9 @@ import type { ItemSummary } from "@/lib/db/items";
 import { formatFileSize } from "@/lib/file-constraints";
 import { getFileIcon } from "@/lib/file-icons";
 import { formatDate } from "@/lib/format-date";
+import { TOUCH_ICON_BUTTON } from "@/lib/touch-target";
 import { getTypeTint } from "@/lib/type-icons";
+import { cn } from "@/lib/utils";
 
 interface FileRowProps {
   item: ItemSummary;
@@ -45,7 +47,7 @@ export function FileRow({ item }: FileRowProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground md:contents">
+          <div className="flex items-center gap-1.5 text-xs whitespace-nowrap text-muted-foreground md:contents">
             <span className="md:w-20 md:shrink-0 md:text-right">{size}</span>
             <span aria-hidden className="md:hidden">
               ·
@@ -69,12 +71,12 @@ export function FileRow({ item }: FileRowProps) {
             <CopyButton value={item.copyValue} />
           ) : (
             // Keeps the size and date columns aligned with rows that have a button.
-            <div className="size-8" />
+            <div className={cn("size-8", TOUCH_ICON_BUTTON)} />
           )}
           {item.fileName ? (
             <FileDownloadButton itemId={item.id} fileName={item.fileName} />
           ) : (
-            <div className="size-8" />
+            <div className={cn("size-8", TOUCH_ICON_BUTTON)} />
           )}
         </div>
       </div>
