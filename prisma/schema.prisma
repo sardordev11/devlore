@@ -24,9 +24,11 @@ model User {
   editorPreferences Json?
 
   // Billing
-  isPro                Boolean @default(false)
-  stripeCustomerId     String? @unique
-  stripeSubscriptionId String? @unique
+  isPro           Boolean       @default(false)
+  // Random ID sent to Toss as customerKey (dl_<uuid>), created on first use
+  tossCustomerKey String?       @unique
+  subscription    Subscription?
+  payments        Payment[]
 
   accounts    Account[]
   sessions    Session[]
@@ -201,4 +203,71 @@ model Tag {
   items Item[]
 
   @@unique([userId, name])
+}
+
+// ─────────────────────────────────────────────
+// Billing (Toss Payments 자동결제)
+// ─────────────────────────────────────────────
+
+enum BillingPlan {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE // paid through currentPeriodEnd, renews automatically
+  CANCELED // no renewal; Pro until currentPeriodEnd
+  PAST_DUE // renewal failed, retrying during the grace period
+  EXPIRED // period over without payment
+}
+
+enum PaymentStatus {
+  DONE
+  FAILED
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan           BillingPlan
+  status         SubscriptionStatus
+  // Encrypted with BILLING_KEY_SECRET; Toss can't return it again once issued
+  billingKey     String?            @db.Text
+  // SHA-256 of the plain key, to find the row from the BILLING_DELETED webhook
+  billingKeyHash String?            @unique
+  cardCompany    String? // issuerCode, for display
+  cardNumber     String? // masked, e.g. "4330********123*"
+  amount         Int // KRW charged per period
+
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  failedAttempts     Int       @default(0)
+  nextRetryAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, currentPeriodEnd])
+}
+
+model Payment {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orderId        String        @unique // also the Idempotency-Key
+  paymentKey     String?       @unique
+  plan           BillingPlan
+  amount         Int
+  status         PaymentStatus
+  failureCode    String?
+  failureMessage String?
+  periodStart    DateTime
+  periodEnd      DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

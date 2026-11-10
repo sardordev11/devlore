@@ -27,6 +27,7 @@ const LIMITERS = {
   resendVerification: createLimiter("resend-verification", 3, "15 m"),
   changePassword: createLimiter("change-password", 5, "15 m"),
   upload: createLimiter("upload", 20, "10 m"),
+  billing: createLimiter("billing", 5, "10 m"),
 };
 
 export type RateLimitName = keyof typeof LIMITERS;

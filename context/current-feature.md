@@ -1,18 +1,29 @@
-# Current Feature
-
-<!-- Feature Name -->
+# Current Feature: Toss Pay Phase 1 — Core Infrastructure
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- **Usage limits** — `src/lib/usage-limits.ts` (pure, no Prisma/`server-only`): `ENFORCE_PLAN_LIMITS` (only `"true"` enables), `FREE_LIMITS = { items: 50, collections: 3 }`, `PRO_ONLY_TYPE_SLUGS` + `isProOnlyTypeSlug`, `canUsePro`, `isWithinLimit`, `canCreateItem`/`canCreateCollection`/`canUseTypeSlug` taking a `UserPlan`, `UPGRADE_MESSAGES` (items, collections, fileTypes) built from `FREE_LIMITS`; `UserPlan` in `src/types/billing.ts`
+- **Database** — `toss_billing` migration on the Neon `development` branch only (never `db push`): remove `stripeCustomerId`/`stripeSubscriptionId`, add `User.tossCustomerKey @unique`, `subscription`, `payments`; enums `BillingPlan`, `SubscriptionStatus`, `PaymentStatus`; `Subscription` (one per user, encrypted `billingKey`, `billingKeyHash @unique`, masked card, KRW amount, period, `failedAttempts`, `nextRetryAt`, `@@index([status, currentPeriodEnd])`) and `Payment` (`orderId @unique` = Idempotency-Key, `paymentKey @unique`, plan, amount, status, failure code/message, period, `@@index([userId, createdAt])`), both cascade delete; seed unchanged
+- **Session** — `jwt` callback in `src/auth.ts` reading `isPro` from the database on every call, `session.user.isPro` (default `false`), type extensions on `Session.user` and `JWT`; `auth.config.ts` and `proxy.ts` unchanged; `isPro` in the session is UI-only
+- **Plan math** — `src/lib/billing-plans.ts`: `BILLING_PLANS` (placeholder ₩11,000 / ₩99,000, `orderName`, `months`, `satisfies Record<BillingPlan, …>`), `GRACE_DAYS = 3`, `MAX_FAILED_ATTEMPTS = 3`, UTC `addMonths` clamping to month end, `addDays`, deterministic `getOrderId` (`sub_<userId>_<YYYYMMDD>`, 6–64 chars `[A-Za-z0-9_=-]`), `parseBillingPlan`
+- **Toss client** — `src/lib/toss.ts` (`server-only`, plain `fetch`): Basic auth from `TOSS_SECRET_KEY` (throws when unset), 60s `AbortSignal.timeout`, `TossError` (`code`, `message`, `status`), `issueBillingKey`, `chargeBillingKey` (Idempotency-Key = orderId), `deleteBillingKey`, `TossBilling`/`TossPayment` types
+- **Billing-key encryption** — `src/lib/billing-key-crypto.ts` (`server-only`, AES-256-GCM, `BILLING_KEY_SECRET` 32-byte base64): `encryptBillingKey` → `iv.tag.data`, `decryptBillingKey` (throws on tamper), `hashBillingKey` (SHA-256 hex, reuse `hashToken` if it fits)
+- **Queries** — `src/lib/db/billing.ts` (`server-only`, scoped by user/subscription id): `getUserPlan` (one query, `null` if unknown), `getOrCreateCustomerKey` (`dl_<uuid>`), `getBillingOverview`, `getDueSubscriptions(now, take = 50)`, and transactional `activateSubscription`, `recordRenewal`, `recordFailedRenewal`, `expireSubscription`, `cancelSubscription`, `resumeSubscription`, `handleBillingDeleted`, each keeping `User.isPro` in sync with the status
+- **Config** — `.env.example` Toss block replaced with plan section 6.2 (`TOSS_SECRET_KEY`, `NEXT_PUBLIC_TOSS_CLIENT_KEY`, optional `TOSS_WEBHOOK_SECRET`, `BILLING_KEY_SECRET`, `CRON_SECRET`, `ENFORCE_PLAN_LIMITS`, each commented; drop `TOSS_PUBLISHABLE_KEY` and `TOSS_PRICE_ID_*`); `billing` limiter (5 / 10 min) in `src/lib/rate-limit.ts`
+- **Tests** — `usage-limits` (flag on/off via `vi.stubEnv` + `vi.resetModules()` + dynamic import, boundaries, slugs, messages), `billing-plans`, `billing-key-crypto`, `toss` (stubbed `fetch`), `db/billing` (mocked Prisma); then `npm run test:run`, `npm run build`, `npm run db:status`; sign in/out once in the browser
 
 ## Notes
 
-<!-- Any extra notes -->
+- Spec: `context/features/toss-pay-phase-1-spec.md`; reference `docs/toss-pay-integration-plan.md` (sections 0, 1, 4, 5.1–5.6, 6.1, 6.2, 9 steps 1–3)
+- Nothing calls Toss from a page, charges a card or changes what users can do; limits are defined but not enforced
+- The project overview calls the limits module `lib/plan.ts`; it lives in `src/lib/usage-limits.ts`
+- `ENFORCE_PLAN_LIMITS` is read at import time
+- Server-side gating uses `getUserPlan`, never `session.user.isPro`
+- Out of scope (Phase 2): enforcing limits in `createItem`/`createCollection`/`/api/upload`, `/api/billing/confirm`, `/api/cron/billing`, `vercel.json`, `/api/webhooks/toss`, cancel/resume actions, `deleteAccount` change, `/settings/billing` and upgrade/cancel UI, client SDK, homepage changes, final KRW pricing and contract decisions
 
 ## History
 
