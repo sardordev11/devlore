@@ -33,7 +33,38 @@ describe("with limits off", () => {
     expect(await gate.checkItemLimit("user-1", "snippets")).toBeNull();
     expect(await gate.checkCollectionLimit("user-1")).toBeNull();
     expect(await gate.checkUploadAccess("user-1")).toBeNull();
+    expect(await gate.canViewTypeSlug("user-1", "images")).toBe(true);
     expect(getUserPlan).not.toHaveBeenCalled();
+  });
+});
+
+describe("canViewTypeSlug with limits on", () => {
+  it("blocks Files and Images for free users", async () => {
+    const { gate } = await loadWithFlag(true, plan());
+
+    expect(await gate.canViewTypeSlug("user-1", "files")).toBe(false);
+    expect(await gate.canViewTypeSlug("user-1", "images")).toBe(false);
+  });
+
+  it("allows other types without reading the plan", async () => {
+    const { gate, getUserPlan } = await loadWithFlag(true, plan());
+
+    expect(await gate.canViewTypeSlug("user-1", "snippets")).toBe(true);
+    expect(await gate.canViewTypeSlug("user-1", "unknown")).toBe(true);
+    expect(getUserPlan).not.toHaveBeenCalled();
+  });
+
+  it("allows Files and Images for Pro users", async () => {
+    const { gate } = await loadWithFlag(true, plan({ isPro: true }));
+
+    expect(await gate.canViewTypeSlug("user-1", "files")).toBe(true);
+    expect(await gate.canViewTypeSlug("user-1", "images")).toBe(true);
+  });
+
+  it("treats a missing user as free", async () => {
+    const { gate } = await loadWithFlag(true, null);
+
+    expect(await gate.canViewTypeSlug("user-1", "images")).toBe(false);
   });
 });
 

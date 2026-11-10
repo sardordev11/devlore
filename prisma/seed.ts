@@ -54,8 +54,8 @@ interface SeedCollection {
 
 const COLLECTIONS: SeedCollection[] = [
   {
-    name: "React Patterns",
-    description: "Reusable React patterns and hooks",
+    name: "Frontend",
+    description: "React patterns, hooks and UI references",
     items: [
       {
         type: "snippet",
@@ -156,6 +156,30 @@ export function formatDate(date: Date | string, locale = "en-US") {
 export const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));`,
       },
+      {
+        type: "link",
+        title: "Tailwind CSS documentation",
+        description: "Utility classes, theming and v4 configuration",
+        url: "https://tailwindcss.com/docs",
+      },
+      {
+        type: "link",
+        title: "shadcn/ui",
+        description: "Accessible, copy-paste React components",
+        url: "https://ui.shadcn.com",
+      },
+      {
+        type: "link",
+        title: "Material Design 3",
+        description: "Google's open-source design system",
+        url: "https://m3.material.io",
+      },
+      {
+        type: "link",
+        title: "Lucide Icons",
+        description: "Open-source icon library used across DevLore",
+        url: "https://lucide.dev/icons",
+      },
     ],
   },
   {
@@ -222,7 +246,7 @@ Code:
   },
   {
     name: "DevOps",
-    description: "Infrastructure and deployment resources",
+    description: "Infrastructure, deployment and everyday shell commands",
     items: [
       {
         type: "snippet",
@@ -268,12 +292,6 @@ CMD ["node", "server.js"]`,
         description: "Workflows, runners and CI/CD with GitHub Actions",
         url: "https://docs.github.com/en/actions",
       },
-    ],
-  },
-  {
-    name: "Terminal Commands",
-    description: "Useful shell commands for everyday development",
-    items: [
       {
         type: "command",
         title: "Undo last commit, keep changes",
@@ -301,36 +319,6 @@ CMD ["node", "server.js"]`,
         description: "List dependencies with newer versions available",
         language: "bash",
         content: `npm outdated`,
-      },
-    ],
-  },
-  {
-    name: "Design Resources",
-    description: "UI/UX resources and references",
-    items: [
-      {
-        type: "link",
-        title: "Tailwind CSS documentation",
-        description: "Utility classes, theming and v4 configuration",
-        url: "https://tailwindcss.com/docs",
-      },
-      {
-        type: "link",
-        title: "shadcn/ui",
-        description: "Accessible, copy-paste React components",
-        url: "https://ui.shadcn.com",
-      },
-      {
-        type: "link",
-        title: "Material Design 3",
-        description: "Google's open-source design system",
-        url: "https://m3.material.io",
-      },
-      {
-        type: "link",
-        title: "Lucide Icons",
-        description: "Open-source icon library used across DevLore",
-        url: "https://lucide.dev/icons",
       },
     ],
   },

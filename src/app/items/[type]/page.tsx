@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { auth } from "@/auth";
+import { ProTypeUpgrade } from "@/components/billing/ProTypeUpgrade";
 import { FileRow } from "@/components/dashboard/FileRow";
 import { ImageCard } from "@/components/dashboard/ImageCard";
 import { ItemCard } from "@/components/dashboard/ItemCard";
@@ -15,6 +16,7 @@ import {
   ITEMS_PER_PAGE,
   parsePage,
 } from "@/lib/pagination";
+import { canViewTypeSlug } from "@/lib/plan-gate";
 import { TOUCH_ICON_ROW_SPACER } from "@/lib/touch-target";
 import { getTypeIcon, getTypeTint } from "@/lib/type-icons";
 import { isCreatableTypeSlug } from "@/lib/validations/items";
@@ -30,6 +32,11 @@ export default async function ItemsByTypePage({
   const session = await auth();
   if (!session?.user?.id) {
     redirect(`/sign-in?callbackUrl=${encodeURIComponent(`/items/${slug}`)}`);
+  }
+
+  // Checked before loading items so free users never fetch Pro-only listings
+  if (!(await canViewTypeSlug(session.user.id, slug))) {
+    return <ProTypeUpgrade slug={slug} />;
   }
 
   const listing = await getItemsByTypeSlug(session.user.id, slug, page);

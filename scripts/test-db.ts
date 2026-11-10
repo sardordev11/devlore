@@ -30,7 +30,7 @@ async function printCounts() {
 }
 
 const DEMO_EMAIL = "demo@devlore.io";
-const EXPECTED = { systemTypes: 7, collections: 5, items: 18 } as const;
+const EXPECTED = { systemTypes: 7, collections: 3, items: 18 } as const;
 
 async function printSystemTypes() {
   const types = await prisma.itemType.findMany({

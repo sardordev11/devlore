@@ -7,6 +7,7 @@ import {
   canUsePro,
   canUseTypeSlug,
   ENFORCE_PLAN_LIMITS,
+  isProOnlyTypeSlug,
   UPGRADE_MESSAGES,
 } from "@/lib/usage-limits";
 import type { UserPlan } from "@/types/billing";
@@ -37,6 +38,12 @@ export async function checkCollectionLimit(userId: string): Promise<string | nul
   if (!ENFORCE_PLAN_LIMITS) return null;
   const plan = await loadPlan(userId);
   return canCreateCollection(plan) ? null : UPGRADE_MESSAGES.collections;
+}
+
+// Whether the user may open /items/[slug]. Only Pro-only types read the plan.
+export async function canViewTypeSlug(userId: string, slug: string): Promise<boolean> {
+  if (!ENFORCE_PLAN_LIMITS || !isProOnlyTypeSlug(slug)) return true;
+  return canUseTypeSlug(await loadPlan(userId), slug);
 }
 
 export async function checkUploadAccess(userId: string): Promise<string | null> {
