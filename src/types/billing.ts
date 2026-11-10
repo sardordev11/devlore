@@ -18,3 +18,9 @@ export interface BillingOverview {
   amount: number;
   currentPeriodEnd: Date;
 }
+
+// /settings/billing: the overview plus whether a card is still registered
+// (Toss can delete it, and then Resume needs a new card first)
+export interface BillingDetails extends BillingOverview {
+  hasBillingKey: boolean;
+}

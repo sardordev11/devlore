@@ -13,6 +13,7 @@ import {
   type CollectionOption,
   type CreatedCollection,
 } from "@/lib/db/collections";
+import { checkCollectionLimit } from "@/lib/plan-gate";
 import {
   collectionIdSchema,
   createCollectionSchema,
@@ -24,6 +25,8 @@ const NOT_FOUND = "Collection not found";
 
 type CreateCollectionResult =
   | { success: true; data: CreatedCollection }
+  // upgrade: the free collection limit was hit, so the client offers the upgrade link
+  | { success: false; error: string; upgrade: true }
   | {
       success: false;
       error: string;
@@ -84,6 +87,11 @@ export async function createCollection(
   }
 
   try {
+    const upgradeMessage = await checkCollectionLimit(session.user.id);
+    if (upgradeMessage) {
+      return { success: false, error: upgradeMessage, upgrade: true };
+    }
+
     const collection = await createCollectionQuery(session.user.id, parsed.data);
     return { success: true, data: collection };
   } catch (error) {

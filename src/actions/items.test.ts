@@ -1,5 +1,5 @@
 import { refresh } from "next/cache";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { auth } from "@/auth";
 import { ownsCollections } from "@/lib/db/collections";
@@ -32,6 +32,7 @@ vi.mock("@/lib/r2", async (importOriginal) => ({
   deleteFile: vi.fn(),
 }));
 vi.mock("@/lib/db/collections", () => ({ ownsCollections: vi.fn() }));
+vi.mock("@/lib/db/billing", () => ({ getUserPlan: vi.fn() }));
 vi.mock("@/lib/db/items", () => ({
   createItem: vi.fn(),
   updateItem: vi.fn(),
@@ -578,5 +579,110 @@ describe("toggleItemPin", () => {
       error: "Couldn't update the pin. Please try again.",
     });
     expect(mockRefresh).not.toHaveBeenCalled();
+  });
+});
+
+describe("createItem plan limits", () => {
+  const snippet = { type: "snippets", title: "useAuth Hook", tags: [] };
+  const upload = {
+    type: "images",
+    title: "Diagram",
+    tags: [],
+    file: {
+      key: "users/user-1/0b6f4c1e-2d3a-4b5c-8d9e-0f1a2b3c4d5e.png",
+      fileName: "diagram.png",
+      fileSize: 1024,
+      mimeType: "image/png",
+    },
+  };
+
+  // ENFORCE_PLAN_LIMITS is read at import time, so re-import the action and
+  // its (freshly mocked) dependencies with the flag set
+  async function load(
+    enforce: boolean,
+    plan: { isPro: boolean; itemCount: number; collectionCount: number },
+  ) {
+    vi.resetModules();
+    vi.stubEnv("ENFORCE_PLAN_LIMITS", enforce ? "true" : "");
+    const [{ createItem }, authModule, billing, items, collections, r2] =
+      await Promise.all([
+        import("@/actions/items"),
+        import("@/auth"),
+        import("@/lib/db/billing"),
+        import("@/lib/db/items"),
+        import("@/lib/db/collections"),
+        import("@/lib/r2"),
+      ]);
+    vi.mocked(authModule.auth as () => Promise<unknown>).mockResolvedValue({
+      user: { id: "user-1" },
+      expires: "",
+    });
+    vi.mocked(billing.getUserPlan).mockResolvedValue(plan);
+    vi.mocked(collections.ownsCollections).mockResolvedValue(true);
+    vi.mocked(items.isFileKeyInUse).mockResolvedValue(false);
+    vi.mocked(items.createItem).mockResolvedValue(ITEM);
+    return {
+      createItem,
+      createItemQuery: vi.mocked(items.createItem),
+      getUserPlan: vi.mocked(billing.getUserPlan),
+      deleteFile: vi.mocked(r2.deleteFile),
+    };
+  }
+
+  const FREE = { isPro: false, itemCount: 0, collectionCount: 0 };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("allows the 51st item when limits aren't enforced", async () => {
+    const actions = await load(false, { ...FREE, itemCount: 50 });
+
+    const result = await actions.createItem(snippet);
+
+    expect(result.success).toBe(true);
+    expect(actions.getUserPlan).not.toHaveBeenCalled();
+  });
+
+  it("allows the 50th item when enforced", async () => {
+    const actions = await load(true, { ...FREE, itemCount: 49 });
+
+    expect((await actions.createItem(snippet)).success).toBe(true);
+    expect(actions.getUserPlan).toHaveBeenCalledWith("user-1");
+  });
+
+  it("rejects the 51st item with the upgrade flag when enforced", async () => {
+    const actions = await load(true, { ...FREE, itemCount: 50 });
+
+    const result = await actions.createItem(snippet);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Free accounts can have up to 50 items. Upgrade to Pro for unlimited items.",
+      upgrade: true,
+    });
+    expect(actions.createItemQuery).not.toHaveBeenCalled();
+  });
+
+  it("rejects File and Image for free users and removes the upload", async () => {
+    const actions = await load(true, FREE);
+
+    const result = await actions.createItem(upload);
+
+    expect(result).toEqual({
+      success: false,
+      error: "File and image uploads are a Pro feature. Upgrade to Pro to upload files.",
+      upgrade: true,
+    });
+    expect(actions.deleteFile).toHaveBeenCalledWith(upload.file.key);
+    expect(actions.createItemQuery).not.toHaveBeenCalled();
+  });
+
+  it("leaves Pro users unrestricted", async () => {
+    const actions = await load(true, { isPro: true, itemCount: 500, collectionCount: 0 });
+
+    expect((await actions.createItem(snippet)).success).toBe(true);
+    expect((await actions.createItem(upload)).success).toBe(true);
+    expect(actions.deleteFile).not.toHaveBeenCalled();
   });
 });

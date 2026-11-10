@@ -8,7 +8,11 @@ import type {
 } from "@/generated/prisma/client";
 import { encryptBillingKey, hashBillingKey } from "@/lib/billing-key-crypto";
 import { prisma } from "@/lib/prisma";
-import type { BillingOverview, UserPlan } from "@/types/billing";
+import type {
+  BillingDetails,
+  BillingOverview,
+  UserPlan,
+} from "@/types/billing";
 
 const BILLING_OVERVIEW_SELECT = {
   plan: true,
@@ -70,6 +74,67 @@ export function getBillingOverview(
   return prisma.subscription.findUnique({
     where: { userId },
     select: BILLING_OVERVIEW_SELECT,
+  });
+}
+
+export async function getBillingDetails(
+  userId: string,
+): Promise<BillingDetails | null> {
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId },
+    select: { ...BILLING_OVERVIEW_SELECT, billingKey: true },
+  });
+  if (!subscription) return null;
+
+  // The encrypted key never leaves this function
+  const { billingKey, ...overview } = subscription;
+  return { ...overview, hasBillingKey: billingKey !== null };
+}
+
+// What the confirm route needs to decide between upgrade, change card and a
+// no-op. billingKey is the encrypted value, or null when there's none.
+export function getSubscriptionState(userId: string) {
+  return prisma.subscription.findUnique({
+    where: { userId },
+    select: { status: true, billingKey: true, currentPeriodEnd: true },
+  });
+}
+
+export type SubscriptionState = NonNullable<
+  Awaited<ReturnType<typeof getSubscriptionState>>
+>;
+
+export interface ReplaceBillingKeyInput {
+  // Plain key from Toss; encrypted and hashed here before it's stored
+  billingKey: string;
+  cardCompany: string | null;
+  cardNumber: string | null;
+}
+
+// Change card: stores the new key on a subscription that hasn't expired, with
+// no charge. Returns the previous encrypted key (null when there was none), or
+// undefined when there's no subscription to update.
+export function replaceBillingKey(
+  userId: string,
+  input: ReplaceBillingKeyInput,
+): Promise<string | null | undefined> {
+  return prisma.$transaction(async (tx) => {
+    const previous = await tx.subscription.findUnique({
+      where: { userId },
+      select: { status: true, billingKey: true },
+    });
+    if (!previous || previous.status === "EXPIRED") return undefined;
+
+    await tx.subscription.update({
+      where: { userId },
+      data: {
+        billingKey: encryptBillingKey(input.billingKey),
+        billingKeyHash: hashBillingKey(input.billingKey),
+        cardCompany: input.cardCompany,
+        cardNumber: input.cardNumber,
+      },
+    });
+    return previous.billingKey;
   });
 }
 

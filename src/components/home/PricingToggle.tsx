@@ -8,6 +8,7 @@ import { Reveal } from "@/components/home/Reveal";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import {
+  getPlanHref,
   getProPrice,
   PLANS,
   YEARLY_SAVINGS_PERCENT,
@@ -56,7 +57,7 @@ function PlanCard({ plan, price, href }: PlanCardProps) {
 }
 
 // Monthly/yearly switch plus the plan cards whose Pro price it controls.
-export function PricingToggle({ planHref }: { planHref: string }) {
+export function PricingToggle({ isSignedIn }: { isSignedIn: boolean }) {
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const yearly = period === "yearly";
 
@@ -84,7 +85,7 @@ export function PricingToggle({ planHref }: { planHref: string }) {
             <PlanCard
               plan={plan}
               price={plan.id === "pro" ? getProPrice(period) : FREE_PRICE}
-              href={planHref}
+              href={getPlanHref(isSignedIn, plan.id)}
             />
           </Reveal>
         ))}

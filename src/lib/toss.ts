@@ -19,6 +19,8 @@ export class TossError extends Error {
 export interface TossBilling {
   billingKey: string;
   customerKey: string;
+  // Issuer name, e.g. "현대"; card.issuerCode is only a code
+  cardCompany?: string | null;
   card: { issuerCode: string; number: string; cardType: string } | null;
 }
 

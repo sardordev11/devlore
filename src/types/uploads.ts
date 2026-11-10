@@ -7,4 +7,6 @@ export interface UploadedFile {
 }
 
 export type UploadResponse =
-  { success: true; data: UploadedFile } | { success: false; error: string };
+  | { success: true; data: UploadedFile }
+  // upgrade: uploads are Pro only, so the client offers the upgrade link
+  | { success: false; error: string; upgrade?: boolean };

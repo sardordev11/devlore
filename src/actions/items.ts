@@ -14,6 +14,7 @@ import {
   updateItem as updateItemQuery,
   type ItemDetail,
 } from "@/lib/db/items";
+import { checkItemLimit } from "@/lib/plan-gate";
 import { deleteFile, getFileKey, isOwnedFileKey } from "@/lib/r2";
 import {
   createItemSchema,
@@ -29,6 +30,8 @@ import type {
 
 type CreateItemResult =
   | ItemDetailResponse
+  // upgrade: a plan limit was hit, so the client offers the upgrade link
+  | { success: false; error: string; upgrade: true }
   | {
       success: false;
       error: string;
@@ -99,6 +102,12 @@ export async function createItem(data: unknown): Promise<CreateItemResult> {
   }
 
   try {
+    // fail() so an upload for a Pro-only type doesn't stay in R2
+    const upgradeMessage = await checkItemLimit(userId, parsed.data.type);
+    if (upgradeMessage) {
+      return fail({ success: false, error: upgradeMessage, upgrade: true });
+    }
+
     // Two items sharing one object would lose the file when either is deleted.
     // The object belongs to the existing item, so it isn't removed here.
     if (parsed.data.file && (await isFileKeyInUse(userId, parsed.data.file.key))) {

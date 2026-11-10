@@ -6,6 +6,7 @@ import { useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { createCollection } from "@/actions/collections";
+import { toastUpgradeError } from "@/components/billing/UpgradePrompt";
 import { EditField } from "@/components/items/EditField";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +65,10 @@ export function CreateCollectionDialog() {
     startTransition(async () => {
       const result = await createCollection({ name, description });
       if (!result.success) {
+        if ("upgrade" in result) {
+          toastUpgradeError(result.error);
+          return;
+        }
         setFieldErrors(result.fieldErrors ?? {});
         toast.error(result.error);
         return;

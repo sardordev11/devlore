@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteFile } from "@/lib/r2";
+import { deleteBillingKey } from "@/lib/toss";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { changePassword, deleteAccount } from "@/actions/profile";
 
@@ -12,6 +13,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn(), delete: vi.fn() },
     item: { findMany: vi.fn() },
+    subscription: { findUnique: vi.fn() },
     verificationToken: { deleteMany: vi.fn() },
   },
 }));
@@ -21,6 +23,10 @@ vi.mock("@/lib/r2", () => ({
       ? url.slice("https://files.example.com/".length)
       : null,
   deleteFile: vi.fn(),
+}));
+vi.mock("@/lib/toss", () => ({ deleteBillingKey: vi.fn() }));
+vi.mock("@/lib/billing-key-crypto", () => ({
+  decryptBillingKey: (stored: string) => stored.replace(/^enc:/, ""),
 }));
 vi.mock("@/lib/rate-limit", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/rate-limit")>()),
@@ -36,6 +42,7 @@ const mockPrisma = vi.mocked(prisma, { deep: true });
 const mockBcrypt = vi.mocked(bcrypt);
 const mockCheckRateLimit = vi.mocked(checkRateLimit);
 const mockDeleteFile = vi.mocked(deleteFile);
+const mockDeleteBillingKey = vi.mocked(deleteBillingKey);
 
 function signInAs(id: string) {
   mockAuth.mockResolvedValue({ user: { id }, expires: "" });
@@ -131,6 +138,50 @@ describe("deleteAccount", () => {
   beforeEach(() => {
     signInAs("user-1");
     mockPrisma.item.findMany.mockResolvedValue([] as never);
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
+  });
+
+  it("deletes the billing key at Toss after deleting the account", async () => {
+    mockPrisma.subscription.findUnique.mockResolvedValue({
+      billingKey: "enc:bk-1",
+    } as never);
+    mockPrisma.user.delete.mockResolvedValue({ email: "a@b.io" } as never);
+
+    const result = await deleteAccount("delete");
+
+    expect(result).toEqual({ success: true });
+    expect(mockPrisma.subscription.findUnique).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      select: { billingKey: true },
+    });
+    expect(mockDeleteBillingKey).toHaveBeenCalledWith("bk-1");
+    // Read before the delete cascades the subscription away
+    expect(
+      mockPrisma.subscription.findUnique.mock.invocationCallOrder[0],
+    ).toBeLessThan(mockPrisma.user.delete.mock.invocationCallOrder[0]);
+  });
+
+  it("still signs out when deleting the billing key at Toss fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockPrisma.subscription.findUnique.mockResolvedValue({
+      billingKey: "enc:bk-1",
+    } as never);
+    mockPrisma.user.delete.mockResolvedValue({ email: "a@b.io" } as never);
+    mockDeleteBillingKey.mockRejectedValue(new Error("toss down"));
+
+    const result = await deleteAccount("delete");
+
+    expect(result).toEqual({ success: true });
+    expect(signOut).toHaveBeenCalledWith({ redirectTo: "/sign-in" });
+  });
+
+  it("skips Toss without a stored billing key", async () => {
+    mockPrisma.subscription.findUnique.mockResolvedValue({ billingKey: null } as never);
+    mockPrisma.user.delete.mockResolvedValue({ email: "a@b.io" } as never);
+
+    await deleteAccount("delete");
+
+    expect(mockDeleteBillingKey).not.toHaveBeenCalled();
   });
 
   it("requires the confirmation word", async () => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { refresh } from "next/cache";
 
@@ -20,6 +20,7 @@ import {
 
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/db/billing", () => ({ getUserPlan: vi.fn() }));
 vi.mock("@/lib/db/collections", () => ({
   createCollection: vi.fn(),
   deleteCollection: vi.fn(),
@@ -315,5 +316,72 @@ describe("toggleCollectionFavorite", () => {
       error: "Couldn't update favorites. Please try again.",
     });
     expect(mockRefresh).not.toHaveBeenCalled();
+  });
+});
+
+describe("createCollection plan limits", () => {
+  // ENFORCE_PLAN_LIMITS is read at import time, so re-import the action and
+  // its (freshly mocked) dependencies with the flag set
+  async function load(enforce: boolean, collectionCount: number, isPro = false) {
+    vi.resetModules();
+    vi.stubEnv("ENFORCE_PLAN_LIMITS", enforce ? "true" : "");
+    const [{ createCollection }, authModule, billing, collections] = await Promise.all([
+      import("@/actions/collections"),
+      import("@/auth"),
+      import("@/lib/db/billing"),
+      import("@/lib/db/collections"),
+    ]);
+    vi.mocked(authModule.auth as () => Promise<unknown>).mockResolvedValue({
+      user: { id: "user-1" },
+    });
+    vi.mocked(billing.getUserPlan).mockResolvedValue({
+      isPro,
+      itemCount: 0,
+      collectionCount,
+    });
+    vi.mocked(collections.createCollection).mockResolvedValue(COLLECTION);
+    return {
+      createCollection,
+      createCollectionQuery: vi.mocked(collections.createCollection),
+    };
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("allows a 4th collection when limits aren't enforced", async () => {
+    const actions = await load(false, 3);
+
+    expect(await actions.createCollection({ name: "Fourth" })).toEqual({
+      success: true,
+      data: COLLECTION,
+    });
+  });
+
+  it("allows the 3rd collection when enforced", async () => {
+    const actions = await load(true, 2);
+
+    expect((await actions.createCollection({ name: "Third" })).success).toBe(true);
+  });
+
+  it("rejects the 4th collection with the upgrade flag when enforced", async () => {
+    const actions = await load(true, 3);
+
+    const result = await actions.createCollection({ name: "Fourth" });
+
+    expect(result).toEqual({
+      success: false,
+      error:
+        "Free accounts can have up to 3 collections. Upgrade to Pro for unlimited collections.",
+      upgrade: true,
+    });
+    expect(actions.createCollectionQuery).not.toHaveBeenCalled();
+  });
+
+  it("leaves Pro users unrestricted", async () => {
+    const actions = await load(true, 30, true);
+
+    expect((await actions.createCollection({ name: "Thirty-first" })).success).toBe(true);
   });
 });
