@@ -3,9 +3,11 @@
 import bcrypt from "bcryptjs";
 
 import { auth, signOut } from "@/auth";
+import { decryptBillingKey } from "@/lib/billing-key-crypto";
 import { prisma } from "@/lib/prisma";
 import { deleteFile, getFileKey } from "@/lib/r2";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
+import { deleteBillingKey } from "@/lib/toss";
 import { PASSWORD_RESET_PREFIX } from "@/lib/tokens";
 import {
   changePasswordSchema,
@@ -30,6 +32,17 @@ async function removeFiles(fileUrls: (string | null)[]) {
     if (result.status === "rejected") {
       console.error("R2 delete failed:", result.reason);
     }
+  }
+}
+
+// Best effort, like the files: a key left at Toss can't be charged without
+// our secret key, and Toss failing mustn't block the account deletion.
+async function removeBillingKey(encrypted: string | null | undefined) {
+  if (!encrypted) return;
+  try {
+    await deleteBillingKey(decryptBillingKey(encrypted));
+  } catch (error) {
+    console.error("Toss billing key delete failed:", error);
   }
 }
 
@@ -98,6 +111,11 @@ export async function deleteAccount(confirmation: unknown): Promise<ActionResult
       where: { userId: session.user.id, fileUrl: { not: null } },
       select: { fileUrl: true },
     });
+    // The subscription cascades too, so read its billing key first
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+      select: { billingKey: true },
+    });
 
     // Items, collections, tags, accounts and sessions cascade with the user.
     // Verification and reset tokens are keyed by email, so they go separately.
@@ -112,6 +130,7 @@ export async function deleteAccount(confirmation: unknown): Promise<ActionResult
     });
 
     await removeFiles(files.map((file) => file.fileUrl));
+    await removeBillingKey(subscription?.billingKey);
   } catch (error) {
     console.error("Delete account failed:", error);
     return { success: false, error: "Couldn't delete your account. Please try again." };

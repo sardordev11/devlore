@@ -202,6 +202,9 @@ export const NAV_GET_STARTED: HomeLink = { label: "Get Started", href: "/sign-up
 export const GET_STARTED_FREE: HomeLink = { label: "Get Started Free", href: "/sign-up" };
 
 // Where the Free and Pro plan buttons go (billing isn't built yet).
-export function getPlanHref(isSignedIn: boolean): string {
-  return isSignedIn ? "/dashboard" : "/sign-up";
+// Signed-out visitors sign up first; signed-in users go to the dashboard for
+// Free and straight to billing for Pro
+export function getPlanHref(isSignedIn: boolean, planId: HomePlan["id"]): string {
+  if (!isSignedIn) return "/sign-up";
+  return planId === "pro" ? "/settings/billing" : "/dashboard";
 }

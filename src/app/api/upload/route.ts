@@ -6,6 +6,7 @@ import {
   FILE_CONSTRAINTS,
   isFileTypeSlug,
 } from "@/lib/file-constraints";
+import { checkUploadAccess } from "@/lib/plan-gate";
 import { createFileKey, uploadFile } from "@/lib/r2";
 import {
   checkRateLimit,
@@ -31,6 +32,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { success: false, error: rateLimitMessage(limit.reset) },
       { status: 429, headers: { "Retry-After": String(retryAfterSeconds(limit.reset)) } },
+    );
+  }
+
+  // Uploads are Pro only when limits are enforced; checked before buffering
+  const upgradeMessage = await checkUploadAccess(session.user.id);
+  if (upgradeMessage) {
+    return NextResponse.json(
+      { success: false, error: upgradeMessage, upgrade: true },
+      { status: 403 },
     );
   }
 

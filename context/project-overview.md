@@ -150,8 +150,7 @@ erDiagram
         string email
         string passwordHash
         boolean isPro
-        string stripeCustomerId
-        string stripeSubscriptionId
+        string tossCustomerKey
     }
     ITEM {
         string id PK
@@ -229,10 +228,9 @@ model User {
   image                String?
   passwordHash         String?   // null for OAuth-only users
 
-  // Billing
+  // Billing (Toss Payments; Subscription and Payment models in prisma/schema.prisma)
   isPro                Boolean   @default(false)
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
+  tossCustomerKey      String?   @unique
 
   accounts    Account[]
   sessions    Session[]
@@ -503,7 +501,7 @@ flowchart LR
     subgraph External["🌐 External"]
         GH["GitHub OAuth"]
         OAI["OpenAI<br/>gpt-5-nano"]
-        STRIPE["Stripe<br/>Billing"]
+        TOSS["Toss Payments<br/>Billing (자동결제)"]
     end
 
     UI --> SSR
@@ -515,8 +513,9 @@ flowchart LR
     AUTH --> GH
     AUTH --> DB
     API --> OAI
-    API --> STRIPE
-    STRIPE -->|webhooks| API
+    API -->|billing key + charges| TOSS
+    TOSS -->|BILLING_DELETED webhook| API
+    CRON["Vercel Cron<br/>daily renewals"] --> API
 ```
 
 ### File Upload Flow
@@ -554,7 +553,7 @@ sequenceDiagram
 | File storage | **Cloudflare R2**               | S3-compatible; uploads go through `/api/upload`    |
 | Auth         | **Auth.js (NextAuth v5)**       | Credentials (email/password) + GitHub OAuth        |
 | AI           | **OpenAI `gpt-5-nano`**         | Tags, summaries, explanations, prompt optimization |
-| Payments     | **Stripe**                      | Subscriptions + webhooks                           |
+| Payments     | **Toss Payments**               | Card billing keys, daily cron renewals, webhook    |
 | Styling      | **Tailwind CSS v4 + shadcn/ui** | Dark mode default                                  |
 | Icons        | **Lucide**                      | Matches shadcn/ui defaults                         |
 | Repo         | Single codebase                 | Less overhead                                      |
@@ -587,11 +586,13 @@ R2_PUBLIC_URL=
 # OpenAI
 OPENAI_API_KEY=
 
-# Stripe
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_MONTHLY=
-STRIPE_PRICE_YEARLY=
+# Toss Payments (API 개별 연동 keys, not widget keys)
+TOSS_SECRET_KEY=
+NEXT_PUBLIC_TOSS_CLIENT_KEY=
+TOSS_WEBHOOK_SECRET=         # optional, only if Toss signs BILLING_DELETED
+BILLING_KEY_SECRET=          # 32 random bytes, base64; encrypts stored billing keys
+CRON_SECRET=                 # Bearer token for /api/cron/billing
+ENFORCE_PLAN_LIMITS=         # plan limits apply only when "true"
 
 # Upstash Redis (optional, rate limiting is skipped without it)
 UPSTASH_REDIS_REST_URL=
@@ -619,10 +620,10 @@ Freemium model.
 | Export (JSON / ZIP)  | ❌                      | ✅                    |
 | Priority support     | ❌                      | ✅                    |
 
-> 🚧 **During development:** build the Pro foundation (`isPro`, limit checks, Stripe fields), but **let all users access everything**. A single feature flag makes this easy to flip later:
+> 🚧 **During development:** build the Pro foundation (`isPro`, limit checks, Toss billing), but **let all users access everything**. A single feature flag makes this easy to flip later:
 >
 > ```ts
-> // lib/plan.ts
+> // src/lib/usage-limits.ts
 > export const ENFORCE_PLAN_LIMITS = process.env.ENFORCE_PLAN_LIMITS === "true";
 >
 > export const FREE_LIMITS = { items: 50, collections: 3 } as const;
@@ -711,7 +712,7 @@ Refer to the screenshots below as a base for the dashboard UI. It does not have 
 | `/collections/[id]`           | Single collection with its items                     |
 | `/search?q=`                  | Search results                                       |
 | `/settings`                   | Theme, export                                        |
-| `/settings/billing`           | Plan & Stripe customer portal                        |
+| `/settings/billing`           | Plan, card, next charge; upgrade, change card, cancel |
 | `/api/auth/[...nextauth]`     | Auth.js handlers                                     |
 | `/api/auth/register`          | Email/password sign-up                               |
 | `/api/auth/verify-email`      | Verification link target                             |
@@ -719,7 +720,9 @@ Refer to the screenshots below as a base for the dashboard UI. It does not have 
 | `/api/items/[id]/download`    | Stream the user's file as an attachment              |
 | `/api/upload`                 | Upload a file or image to R2, returns its key        |
 | `/api/ai/*`                   | AI endpoints (tags, summary, explain, optimize)      |
-| `/api/webhooks/stripe`        | Stripe webhook handler                               |
+| `/api/billing/confirm`        | Toss success URL: issue billing key, first charge    |
+| `/api/cron/billing`           | Daily renewals, retries and expiries (Vercel Cron)   |
+| `/api/webhooks/toss`          | Toss `BILLING_DELETED` webhook handler               |
 
 > Items open in a drawer, so a dedicated item page is optional. Adding `?item=<id>` to the URL keeps drawers shareable and back-button friendly.
 
@@ -769,7 +772,7 @@ Refer to the screenshots below as a base for the dashboard UI. It does not have 
 | Auth.js + Prisma   | https://authjs.dev/getting-started/adapters/prisma |
 | Cloudflare R2      | https://developers.cloudflare.com/r2/              |
 | OpenAI API         | https://platform.openai.com/docs                   |
-| Stripe Billing     | https://docs.stripe.com/billing                    |
+| Toss Payments      | https://docs.tosspayments.com/guides/v2/billing    |
 | Tailwind CSS       | https://tailwindcss.com/docs                       |
 | shadcn/ui          | https://ui.shadcn.com                              |
 | Lucide Icons       | https://lucide.dev/icons                           |

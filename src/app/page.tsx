@@ -11,7 +11,6 @@ import { HomeFooter } from "@/components/home/HomeFooter";
 import { HomeNav } from "@/components/home/HomeNav";
 import { PricingSection } from "@/components/home/PricingSection";
 import { ScrollToHash } from "@/components/home/ScrollToHash";
-import { getPlanHref } from "@/lib/homepage";
 
 export const metadata: Metadata = {
   title: "DevLore — Your Developer Knowledge Hub",
@@ -23,7 +22,7 @@ async function HomeContent() {
   // The session is per request, so this part isn't prerendered.
   await connection();
   const session = await auth();
-  const planHref = getPlanHref(Boolean(session?.user?.id));
+  const isSignedIn = Boolean(session?.user?.id);
 
   return (
     <>
@@ -32,7 +31,7 @@ async function HomeContent() {
         <Hero />
         <FeaturesSection />
         <AiSection />
-        <PricingSection planHref={planHref} />
+        <PricingSection isSignedIn={isSignedIn} />
         <CtaSection />
       </main>
       <HomeFooter year={new Date().getFullYear()} />

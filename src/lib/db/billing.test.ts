@@ -4,14 +4,17 @@ import {
   activateSubscription,
   cancelSubscription,
   expireSubscription,
+  getBillingDetails,
   getBillingOverview,
   getDueSubscriptions,
   getOrCreateCustomerKey,
+  getSubscriptionState,
   getUserPlan,
   handleBillingDeleted,
   isProStatus,
   recordFailedRenewal,
   recordRenewal,
+  replaceBillingKey,
   resumeSubscription,
 } from "@/lib/db/billing";
 import { prisma } from "@/lib/prisma";
@@ -132,6 +135,99 @@ describe("getBillingOverview", () => {
     expect(mockPrisma.subscription.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: "user-1" } }),
     );
+  });
+});
+
+describe("getBillingDetails", () => {
+  it("returns null without a subscription", async () => {
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
+
+    await expect(getBillingDetails("user-1")).resolves.toBeNull();
+    expect(mockPrisma.subscription.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "user-1" } }),
+    );
+  });
+
+  it.each([
+    ["enc(bk-1)", true],
+    [null, false],
+  ])("reports whether a key is stored (%s) without returning it", async (billingKey, has) => {
+    mockPrisma.subscription.findUnique.mockResolvedValue({
+      plan: "MONTHLY",
+      status: "CANCELED",
+      cardCompany: "현대",
+      cardNumber: "4330****",
+      amount: 11000,
+      currentPeriodEnd: periodEnd,
+      billingKey,
+    } as never);
+
+    const details = await getBillingDetails("user-1");
+
+    expect(details).toEqual({
+      plan: "MONTHLY",
+      status: "CANCELED",
+      cardCompany: "현대",
+      cardNumber: "4330****",
+      amount: 11000,
+      currentPeriodEnd: periodEnd,
+      hasBillingKey: has,
+    });
+    expect(details).not.toHaveProperty("billingKey");
+  });
+});
+
+describe("getSubscriptionState", () => {
+  it("reads the status, stored key and period end for the user", async () => {
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
+
+    await expect(getSubscriptionState("user-1")).resolves.toBeNull();
+    expect(mockPrisma.subscription.findUnique).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      select: { status: true, billingKey: true, currentPeriodEnd: true },
+    });
+  });
+});
+
+describe("replaceBillingKey", () => {
+  const input = { billingKey: "bk-new", cardCompany: "신한", cardNumber: "5111****" };
+
+  it("stores the new key encrypted and hashed, returning the old one", async () => {
+    mockPrisma.subscription.findUnique.mockResolvedValue({
+      status: "ACTIVE",
+      billingKey: "enc(bk-old)",
+    } as never);
+
+    await expect(replaceBillingKey("user-1", input)).resolves.toBe("enc(bk-old)");
+    expect(mockPrisma.subscription.update).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: {
+        billingKey: "enc(bk-new)",
+        billingKeyHash: "hash(bk-new)",
+        cardCompany: "신한",
+        cardNumber: "5111****",
+      },
+    });
+  });
+
+  it("returns null for a subscription whose key was already removed", async () => {
+    mockPrisma.subscription.findUnique.mockResolvedValue({
+      status: "CANCELED",
+      billingKey: null,
+    } as never);
+
+    await expect(replaceBillingKey("user-1", input)).resolves.toBeNull();
+    expect(mockPrisma.subscription.update).toHaveBeenCalled();
+  });
+
+  it.each([
+    ["no subscription", null],
+    ["an expired one", { status: "EXPIRED", billingKey: null }],
+  ])("returns undefined and stores nothing for %s", async (_label, existing) => {
+    mockPrisma.subscription.findUnique.mockResolvedValue(existing as never);
+
+    await expect(replaceBillingKey("user-1", input)).resolves.toBeUndefined();
+    expect(mockPrisma.subscription.update).not.toHaveBeenCalled();
   });
 });
 

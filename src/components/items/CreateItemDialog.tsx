@@ -1,10 +1,12 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useState, useTransition, type SubmitEvent } from "react";
+import { Suspense, useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { createItem } from "@/actions/items";
+import { usePlanAccess } from "@/components/billing/PlanAccessContext";
+import { toastUpgradeError } from "@/components/billing/UpgradePrompt";
 import { CollectionPicker } from "@/components/items/CollectionPicker";
 import { ContentField } from "@/components/items/ContentField";
 import { EditField } from "@/components/items/EditField";
@@ -27,6 +29,7 @@ import { useFileUpload } from "@/hooks/use-file-upload";
 import { useItemFields } from "@/hooks/use-item-fields";
 import { isFileTypeSlug } from "@/lib/file-constraints";
 import { buildItemPayload, EMPTY_ITEM_FIELD_VALUES } from "@/lib/item-form";
+import { isProOnlyTypeSlug } from "@/lib/usage-limits";
 import { cn } from "@/lib/utils";
 import {
   getCreateFields,
@@ -38,14 +41,47 @@ interface CreateItemDialogProps {
   defaultType?: CreatableTypeSlug;
 }
 
+function getTriggerLabel(defaultType: CreatableTypeSlug | undefined) {
+  return defaultType
+    ? `New ${TYPE_OPTIONS.find((option) => option.slug === defaultType)?.label}`
+    : "New Item";
+}
+
+function TriggerContent({ defaultType }: CreateItemDialogProps) {
+  return (
+    <>
+      <Plus data-icon="inline-start" />
+      {/* The top bar is tight on mobile, so only the type pages always show the label. */}
+      <span className={cn(!defaultType && "hidden sm:inline")}>
+        {getTriggerLabel(defaultType)}
+      </span>
+    </>
+  );
+}
+
+// The plan streams in after the shell; until then the button waits disabled
 export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
+  return (
+    <Suspense
+      fallback={
+        <Button aria-label={getTriggerLabel(defaultType)} disabled>
+          <TriggerContent defaultType={defaultType} />
+        </Button>
+      }
+    >
+      <CreateItemDialogContent defaultType={defaultType} />
+    </Suspense>
+  );
+}
+
+function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
+  const { proLocked } = usePlanAccess();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const initialType = defaultType ?? "snippets";
   const [type, setType] = useState<CreatableTypeSlug>(initialType);
-  const triggerLabel = defaultType
-    ? `New ${TYPE_OPTIONS.find((option) => option.slug === defaultType)?.label}`
-    : "New Item";
+  const typeLocked = proLocked && isProOnlyTypeSlug(type);
+  const triggerLabel = getTriggerLabel(defaultType);
   const { values, setValue, fieldErrors, setFieldErrors, fieldProps, reset: resetFields } =
     useItemFields("new-item", EMPTY_ITEM_FIELD_VALUES, isPending);
   const [file, setFile] = useState<File | null>(null);
@@ -78,6 +114,10 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
         if (!file) return;
         const uploadResult = await upload(file, type);
         if (!uploadResult.success) {
+          if (uploadResult.upgrade) {
+            toastUpgradeError(uploadResult.error);
+            return;
+          }
           setFieldErrors({ file: [uploadResult.error] });
           toast.error(uploadResult.error);
           return;
@@ -87,6 +127,10 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
 
       const result = await createItem({ ...payload, file: uploaded });
       if (!result.success) {
+        if ("upgrade" in result) {
+          toastUpgradeError(result.error);
+          return;
+        }
         setFieldErrors("fieldErrors" in result ? result.fieldErrors : {});
         toast.error(result.error);
         return;
@@ -100,9 +144,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button aria-label={triggerLabel} />}>
-        <Plus data-icon="inline-start" />
-        {/* The top bar is tight on mobile, so only the type pages always show the label. */}
-        <span className={cn(!defaultType && "hidden sm:inline")}>{triggerLabel}</span>
+        <TriggerContent defaultType={defaultType} />
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
@@ -121,6 +163,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
               setFile(null);
             }}
             disabled={isPending}
+            proLocked={proLocked}
           />
 
           <EditField id="new-item-title" label="Title" error={fieldErrors.title?.[0]}>
@@ -220,6 +263,7 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
               type="submit"
               disabled={
                 isPending ||
+                typeLocked ||
                 !values.title.trim() ||
                 (fields.url && !values.url.trim()) ||
                 (fields.file && !file)

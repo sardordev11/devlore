@@ -1,18 +1,30 @@
-# Current Feature
-
-<!-- Feature Name -->
+# Current Feature: Toss Pay Phase 2 — Integration & UI
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- **Upgrade flow** — `src/app/api/billing/confirm/route.ts` (Toss success URL): `auth()` first, `billing` rate limit, `plan` via `parseBillingPlan`; `customerKey` must match the stored key (else `error=invalid`, no Toss call); users with an `ACTIVE`/`PAST_DUE` subscription redirected without charging; issue billing key → charge first period → require `status === "DONE"` → `activateSubscription`; on any failure after issuing, delete the key (best effort) and redirect to `/settings/billing?error=<code>`; `mode=change` issues a new key, replaces the stored one, deletes the old one, no charge
+- **Renewals** — `runBillingCycle(now)` in `src/lib/billing-cycle.ts`: charges due `ACTIVE`/`PAST_DUE` subscriptions one at a time, extends the period on success, failures → `PAST_DUE` with `nextRetryAt` +1 day, expire after `MAX_FAILED_ATTEMPTS`, expire `CANCELED` at period end and delete their key, one error never stops the run, returns `{ renewed, failed, expired }`; `GET /api/cron/billing` (401 unless `Authorization: Bearer <CRON_SECRET>`, 401 when unset, `maxDuration = 300`); `vercel.json` cron at `0 1 * * *` (10:00 KST)
+- **Webhook** — `POST /api/webhooks/toss`: Zod-validated body, 200 for malformed bodies and every event except `BILLING_DELETED`; `BILLING_DELETED` → `handleBillingDeleted(billingKey)` (match on `billingKeyHash`, clear key, `CANCELED` with access until `currentPeriodEnd`), 500 only on a database error; no Toss calls, respond within 10s; signature check only if Toss signs `BILLING_DELETED`
+- **Server actions** — `src/actions/billing.ts` (session check, `{ success, data, error }`, user id only from the session, `refresh()` on success): `getCustomerKey()`, `cancelSubscription()` (`ACTIVE` → `CANCELED`, "No active subscription" otherwise), `resumeSubscription()` (`CANCELED` → `ACTIVE` before the period ends while the key exists); `deleteAccount` loads the subscription before the cascade and calls `deleteBillingKey` (best effort, logged, sign-out unaffected)
+- **Feature gating** (server checks via `getUserPlan`, never `session.user.isPro`; no change when `ENFORCE_PLAN_LIMITS` is unset): `createItem` checks `canUseTypeSlug` for files/images then `canCreateItem` (`UPGRADE_MESSAGES.fileTypes`/`.items` via `fail()` so uploads are removed); `createCollection` checks `canCreateCollection`; `POST /api/upload` checks `canUsePro` after the rate limit, before buffering (403); results carry an `upgrade: true` flag (or shared error code); count-then-create races acceptable
+- **Billing page** — `/settings/billing` server page (`connection()`, `auth()`, `callbackUrl=/settings/billing`): plan, status badge, masked card, next charge date and amount, Upgrade / Change card / Cancel / Resume; banners for `?upgraded=1` and `?error=` (friendly messages, `PAY_PROCESS_CANCELED` as a neutral "Card registration cancelled"); `loading.tsx` skeleton
+- **Billing components** — `UpgradeButton` (Monthly/Yearly with KRW amounts from `BILLING_PLANS`, `@tosspayments/tosspayments-sdk` `requestBillingAuth`, success URL `/api/billing/confirm?plan=…`, fail URL `/settings/billing`), `CancelSubscriptionDialog` (`AlertDialog`, access until period end, "Cancelling…", toast), `UpgradePrompt` ("Upgrade to Pro" link to `/settings/billing`)
+- **Other UI** — "Billing" `DashboardSection` on `/settings` with the plan name and a link; File and Image disabled with an upgrade hint in `TypeSelector`/`CreateItemDialog` for free users when enforced (`isPro` and the flag from the server); `CreateCollectionDialog` and top bar "New" buttons show the limit message with `UpgradePrompt` on rejection; `getPlanHref` sends signed-in users to `/settings/billing` for the Pro card
+- **Other** — `npm install @tosspayments/tosspayments-sdk` (v2 client SDK only); `context/project-overview.md` updated from Stripe to Toss Payments (architecture, tech stack, env vars, `/settings/billing`, `/api/webhooks/toss`)
+- **Unit tests** — `billing-cycle.test.ts` (renew `ACTIVE`, retry `PAST_DUE`, `nextRetryAt`, expire after max attempts, expire `CANCELED` + delete key, continue after a throw, non-`DONE` is a failure), `actions/billing.test.ts` (cancel, resume, signed out, no subscription, resume after period end), `items.test.ts` (51st item rejected only when enforced, File/Image rejected for free users with upload removed, Pro unrestricted), `collections.test.ts` (4th collection rejected only when enforced), `profile.test.ts` (`deleteAccount` deletes the billing key and still signs out when Toss fails)
 
 ## Notes
 
-<!-- Any extra notes -->
+- Spec: `context/features/toss-pay-phase-2-spec.md`; reference `docs/toss-pay-integration-plan.md` (sections 2, 3, 4.1, 5.7–5.11, 6, 7, 8, 9 steps 4–8)
+- Prerequisites: Phase 1 merged; Toss test keys (API 개별 연동 키, not widget keys) in `.env.local`; if the plan section 0 pricing decisions aren't made, ship with the placeholder amounts and leave homepage prices unchanged
+- Out of scope: going live (contract, live keys, live webhook, `ENFORCE_PLAN_LIMITS=true` in production), downgrade handling for data over free limits (existing data stays, only new creation blocked), invoices/receipts/refunds/proration/plan switching, international cards or a second provider, AI/export/custom types
+- Route handlers aren't unit tested; keep their logic in `src/lib` where possible
+- Manual testing: no Toss CLI — webhooks via ngrok (register `/api/webhooks/toss` for `BILLING_DELETED` in the developer center) or `curl -X POST` a sample payload locally; cron via `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/billing` after moving `currentPeriodEnd` into the past on Neon `development` (ask before the `UPDATE`)
+- Manual checklist (plan section 8): monthly and yearly upgrade, closed card window message, tampered `customerKey` and success-URL reload don't charge, change card without a new `Payment`, cron renew + idempotent second call + 401s, cancel → expire → `isPro` false and resume, `BILLING_DELETED` → `CANCELED` and unknown events 200, enforced limits (50 items, 3 collections, File/Image disabled, upload 403) vs flag unset, delete account removes the billing key, `/settings/billing` at 1440px and 390px, `npm run test:run`, `npm run build`, `npm run db:status`
 
 ## History
 

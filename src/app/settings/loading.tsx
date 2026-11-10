@@ -8,6 +8,7 @@ export default function SettingsLoading() {
         <Skeleton className="h-5 w-56" />
       </header>
       <Skeleton className="h-80 rounded-xl" />
+      <Skeleton className="h-24 rounded-xl" />
       <Skeleton className="h-36 rounded-xl" />
     </div>
   );

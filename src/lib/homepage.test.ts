@@ -33,11 +33,16 @@ describe("YEARLY_SAVINGS_PERCENT", () => {
 });
 
 describe("getPlanHref", () => {
-  it("sends signed-out visitors to sign up", () => {
-    expect(getPlanHref(false)).toBe("/sign-up");
+  it("sends signed-out visitors to sign up for either plan", () => {
+    expect(getPlanHref(false, "free")).toBe("/sign-up");
+    expect(getPlanHref(false, "pro")).toBe("/sign-up");
   });
 
-  it("sends signed-in users to the dashboard", () => {
-    expect(getPlanHref(true)).toBe("/dashboard");
+  it("sends signed-in users to the dashboard for Free", () => {
+    expect(getPlanHref(true, "free")).toBe("/dashboard");
+  });
+
+  it("sends signed-in users to billing for Pro", () => {
+    expect(getPlanHref(true, "pro")).toBe("/settings/billing");
   });
 });
