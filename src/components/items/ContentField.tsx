@@ -16,6 +16,8 @@ interface ContentFieldProps {
   field: ItemFieldProps;
   onValueChange: (content: string) => void;
   language: string;
+  // Guessed from the content when no language is set (snippets).
+  detectedLanguage?: string | null;
   invalid: boolean;
 }
 
@@ -25,6 +27,7 @@ export function ContentField({
   field,
   onValueChange,
   language,
+  detectedLanguage,
   invalid,
 }: ContentFieldProps) {
   if (MARKDOWN_TYPE_SLUGS.has(typeSlug)) {
@@ -36,7 +39,7 @@ export function ContentField({
         value={field.value}
         onChange={onValueChange}
         language={language}
-        fallbackLanguage={getFallbackLanguage(typeSlug)}
+        fallbackLanguage={detectedLanguage ?? getFallbackLanguage(typeSlug)}
         disabled={field.disabled}
         ariaLabel="Content"
         invalid={invalid}

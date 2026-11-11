@@ -9,6 +9,7 @@ import { usePlanAccess } from "@/components/billing/PlanAccessContext";
 import { toastUpgradeError } from "@/components/billing/UpgradePrompt";
 import { CollectionPicker } from "@/components/items/CollectionPicker";
 import { ContentField } from "@/components/items/ContentField";
+import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { EditField } from "@/components/items/EditField";
 import { FileUpload } from "@/components/items/FileUpload";
 import { TYPE_OPTIONS, TypeSelector } from "@/components/items/TypeSelector";
@@ -25,8 +26,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useDetectedLanguage } from "@/hooks/use-detected-language";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useItemFields } from "@/hooks/use-item-fields";
+import {
+  getAutoLanguageLabel,
+  shouldDetectLanguage,
+} from "@/lib/code-language";
 import { isFileTypeSlug } from "@/lib/file-constraints";
 import { buildItemPayload, EMPTY_ITEM_FIELD_VALUES } from "@/lib/item-form";
 import { isProOnlyTypeSlug } from "@/lib/usage-limits";
@@ -89,6 +95,8 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
   const { upload, progress } = useFileUpload();
 
   const fields = getCreateFields(type);
+  const autoDetect = shouldDetectLanguage(type, values.language);
+  const detectedLanguage = useDetectedLanguage(values.content, autoDetect);
 
   function reset() {
     setType(initialType);
@@ -210,6 +218,22 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
             <Textarea {...fieldProps("description")} rows={2} />
           </EditField>
 
+          {fields.language && (
+            <EditField
+              id="new-item-language"
+              label="Language"
+              error={fieldErrors.language?.[0]}
+            >
+              <LanguageSelect
+                field={fieldProps("language")}
+                onValueChange={(language) => setValue("language", language)}
+                noneLabel={
+                  autoDetect ? getAutoLanguageLabel(detectedLanguage) : undefined
+                }
+              />
+            </EditField>
+          )}
+
           {fields.content && (
             <EditField
               id="new-item-content"
@@ -222,18 +246,9 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
                 field={fieldProps("content")}
                 onValueChange={(content) => setValue("content", content)}
                 language={values.language}
+                detectedLanguage={detectedLanguage}
                 invalid={Boolean(fieldErrors.content)}
               />
-            </EditField>
-          )}
-
-          {fields.language && (
-            <EditField
-              id="new-item-language"
-              label="Language"
-              error={fieldErrors.language?.[0]}
-            >
-              <Input {...fieldProps("language")} placeholder="typescript" />
             </EditField>
           )}
 

@@ -1,18 +1,29 @@
 # Current Feature
 
-<!-- Feature Name -->
+Language Select
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- Replace the free-text Language input with a dropdown (shadcn `Select`) for snippets and commands
+- Place the Language dropdown above the Content editor
+- Choosing a language updates the Monaco highlighting right away, so typing is highlighted in that language
+- Applies to both the New Item dialog (`CreateItemDialog`) and the drawer's edit mode (`ItemEditForm`)
 
 ## Notes
 
-<!-- Any extra notes -->
+- Highlighting already follows `values.language` via `ContentField` → `CodeEditor` (`toMonacoLanguage`); only the input and its position change
+- Options list of common Monaco languages in `src/lib/code-language.ts`, values stored as Monaco ids (e.g. `typescript`, `shell`)
+- Existing items with an alias like `bash` or `ts` should still preselect the matching option (normalize via `toMonacoLanguage`); a stored value that isn't in the list is kept as an extra option so editing doesn't drop it
+- Include a "None" / auto option that stores blank (fallback: shell for commands, plaintext otherwise)
+- Snippets with no language get one guessed from their content (highlight.js `highlightAuto`-style scoring over the select's languages, ties broken by a priority order with CSS/SCSS last, relevance below 3 stays plain text) via `detectLanguage` in `src/lib/detect-language.ts`; `useDetectedLanguage` debounces 300ms and lazy-loads the detector; the empty option reads "Auto (TypeScript)" / "Auto"; also applied to the drawer's read-only view; commands keep the shell fallback; nothing detected is saved
+- Autocomplete: Monaco's suggestions already worked (TypeScript service for JS/TS, words elsewhere) but `fixedOverflowWidgets` placed them relative to the dialog/drawer (both use CSS transforms), so the list showed far from the cursor and got clipped; `CodeEditor` now renders Monaco's popups in an `overflowWidgetsDomNode` on `<body>` (`monaco-editor` class for theme variables, fixed, z-60 above the dialog); Base UI ignores clicks on nodes added after the dialog opened, so picking a suggestion doesn't close it
+- VS Code-style JS/TS snippets (`log` → `console.log()`, `function`, `arrow`, `forof`, `foreach`, `if`, `ifelse`, `trycatch`, `import`, `fetch`, ...) in `src/lib/code-snippets.ts`, registered once as a Monaco completion provider in `src/components/items/monaco-snippets.ts`
+- No schema or server action changes; `language` stays an optional string
+- Unit tests for any new helpers in `src/lib/code-language.ts`
 
 ## History
 
