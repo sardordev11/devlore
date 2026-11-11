@@ -1,5 +1,7 @@
 // Content and link rules for the marketing homepage (`/`).
 
+import { UPGRADE_PATH } from "@/lib/billing-display";
+
 export interface HomeType {
   label: string;
   icon: string; // Lucide icon name, resolved with getTypeIcon
@@ -201,10 +203,9 @@ export const NAV_GET_STARTED: HomeLink = { label: "Get Started", href: "/sign-up
 // Hero and bottom CTA button.
 export const GET_STARTED_FREE: HomeLink = { label: "Get Started Free", href: "/sign-up" };
 
-// Where the Free and Pro plan buttons go (billing isn't built yet).
-// Signed-out visitors sign up first; signed-in users go to the dashboard for
-// Free and straight to billing for Pro
+// Where the Free and Pro plan buttons go. Signed-out visitors sign up first;
+// signed-in users go to the dashboard for Free and the upgrade page for Pro
 export function getPlanHref(isSignedIn: boolean, planId: HomePlan["id"]): string {
   if (!isSignedIn) return "/sign-up";
-  return planId === "pro" ? "/settings/billing" : "/dashboard";
+  return planId === "pro" ? UPGRADE_PATH : "/dashboard";
 }

@@ -1,6 +1,8 @@
 import { StarIcon } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 
+import { UpgradeNavButton } from "@/components/billing/UpgradeNavButton";
 import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { LogoMark } from "@/components/home/Logo";
@@ -25,6 +27,10 @@ export function TopBar() {
       </div>
       <GlobalSearch />
       <div className="flex items-center justify-end gap-2">
+        {/* Nothing while the plan streams in, so Pro users never see it flash */}
+        <Suspense fallback={null}>
+          <UpgradeNavButton />
+        </Suspense>
         <Button
           variant="ghost"
           size="icon"

@@ -227,6 +227,7 @@ model User {
   emailVerified        DateTime?
   image                String?
   passwordHash         String?   // null for OAuth-only users
+  editorPreferences    Json?     // Monaco settings; null or invalid fields fall back to defaults
 
   // Billing (Toss Payments; Subscription and Payment models in prisma/schema.prisma)
   isPro                Boolean   @default(false)
@@ -710,9 +711,11 @@ Refer to the screenshots below as a base for the dashboard UI. It does not have 
 | `/profile`                    | User info, stats, change password, delete account    |
 | `/collections`                | All collections                                      |
 | `/collections/[id]`           | Single collection with its items                     |
+| `/favorites`                  | Favorite items and collections, sortable             |
 | `/search?q=`                  | Search results                                       |
 | `/settings`                   | Theme, export                                        |
-| `/settings/billing`           | Plan, card, next charge; upgrade, change card, cancel |
+| `/settings/billing`           | Plan, card, next charge; change card, cancel, resume |
+| `/upgrade`                    | Choose Monthly/Yearly Pro and start Toss checkout    |
 | `/api/auth/[...nextauth]`     | Auth.js handlers                                     |
 | `/api/auth/register`          | Email/password sign-up                               |
 | `/api/auth/verify-email`      | Verification link target                             |
