@@ -1,14 +1,16 @@
-import { ArrowLeftIcon, CheckCircle2Icon, CircleAlertIcon, InfoIcon } from "lucide-react";
+import { ArrowLeftIcon, SparklesIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { auth } from "@/auth";
+import { BillingBanner, type Banner } from "@/components/billing/BillingBanner";
 import { CancelSubscriptionDialog } from "@/components/billing/CancelSubscriptionDialog";
+import { ChangeCardButton } from "@/components/billing/ChangeCardButton";
 import { ResumeSubscriptionButton } from "@/components/billing/ResumeSubscriptionButton";
-import { UpgradeButton } from "@/components/billing/UpgradeButton";
 import { DashboardSection } from "@/components/dashboard/DashboardSection";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   formatKrw,
@@ -16,11 +18,11 @@ import {
   getBillingView,
   PLAN_LABELS,
   PLAN_PERIODS,
+  UPGRADE_PATH,
   type BillingView,
 } from "@/lib/billing-display";
 import { getBillingDetails } from "@/lib/db/billing";
 import { formatDate } from "@/lib/format-date";
-import { cn } from "@/lib/utils";
 import type { BillingDetails } from "@/types/billing";
 
 const STATUS_BADGES: Record<BillingView, { label: string; className: string }> = {
@@ -29,8 +31,6 @@ const STATUS_BADGES: Record<BillingView, { label: string; className: string }> =
   past_due: { label: "Payment failed", className: "border-red-500/40 text-red-400" },
   canceled: { label: "Cancelled", className: "border-amber-500/40 text-amber-400" },
 };
-
-type Banner = { tone: "success" | "neutral" | "error"; text: string };
 
 function getBanner(params: Record<string, string | string[] | undefined>): Banner | null {
   if (params.upgraded === "1") {
@@ -42,25 +42,6 @@ function getBanner(params: Record<string, string | string[] | undefined>): Banne
   // Our confirm route sends ?error=, the Toss fail URL sends ?code=
   const code = params.error ?? params.code;
   return typeof code === "string" && code ? getBillingMessage(code) : null;
-}
-
-const BANNER_STYLES = {
-  success: { icon: CheckCircle2Icon, className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
-  neutral: { icon: InfoIcon, className: "border-border bg-muted text-muted-foreground" },
-  error: { icon: CircleAlertIcon, className: "border-red-500/30 bg-red-500/10 text-red-300" },
-};
-
-function BillingBanner({ banner }: { banner: Banner }) {
-  const { icon: Icon, className } = BANNER_STYLES[banner.tone];
-  return (
-    <div
-      role={banner.tone === "error" ? "alert" : "status"}
-      className={cn("flex items-start gap-2 rounded-lg border px-4 py-3 text-sm", className)}
-    >
-      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
-      {banner.text}
-    </div>
-  );
 }
 
 function getSummary(view: BillingView, details: BillingDetails | null) {
@@ -87,13 +68,20 @@ function BillingActions({
   details: BillingDetails | null;
   email: string | null;
 }) {
-  if (!details || view === "free") return <UpgradeButton mode="upgrade" email={email} />;
+  if (!details || view === "free") {
+    return (
+      <Button nativeButton={false} render={<Link href={UPGRADE_PATH} />} className="self-start">
+        <SparklesIcon data-icon="inline-start" />
+        Upgrade to Pro
+      </Button>
+    );
+  }
 
   const periodEnd = formatDate(details.currentPeriodEnd, "long");
   return (
     <div className="flex flex-wrap gap-2">
       {view === "canceled" && details.hasBillingKey && <ResumeSubscriptionButton />}
-      <UpgradeButton mode="change" email={email} />
+      <ChangeCardButton email={email} />
       {view !== "canceled" && <CancelSubscriptionDialog periodEnd={periodEnd} />}
     </div>
   );

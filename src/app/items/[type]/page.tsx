@@ -3,12 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { auth } from "@/auth";
-import { ProTypeUpgrade } from "@/components/billing/ProTypeUpgrade";
 import { FileRow } from "@/components/dashboard/FileRow";
 import { ImageCard } from "@/components/dashboard/ImageCard";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { PaginationControls } from "@/components/pagination/PaginationControls";
+import { UPGRADE_PATH } from "@/lib/billing-display";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 import {
   getPageCount,
@@ -35,9 +35,7 @@ export default async function ItemsByTypePage({
   }
 
   // Checked before loading items so free users never fetch Pro-only listings
-  if (!(await canViewTypeSlug(session.user.id, slug))) {
-    return <ProTypeUpgrade slug={slug} />;
-  }
+  if (!(await canViewTypeSlug(session.user.id, slug))) redirect(UPGRADE_PATH);
 
   const listing = await getItemsByTypeSlug(session.user.id, slug, page);
   if (!listing) notFound();

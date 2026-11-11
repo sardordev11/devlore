@@ -28,6 +28,14 @@ export function getBillingView(
   }
 }
 
+// Where every "Upgrade" link goes: plan picker, then the Toss card window
+export const UPGRADE_PATH = "/upgrade";
+
+// The page's monthly/yearly switch (lowercase, as on the homepage) → BillingPlan
+export function toBillingPlan(period: "monthly" | "yearly"): BillingPlan {
+  return period === "yearly" ? "YEARLY" : "MONTHLY";
+}
+
 export const PLAN_LABELS = {
   MONTHLY: "Monthly",
   YEARLY: "Yearly",

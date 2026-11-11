@@ -19,7 +19,7 @@ export function AppShell({ children }: AppShellProps) {
       <SidebarProvider className="h-dvh flex-col">
         {/* Not awaited: code editors read it with use() once it streams in. */}
         <EditorPreferencesProvider preferencesPromise={loadEditorPreferences()}>
-          {/* Not awaited either: only the New Item dialog's type picker reads it. */}
+          {/* Not awaited either: read by the Upgrade button and the New Item dialog. */}
           <PlanAccessProvider planAccessPromise={loadPlanAccess()}>
             {/* Wraps the top bar too, so the command palette can open items. */}
             <ItemDrawerProvider>

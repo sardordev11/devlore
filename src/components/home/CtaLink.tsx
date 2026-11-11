@@ -18,12 +18,31 @@ const SIZES = {
   lg: "h-12 px-6 text-[15px]",
 } as const;
 
-interface CtaLinkProps {
-  href: string;
+interface CtaStyleOptions {
   variant?: keyof typeof VARIANTS;
   size?: keyof typeof SIZES;
   block?: boolean;
   className?: string;
+}
+
+// Homepage button look, shared with real buttons such as /upgrade's checkout
+export function getCtaClassName({
+  variant = "primary",
+  size = "default",
+  block = false,
+  className,
+}: CtaStyleOptions) {
+  return cn(
+    "rounded-[10px] font-semibold transition-[background-color,border-color,color,transform,box-shadow] duration-200 focus-visible:ring-home-accent/60",
+    VARIANTS[variant],
+    SIZES[size],
+    block && "w-full",
+    className,
+  );
+}
+
+interface CtaLinkProps extends CtaStyleOptions {
+  href: string;
   children: ReactNode;
 }
 
@@ -41,13 +60,7 @@ export function CtaLink({
       variant={variant === "primary" ? "default" : variant}
       nativeButton={false}
       render={<Link href={href} />}
-      className={cn(
-        "rounded-[10px] font-semibold transition-[background-color,border-color,color,transform,box-shadow] duration-200 focus-visible:ring-home-accent/60",
-        VARIANTS[variant],
-        SIZES[size],
-        block && "w-full",
-        className,
-      )}
+      className={getCtaClassName({ variant, size, block, className })}
     >
       {children}
     </Button>

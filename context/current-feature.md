@@ -1,18 +1,25 @@
 # Current Feature
 
-<!-- Feature Name -->
+Upgrade Page
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- Free users (not `isPro`) see a subtle ghost "Upgrade" button in the app header; Pro users don't
+- New protected `/upgrade` page showing the Free and Pro plans like the homepage pricing section
+- Monthly ($8) / Yearly ($72) selection on the page
+- "Upgrade to Pro" on the page opens the Toss card window for the selected plan
+- Existing upgrade links (upgrade prompts, homepage Pro plan, free state of `/settings/billing`) point to `/upgrade`
+- Users who already have Pro are redirected from `/upgrade` to `/settings/billing`
+- Free users opening `/items/files` or `/items/images` are redirected to `/upgrade` instead of seeing the `ProTypeUpgrade` page, which is removed
 
 ## Notes
 
-<!-- Any extra notes -->
+- Prices shown are the homepage USD prices; Toss still charges the KRW amounts in `BILLING_PLANS`, so the page states the KRW charge in fine print
+- Toss's fail URL for upgrades is `/upgrade`, so a cancelled card window lands back on the page with a banner
 
 ## History
 

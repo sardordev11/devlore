@@ -42,7 +42,7 @@ describe("getPlanHref", () => {
     expect(getPlanHref(true, "free")).toBe("/dashboard");
   });
 
-  it("sends signed-in users to billing for Pro", () => {
-    expect(getPlanHref(true, "pro")).toBe("/settings/billing");
+  it("sends signed-in users to the upgrade page for Pro", () => {
+    expect(getPlanHref(true, "pro")).toBe("/upgrade");
   });
 });

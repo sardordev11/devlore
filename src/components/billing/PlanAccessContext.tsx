@@ -19,8 +19,9 @@ export function PlanAccessProvider({
   return <PlanAccessContext value={planAccessPromise}>{children}</PlanAccessContext>;
 }
 
-// Suspends until the plan arrives; everything stays unlocked outside a provider
+// Suspends until the plan arrives. Outside a provider everything stays
+// unlocked and no upgrade prompt shows.
 export function usePlanAccess(): PlanAccess {
   const promise = useContext(PlanAccessContext);
-  return promise ? use(promise) : { proLocked: false };
+  return promise ? use(promise) : { isPro: true, proLocked: false };
 }

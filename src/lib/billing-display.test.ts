@@ -5,7 +5,15 @@ import {
   getBillingMessage,
   getBillingView,
   isCardWindowClosed,
+  toBillingPlan,
 } from "@/lib/billing-display";
+
+describe("toBillingPlan", () => {
+  it("maps the billing period to the plan", () => {
+    expect(toBillingPlan("monthly")).toBe("MONTHLY");
+    expect(toBillingPlan("yearly")).toBe("YEARLY");
+  });
+});
 
 const now = new Date("2026-11-10T00:00:00Z");
 const later = new Date("2026-12-10T00:00:00Z");

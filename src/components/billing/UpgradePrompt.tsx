@@ -4,9 +4,8 @@ import { SparklesIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
+import { UPGRADE_PATH } from "@/lib/billing-display";
 import { cn } from "@/lib/utils";
-
-export const BILLING_HREF = "/settings/billing";
 
 interface UpgradePromptProps {
   className?: string;
@@ -16,7 +15,7 @@ interface UpgradePromptProps {
 export function UpgradePrompt({ className }: UpgradePromptProps) {
   return (
     <Link
-      href={BILLING_HREF}
+      href={UPGRADE_PATH}
       className={cn(
         "inline-flex items-center gap-1 text-sm font-medium text-blue-400 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none",
         className,
