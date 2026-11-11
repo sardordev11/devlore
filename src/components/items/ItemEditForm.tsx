@@ -8,12 +8,18 @@ import { toast } from "sonner";
 import { updateItem } from "@/actions/items";
 import { CollectionPicker } from "@/components/items/CollectionPicker";
 import { ContentField } from "@/components/items/ContentField";
+import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { EditField } from "@/components/items/EditField";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useDetectedLanguage } from "@/hooks/use-detected-language";
 import { useItemFields } from "@/hooks/use-item-fields";
+import {
+  getAutoLanguageLabel,
+  shouldDetectLanguage,
+} from "@/lib/code-language";
 import { buildItemPayload } from "@/lib/item-form";
 import { LANGUAGE_TYPE_SLUGS } from "@/lib/validations/items";
 import type { ItemDetailJson } from "@/types/items";
@@ -50,6 +56,9 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
     language: LANGUAGE_TYPE_SLUGS.has(item.type.slug),
     url: item.contentType === "URL",
   };
+
+  const autoDetect = shouldDetectLanguage(item.type.slug, values.language);
+  const detectedLanguage = useDetectedLanguage(values.content, autoDetect);
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -104,6 +113,22 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
           <Textarea {...fieldProps("description")} rows={2} />
         </EditField>
 
+        {fields.language && (
+          <EditField
+            id="item-language"
+            label="Language"
+            error={fieldErrors.language?.[0]}
+          >
+            <LanguageSelect
+              field={fieldProps("language")}
+              onValueChange={(language) => setValue("language", language)}
+              noneLabel={
+                autoDetect ? getAutoLanguageLabel(detectedLanguage) : undefined
+              }
+            />
+          </EditField>
+        )}
+
         {fields.content && (
           <EditField
             id="item-content"
@@ -115,20 +140,12 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
               field={fieldProps("content")}
               onValueChange={(content) => setValue("content", content)}
               language={values.language}
+              detectedLanguage={detectedLanguage}
               invalid={Boolean(fieldErrors.content)}
             />
           </EditField>
         )}
 
-        {fields.language && (
-          <EditField
-            id="item-language"
-            label="Language"
-            error={fieldErrors.language?.[0]}
-          >
-            <Input {...fieldProps("language")} placeholder="typescript" />
-          </EditField>
-        )}
 
         {fields.url && (
           <EditField id="item-url" label="URL" error={fieldErrors.url?.[0]}>

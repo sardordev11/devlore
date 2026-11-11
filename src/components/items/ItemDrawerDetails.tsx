@@ -6,7 +6,11 @@ import type { LucideIcon } from "lucide-react";
 import { CodeEditor } from "@/components/items/CodeEditor";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Badge } from "@/components/ui/badge";
-import { getFallbackLanguage } from "@/lib/code-language";
+import { useDetectedLanguage } from "@/hooks/use-detected-language";
+import {
+  getFallbackLanguage,
+  shouldDetectLanguage,
+} from "@/lib/code-language";
 import { formatFileSize, isImageMimeType } from "@/lib/file-constraints";
 import { formatLocalDate } from "@/lib/format-date";
 import {
@@ -17,6 +21,30 @@ import type { ItemDetailJson } from "@/types/items";
 
 interface ItemDrawerDetailsProps {
   item: ItemDetailJson;
+}
+
+interface CodeViewProps {
+  content: string;
+  language: string | null;
+  typeSlug: string;
+}
+
+// Read-only code, with the language guessed for snippets saved without one.
+function CodeView({ content, language, typeSlug }: CodeViewProps) {
+  const detectedLanguage = useDetectedLanguage(
+    content,
+    shouldDetectLanguage(typeSlug, language),
+  );
+
+  return (
+    <CodeEditor
+      value={content}
+      language={language}
+      fallbackLanguage={detectedLanguage ?? getFallbackLanguage(typeSlug)}
+      ariaLabel="Content"
+      readOnly
+    />
+  );
 }
 
 interface DetailSectionProps {
@@ -92,12 +120,10 @@ function ItemContent({ item }: ItemDrawerDetailsProps) {
   }
   if (item.content && LANGUAGE_TYPE_SLUGS.has(item.type.slug)) {
     return (
-      <CodeEditor
-        value={item.content}
+      <CodeView
+        content={item.content}
         language={item.language}
-        fallbackLanguage={getFallbackLanguage(item.type.slug)}
-        ariaLabel="Content"
-        readOnly
+        typeSlug={item.type.slug}
       />
     );
   }
