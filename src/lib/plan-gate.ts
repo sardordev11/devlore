@@ -51,3 +51,9 @@ export async function checkUploadAccess(userId: string): Promise<string | null> 
   const plan = await loadPlan(userId);
   return canUsePro(plan) ? null : UPGRADE_MESSAGES.fileTypes;
 }
+
+export async function checkAiAccess(userId: string): Promise<string | null> {
+  if (!ENFORCE_PLAN_LIMITS) return null;
+  const plan = await loadPlan(userId);
+  return canUsePro(plan) ? null : UPGRADE_MESSAGES.ai;
+}

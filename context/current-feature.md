@@ -1,18 +1,32 @@
-# Current Feature
-
-<!-- Feature Name -->
+# Current Feature: AI Auto-Tagging
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- OpenAI client utility with an `AI_MODEL` constant (`gpt-5-nano`), using the standard `openai` SDK and kept simple (first AI feature, so this sets up the foundation)
+- `generateAutoTags` server action with auth, Pro gating, Zod validation and rate limiting
+- AI rate limit config (20 requests/hour per user) added to `src/lib/rate-limit.ts`
+- "Suggest Tags" button (Sparkles icon, ghost variant) near the tags input in `CreateItemDialog` and `ItemEditForm` (drawer edit mode)
+- 3–5 freeform suggestions from the item's title and content, shown as badges with accept (check) and reject (X) controls per tag
+- Accepted tags added to the item's tag list; tags are freeform, not limited to existing database tags
+- Content truncated to 2000 chars before the API call
+- Suggest Tags button hidden for free users (UI gating) plus server-side enforcement
+- Errors shown as toasts (Pro gating, rate limit, AI service errors)
+- Follow existing patterns
+- Unit tests for the server action
 
 ## Notes
 
-<!-- Any extra notes -->
+- **Use the Responses API, not Chat Completions** — gpt-5-nano returns empty content with `chat.completions.create()`. Use `client.responses.create({ model, instructions, input, text: { format: { type: "json_object" } } })` and read `response.output_text`
+- Don't use `max_tokens`; don't use `zodResponseFormat` (excessive tokens, hits length limits) — use `json_object` and parse manually
+- The model may return `{"tags": [...]}` or a bare `[...]` — handle both; always normalize tags to lowercase
+- `OPENAI_API_KEY` is already in `.env`
+- `isPro` is in the session but not passed to the create/edit UI; `PlanAccess` (from `loadPlanAccess` in `AppShell`) already exposes `isPro` client side and can drive button visibility
+- See `docs/ai-integration-plan.md` for full architectural context
+- Spec: `context/features/ai-auto-tag-spec.md`
 
 ## History
 

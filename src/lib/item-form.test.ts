@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildItemPayload, type ItemFieldValues } from "@/lib/item-form";
+import {
+  appendTag,
+  buildItemPayload,
+  getNewTags,
+  type ItemFieldValues,
+} from "@/lib/item-form";
 
 const VALUES: ItemFieldValues = {
   title: "useAuth Hook",
@@ -40,5 +45,32 @@ describe("buildItemPayload", () => {
       { content: false, language: false, url: true },
     );
     expect(payload).toHaveProperty("url", "");
+  });
+});
+
+describe("getNewTags", () => {
+  it("drops suggestions already in the field, ignoring case", () => {
+    expect(getNewTags("React, hooks", ["react", "typescript", "HOOKS", "state"])).toEqual([
+      "typescript",
+      "state",
+    ]);
+  });
+
+  it("keeps everything for an empty field", () => {
+    expect(getNewTags("", ["react"])).toEqual(["react"]);
+  });
+});
+
+describe("appendTag", () => {
+  it("appends to the comma-separated list and normalizes spacing", () => {
+    expect(appendTag("react,hooks ,", "typescript")).toBe("react, hooks, typescript");
+  });
+
+  it("starts an empty field", () => {
+    expect(appendTag("  ", "docker")).toBe("docker");
+  });
+
+  it("leaves the field unchanged for a duplicate", () => {
+    expect(appendTag("React, hooks", "react")).toBe("React, hooks");
   });
 });

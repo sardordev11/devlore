@@ -11,6 +11,7 @@ import { ContentField } from "@/components/items/ContentField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { EditField } from "@/components/items/EditField";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
+import { TagsField } from "@/components/items/TagsField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -157,9 +158,13 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
           </EditField>
         )}
 
-        <EditField id="item-tags" label="Tags" error={fieldErrors.tags?.[0]}>
-          <Input {...fieldProps("tags")} placeholder="react, hooks, auth" />
-        </EditField>
+        <TagsField
+          field={fieldProps("tags")}
+          error={fieldErrors.tags?.[0]}
+          onValueChange={(tags) => setValue("tags", tags)}
+          title={values.title}
+          content={fields.url ? values.url : fields.content ? values.content : ""}
+        />
 
         <EditField
           id="item-collections"
