@@ -1,13 +1,15 @@
 import OpenAI from "openai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { generateAutoTags, generateDescription } from "@/actions/ai";
+import { explainCode, generateAutoTags, generateDescription } from "@/actions/ai";
 import { auth } from "@/auth";
 import { getOpenAI } from "@/lib/ai/client";
+import { getItemDetail, type ItemDetail } from "@/lib/db/items";
 import { checkAiAccess } from "@/lib/plan-gate";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/db/items", () => ({ getItemDetail: vi.fn() }));
 vi.mock("@/lib/plan-gate", () => ({ checkAiAccess: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
@@ -20,6 +22,7 @@ const mockAuth = vi.mocked(auth as () => Promise<unknown>);
 const mockCheckAiAccess = vi.mocked(checkAiAccess);
 const mockCheckRateLimit = vi.mocked(checkRateLimit);
 const mockGetOpenAI = vi.mocked(getOpenAI);
+const mockGetItemDetail = vi.mocked(getItemDetail);
 const mockCreate = vi.fn();
 
 const INPUT = { title: "useDebounce hook", content: "export function useDebounce() {}" };
@@ -275,6 +278,121 @@ describe("generateDescription", () => {
     expect(await generateDescription(DESCRIPTION_INPUT)).toEqual({
       success: false,
       error: "Couldn't generate a description. Please try again.",
+    });
+  });
+});
+
+describe("explainCode", () => {
+  const EXPLAIN_INPUT = { itemId: "item-1", language: "typescript" };
+  const SNIPPET = {
+    id: "item-1",
+    title: "useDebounce hook",
+    content: "export function useDebounce() {}",
+    language: null,
+    type: { slug: "snippets" },
+  } as unknown as ItemDetail;
+
+  beforeEach(() => {
+    mockGetItemDetail.mockResolvedValue(SNIPPET);
+    mockCreate.mockResolvedValue({ output_text: "Debounces a value.\n\n- `delay` sets the wait" });
+  });
+
+  it("requires a session", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({
+      success: false,
+      error: "You must be signed in",
+    });
+    expect(mockGetItemDetail).not.toHaveBeenCalled();
+  });
+
+  it("rejects input without an item id", async () => {
+    expect(await explainCode({ itemId: "" })).toEqual({ success: false, error: "Invalid item" });
+    expect(mockGetItemDetail).not.toHaveBeenCalled();
+  });
+
+  it("loads the item scoped to the user", async () => {
+    mockGetItemDetail.mockResolvedValue(null);
+
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({ success: false, error: "Item not found" });
+    expect(mockGetItemDetail).toHaveBeenCalledWith("user-1", "item-1");
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("only explains snippets and commands with content", async () => {
+    mockGetItemDetail.mockResolvedValue({ ...SNIPPET, type: { slug: "notes" } } as ItemDetail);
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({
+      success: false,
+      error: "Only snippets and commands can be explained.",
+    });
+
+    mockGetItemDetail.mockResolvedValue({ ...SNIPPET, content: "  " });
+    expect((await explainCode(EXPLAIN_INPUT)).success).toBe(false);
+
+    expect(mockCheckAiAccess).not.toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns an upgrade error for free users without calling OpenAI", async () => {
+    mockCheckAiAccess.mockResolvedValue("AI features are part of Pro.");
+
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({
+      success: false,
+      error: "AI features are part of Pro.",
+      upgrade: true,
+    });
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("rate limits by user id", async () => {
+    mockCheckRateLimit.mockResolvedValue({ success: false, remaining: 0, reset: 1 });
+
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({
+      success: false,
+      error: "Too many attempts. Please try again in 30 minutes.",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("ai", "user-1");
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns the explanation from the saved content", async () => {
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({
+      success: true,
+      data: { explanation: "Debounces a value.\n\n- `delay` sets the wait" },
+    });
+
+    const request = mockCreate.mock.calls[0][0];
+    expect(request).toMatchObject({ model: "gpt-5-nano", store: false });
+    expect(request.input).toContain("Explain this code snippet.");
+    expect(request.input).toContain("export function useDebounce() {}");
+    // No saved language, so the editor's detected one is used
+    expect(request.input).toContain("Language: typescript");
+  });
+
+  it("prefers the saved language over the client's", async () => {
+    mockGetItemDetail.mockResolvedValue({ ...SNIPPET, language: "javascript" });
+
+    await explainCode(EXPLAIN_INPUT);
+
+    expect(mockCreate.mock.calls[0][0].input).toContain("Language: javascript");
+  });
+
+  it("fails when the model returns nothing", async () => {
+    mockCreate.mockResolvedValue({ output_text: "  " });
+
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({
+      success: false,
+      error: "Couldn't explain this item. Please try again.",
+    });
+  });
+
+  it("maps OpenAI errors to fixed messages", async () => {
+    mockCreate.mockRejectedValue(new Error("secret upstream detail"));
+
+    expect(await explainCode(EXPLAIN_INPUT)).toEqual({
+      success: false,
+      error: "Couldn't explain this code. Please try again.",
     });
   });
 });

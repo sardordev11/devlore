@@ -3,7 +3,8 @@
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 
-import { EditorFrame } from "@/components/items/EditorFrame";
+import { EditorFrame, EditorTabs } from "@/components/items/EditorFrame";
+import { MarkdownPreview } from "@/components/items/MarkdownEditor";
 import {
   defineMonacoThemes,
   getMonacoThemeName,
@@ -13,12 +14,16 @@ import { registerMonacoSnippets } from "@/components/items/monaco-snippets";
 import { useEditorPreferences } from "@/components/settings/EditorPreferencesContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toMonacoLanguage } from "@/lib/code-language";
+import { cn } from "@/lib/utils";
 
 const MAX_HEIGHT = 400;
 const MIN_HEIGHT = 80;
 // Monaco line height relative to the font size (19px at the default 13px).
 const LINE_HEIGHT_RATIO = 1.45;
 const VERTICAL_PADDING = 24;
+
+export type CodeEditorView = "code" | "explain";
+const VIEWS: readonly CodeEditorView[] = ["code", "explain"];
 
 interface CodeEditorProps {
   value: string;
@@ -31,6 +36,12 @@ interface CodeEditorProps {
   disabled?: boolean;
   ariaLabel?: string;
   invalid?: boolean;
+  // Extra header buttons, before the language label (e.g. Explain).
+  headerActions?: React.ReactNode;
+  // AI explanation; when set, Code/Explain tabs replace the window dots.
+  explanation?: string | null;
+  view?: CodeEditorView;
+  onViewChange?: (view: CodeEditorView) => void;
 }
 
 // Monaco's popups (autocomplete, hovers, parameter hints) use fixed positioning
@@ -85,6 +96,10 @@ export function CodeEditor({
   disabled = false,
   ariaLabel = "Code editor",
   invalid = false,
+  headerActions,
+  explanation,
+  view = "code",
+  onViewChange,
 }: CodeEditorProps) {
   const { preferences } = useEditorPreferences();
   const lineHeight = getLineHeight(preferences.fontSize);
@@ -102,7 +117,16 @@ export function CodeEditor({
     });
   };
 
-  const header = (
+  const activeView: CodeEditorView = explanation ? view : "code";
+
+  const header = explanation ? (
+    <EditorTabs
+      tabs={VIEWS}
+      active={activeView}
+      onChange={(next) => onViewChange?.(next)}
+      label="Code view"
+    />
+  ) : (
     <div className="flex gap-1.5 px-1" aria-hidden="true">
       <span className="size-2.5 rounded-full bg-[#ff5f57]" />
       <span className="size-2.5 rounded-full bg-[#febc2e]" />
@@ -110,20 +134,26 @@ export function CodeEditor({
     </div>
   );
 
-  const languageLabel = (
-    <span className="font-mono text-xs text-muted-foreground">
-      {monacoLanguage}
-    </span>
+  const actions = (
+    <>
+      {headerActions}
+      <span className="font-mono text-xs text-muted-foreground">
+        {monacoLanguage}
+      </span>
+    </>
   );
 
   return (
     <EditorFrame
       header={header}
-      headerActions={languageLabel}
-      copyValue={value}
+      headerActions={actions}
+      copyValue={activeView === "explain" && explanation ? explanation : value}
       invalid={invalid}
       className={THEME_FRAME_CLASSES[preferences.theme]}
     >
+      {activeView === "explain" && explanation && <MarkdownPreview value={explanation} />}
+      {/* Kept mounted while the explanation shows, so switching back is instant. */}
+      <div className={cn(activeView === "explain" && "hidden")}>
       <Editor
         height={height}
         theme={getMonacoThemeName(preferences.theme)}
@@ -160,6 +190,7 @@ export function CodeEditor({
           },
         }}
       />
+      </div>
     </EditorFrame>
   );
 }

@@ -4,8 +4,7 @@ import { useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { EditorFrame } from "@/components/items/EditorFrame";
-import { cn } from "@/lib/utils";
+import { EditorFrame, EditorTabs } from "@/components/items/EditorFrame";
 
 type Tab = "write" | "preview";
 
@@ -31,6 +30,27 @@ const MARKDOWN_COMPONENTS: Components = {
   ),
 };
 
+interface MarkdownPreviewProps {
+  value: string;
+}
+
+// Rendered Markdown in the editor frame's body, also used for AI explanations.
+export function MarkdownPreview({ value }: MarkdownPreviewProps) {
+  return (
+    <div className="max-h-[400px] min-h-16 overflow-auto p-4">
+      {value.trim() ? (
+        <div className="markdown-preview">
+          <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+            {value}
+          </ReactMarkdown>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Nothing to preview.</p>
+      )}
+    </div>
+  );
+}
+
 export function MarkdownEditor({
   value,
   onChange,
@@ -45,25 +65,7 @@ export function MarkdownEditor({
   const tabs: Tab[] = readOnly ? ["preview"] : ["write", "preview"];
 
   const header = (
-    <div role="tablist" aria-label="Markdown editor" className="flex gap-1">
-      {tabs.map((name) => (
-        <button
-          key={name}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === name}
-          onClick={() => setTab(name)}
-          className={cn(
-            "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-            activeTab === name
-              ? "bg-white/10 text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {name}
-        </button>
-      ))}
-    </div>
+    <EditorTabs tabs={tabs} active={activeTab} onChange={setTab} label="Markdown editor" />
   );
 
   return (
@@ -83,20 +85,7 @@ export function MarkdownEditor({
           className="block field-sizing-content max-h-[400px] min-h-40 w-full resize-none bg-transparent p-4 font-mono text-xs leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
         />
       ) : (
-        <div className="max-h-[400px] min-h-16 overflow-auto p-4">
-          {value.trim() ? (
-            <div className="markdown-preview">
-              <ReactMarkdown
-                remarkPlugins={REMARK_PLUGINS}
-                components={MARKDOWN_COMPONENTS}
-              >
-                {value}
-              </ReactMarkdown>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">Nothing to preview.</p>
-          )}
-        </div>
+        <MarkdownPreview value={value} />
       )}
     </EditorFrame>
   );

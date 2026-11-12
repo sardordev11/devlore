@@ -19,6 +19,43 @@ interface EditorFrameProps {
   children: React.ReactNode;
 }
 
+interface EditorTabsProps<T extends string> {
+  tabs: readonly T[];
+  active: T;
+  onChange: (tab: T) => void;
+  label: string;
+}
+
+// Small tabs for the left side of the frame header.
+export function EditorTabs<T extends string>({
+  tabs,
+  active,
+  onChange,
+  label,
+}: EditorTabsProps<T>) {
+  return (
+    <div role="tablist" aria-label={label} className="flex gap-1">
+      {tabs.map((name) => (
+        <button
+          key={name}
+          type="button"
+          role="tab"
+          aria-selected={active === name}
+          onClick={() => onChange(name)}
+          className={cn(
+            "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+            active === name
+              ? "bg-white/10 text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // Dark VS Code-style frame shared by MarkdownEditor and CodeEditor.
 export function EditorFrame({
   header,
