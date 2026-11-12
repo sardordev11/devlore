@@ -9,6 +9,7 @@ import { usePlanAccess } from "@/components/billing/PlanAccessContext";
 import { toastUpgradeError } from "@/components/billing/UpgradePrompt";
 import { CollectionPicker } from "@/components/items/CollectionPicker";
 import { ContentField } from "@/components/items/ContentField";
+import { DescriptionField } from "@/components/items/DescriptionField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { EditField } from "@/components/items/EditField";
 import { FileUpload } from "@/components/items/FileUpload";
@@ -26,7 +27,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useDetectedLanguage } from "@/hooks/use-detected-language";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useItemFields } from "@/hooks/use-item-fields";
@@ -211,13 +211,21 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
             </EditField>
           )}
 
-          <EditField
-            id="new-item-description"
-            label="Description"
+          <DescriptionField
+            field={fieldProps("description")}
             error={fieldErrors.description?.[0]}
-          >
-            <Textarea {...fieldProps("description")} rows={2} />
-          </EditField>
+            onValueChange={(description) => setValue("description", description)}
+            source={{
+              title: values.title,
+              type: TYPE_OPTIONS.find((option) => option.slug === type)?.label,
+              content: fields.content ? values.content : "",
+              language: fields.language ? values.language || (detectedLanguage ?? "") : "",
+              url: fields.url ? values.url : "",
+              fileName: file?.name,
+              mimeType: file?.type,
+              tags: values.tags,
+            }}
+          />
 
           {fields.language && (
             <EditField

@@ -1,18 +1,28 @@
-# Current Feature
-
-<!-- Feature Name -->
+# Current Feature: AI Description Generator
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- Icon button next to the Description field label (via the existing `action` slot on `EditField`) that generates a description with AI
+- Works in both `CreateItemDialog` and `ItemEditForm`, for every item type (snippet, prompt, command, note, link, file, image)
+- Uses whatever the form currently holds, with no save first: title, content, language, URL, file name/type, tags and type
+- Result is a good, concise summary of 1–2 sentences, written straight into the Description input (user can still edit it)
+- `generateDescription` server action in `src/actions/ai.ts` following `generateAutoTags`: session check, Zod validation, `checkAiAccess` Pro gate returning `upgrade: true`, the existing `ai` rate limiter, Responses API with `store: false`, OpenAI errors mapped to the same fixed messages, `{ success, data, error }`, nothing saved
+- Pure helpers in `src/lib/ai/` (schema with trimmed/truncated content, instructions treating `<item>`-wrapped input as data, input builder, response parser trimming and capping length)
+- Button disabled without a title (and while generating, with a loading state), hidden when `proLocked`, error and upgrade toasts
+- Unit tests for the schema, helpers and server action
 
 ## Notes
 
-<!-- Any extra notes -->
+- Reuse the AI Auto-Tagging patterns: `src/lib/ai/client.ts` (`AI_MODEL`, null without `OPENAI_API_KEY`), `src/lib/ai/tags.ts`, `useTagSuggestions`, the Sparkles ghost button in `TagsField`
+- Links send their URL as content; files and images send the file name and MIME type (no file contents)
+- Existing Description text is replaced without asking (it can be edited or regenerated)
+- Plain text output (no `json_object`), cleaned and capped at 300 characters by `parseDescriptionResponse`
+- Pro gate, rate limit and client lookup shared by both AI actions via `getAiClient` in `src/actions/ai.ts`
+- Checked in the browser with real OpenAI responses (New Item dialog and drawer edit form)
 
 ## History
 
