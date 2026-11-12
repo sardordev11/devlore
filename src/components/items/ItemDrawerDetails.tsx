@@ -4,13 +4,15 @@ import { CalendarIcon, FileIcon, FolderIcon, TagIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Suspense } from "react";
 
+import { AiHeaderButton } from "@/components/items/AiHeaderButton";
 import { CodeEditor } from "@/components/items/CodeEditor";
-import { ExplainCodeButton } from "@/components/items/ExplainCodeButton";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
+import { PromptView } from "@/components/items/PromptView";
 import { Badge } from "@/components/ui/badge";
 import { useCodeExplanation } from "@/hooks/use-code-explanation";
 import { useDetectedLanguage } from "@/hooks/use-detected-language";
 import { canExplainType } from "@/lib/ai/explain";
+import { canOptimizeType } from "@/lib/ai/optimize";
 import {
   getFallbackLanguage,
   shouldDetectLanguage,
@@ -25,6 +27,8 @@ import type { ItemDetailJson } from "@/types/items";
 
 interface ItemDrawerDetailsProps {
   item: ItemDetailJson;
+  // Opens edit mode with this content filled in (an accepted AI rewrite).
+  onEditWithContent?: (content: string) => void;
 }
 
 interface CodeViewProps {
@@ -59,7 +63,13 @@ function CodeView({ itemId, content, language, typeSlug }: CodeViewProps) {
       headerActions={
         canExplainType(typeSlug) && (
           <Suspense fallback={null}>
-            <ExplainCodeButton onClick={explain} isPending={isPending} />
+            <AiHeaderButton
+              label="Explain"
+              actionLabel="Explain code"
+              pendingLabel="Explaining code…"
+              onClick={explain}
+              isPending={isPending}
+            />
           </Suspense>
         )
       }
@@ -119,7 +129,7 @@ function FilePreview({ item }: ItemDrawerDetailsProps) {
   );
 }
 
-function ItemContent({ item }: ItemDrawerDetailsProps) {
+function ItemContent({ item, onEditWithContent }: ItemDrawerDetailsProps) {
   if (item.contentType === "URL" && item.url) {
     return (
       <a
@@ -134,6 +144,17 @@ function ItemContent({ item }: ItemDrawerDetailsProps) {
   }
   if (item.contentType === "FILE" && item.fileName) {
     return <FilePreview item={item} />;
+  }
+  if (item.content && canOptimizeType(item.type.slug) && onEditWithContent) {
+    return (
+      <PromptView
+        // A new item or saved edit starts without a stale suggestion
+        key={`${item.id}:${item.updatedAt}`}
+        itemId={item.id}
+        content={item.content}
+        onUseOptimized={onEditWithContent}
+      />
+    );
   }
   if (item.content && MARKDOWN_TYPE_SLUGS.has(item.type.slug)) {
     return <MarkdownEditor value={item.content} readOnly />;
@@ -160,7 +181,7 @@ function ItemContent({ item }: ItemDrawerDetailsProps) {
   return null;
 }
 
-export function ItemDrawerDetails({ item }: ItemDrawerDetailsProps) {
+export function ItemDrawerDetails({ item, onEditWithContent }: ItemDrawerDetailsProps) {
   const hasContent = Boolean(item.content || item.url || item.fileName);
 
   return (
@@ -173,7 +194,7 @@ export function ItemDrawerDetails({ item }: ItemDrawerDetailsProps) {
 
       {hasContent && (
         <DetailSection title="Content">
-          <ItemContent item={item} />
+          <ItemContent item={item} onEditWithContent={onEditWithContent} />
         </DetailSection>
       )}
 

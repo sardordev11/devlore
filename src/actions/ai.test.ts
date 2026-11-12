@@ -1,7 +1,12 @@
 import OpenAI from "openai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { explainCode, generateAutoTags, generateDescription } from "@/actions/ai";
+import {
+  explainCode,
+  generateAutoTags,
+  generateDescription,
+  optimizePrompt,
+} from "@/actions/ai";
 import { auth } from "@/auth";
 import { getOpenAI } from "@/lib/ai/client";
 import { getItemDetail, type ItemDetail } from "@/lib/db/items";
@@ -393,6 +398,145 @@ describe("explainCode", () => {
     expect(await explainCode(EXPLAIN_INPUT)).toEqual({
       success: false,
       error: "Couldn't explain this code. Please try again.",
+    });
+  });
+});
+
+describe("optimizePrompt", () => {
+  const OPTIMIZE_INPUT = { itemId: "item-1" };
+  const PROMPT = {
+    id: "item-1",
+    title: "Code review",
+    content: "Review my code.",
+    type: { slug: "prompts" },
+  } as unknown as ItemDetail;
+
+  beforeEach(() => {
+    mockGetItemDetail.mockResolvedValue(PROMPT);
+    mockCreate.mockResolvedValue({
+      output_text: JSON.stringify({
+        improved: true,
+        optimized: "Review my TypeScript code for bugs and readability.",
+        changes: ["Stated what to look for"],
+      }),
+    });
+  });
+
+  it("requires a session", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "You must be signed in",
+    });
+    expect(mockGetItemDetail).not.toHaveBeenCalled();
+  });
+
+  it("rejects input without an item id", async () => {
+    expect(await optimizePrompt({ itemId: "" })).toEqual({ success: false, error: "Invalid item" });
+    expect(mockGetItemDetail).not.toHaveBeenCalled();
+  });
+
+  it("loads the item scoped to the user", async () => {
+    mockGetItemDetail.mockResolvedValue(null);
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "Item not found",
+    });
+    expect(mockGetItemDetail).toHaveBeenCalledWith("user-1", "item-1");
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("only optimizes prompts with content", async () => {
+    mockGetItemDetail.mockResolvedValue({ ...PROMPT, type: { slug: "notes" } } as ItemDetail);
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "Only prompts can be optimized.",
+    });
+
+    mockGetItemDetail.mockResolvedValue({ ...PROMPT, content: "  " });
+    expect((await optimizePrompt(OPTIMIZE_INPUT)).success).toBe(false);
+
+    expect(mockCheckAiAccess).not.toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses prompts that are too long instead of cutting them", async () => {
+    mockGetItemDetail.mockResolvedValue({ ...PROMPT, content: "x".repeat(8001) });
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "This prompt is too long to optimize.",
+    });
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns an upgrade error for free users without calling OpenAI", async () => {
+    mockCheckAiAccess.mockResolvedValue("AI features are part of Pro.");
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "AI features are part of Pro.",
+      upgrade: true,
+    });
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("rate limits by user id", async () => {
+    mockCheckRateLimit.mockResolvedValue({ success: false, remaining: 0, reset: 1 });
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "Too many attempts. Please try again in 30 minutes.",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("ai", "user-1");
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns the optimized prompt from the saved content", async () => {
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: true,
+      data: {
+        optimized: "Review my TypeScript code for bugs and readability.",
+        changes: ["Stated what to look for"],
+      },
+    });
+
+    const request = mockCreate.mock.calls[0][0];
+    expect(request).toMatchObject({
+      model: "gpt-5-nano",
+      store: false,
+      text: { format: { type: "json_object" } },
+    });
+    expect(request.input).toContain("JSON");
+    expect(request.input).toContain("Review my code.");
+  });
+
+  it("returns optimized null when the prompt is already good", async () => {
+    mockCreate.mockResolvedValue({ output_text: '{"improved": false, "optimized": "", "changes": []}' });
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: true,
+      data: { optimized: null, changes: [] },
+    });
+  });
+
+  it("fails when the model returns unusable output", async () => {
+    mockCreate.mockResolvedValue({ output_text: "not json" });
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "Couldn't optimize this prompt. Please try again.",
+    });
+  });
+
+  it("maps OpenAI errors to fixed messages", async () => {
+    mockCreate.mockRejectedValue(new Error("secret upstream detail"));
+
+    expect(await optimizePrompt(OPTIMIZE_INPUT)).toEqual({
+      success: false,
+      error: "Couldn't optimize this prompt. Please try again.",
     });
   });
 });
