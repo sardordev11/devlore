@@ -2,11 +2,15 @@
 
 import { CalendarIcon, FileIcon, FolderIcon, TagIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Suspense } from "react";
 
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { ExplainCodeButton } from "@/components/items/ExplainCodeButton";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Badge } from "@/components/ui/badge";
+import { useCodeExplanation } from "@/hooks/use-code-explanation";
 import { useDetectedLanguage } from "@/hooks/use-detected-language";
+import { canExplainType } from "@/lib/ai/explain";
 import {
   getFallbackLanguage,
   shouldDetectLanguage,
@@ -24,16 +28,22 @@ interface ItemDrawerDetailsProps {
 }
 
 interface CodeViewProps {
+  itemId: string;
   content: string;
   language: string | null;
   typeSlug: string;
 }
 
-// Read-only code, with the language guessed for snippets saved without one.
-function CodeView({ content, language, typeSlug }: CodeViewProps) {
+// Read-only code, with the language guessed for snippets saved without one,
+// and an AI explanation for snippets and commands.
+function CodeView({ itemId, content, language, typeSlug }: CodeViewProps) {
   const detectedLanguage = useDetectedLanguage(
     content,
     shouldDetectLanguage(typeSlug, language),
+  );
+  const { isPending, explanation, view, setView, explain } = useCodeExplanation(
+    itemId,
+    language || detectedLanguage,
   );
 
   return (
@@ -43,6 +53,16 @@ function CodeView({ content, language, typeSlug }: CodeViewProps) {
       fallbackLanguage={detectedLanguage ?? getFallbackLanguage(typeSlug)}
       ariaLabel="Content"
       readOnly
+      explanation={explanation}
+      view={view}
+      onViewChange={setView}
+      headerActions={
+        canExplainType(typeSlug) && (
+          <Suspense fallback={null}>
+            <ExplainCodeButton onClick={explain} isPending={isPending} />
+          </Suspense>
+        )
+      }
     />
   );
 }
@@ -121,6 +141,9 @@ function ItemContent({ item }: ItemDrawerDetailsProps) {
   if (item.content && LANGUAGE_TYPE_SLUGS.has(item.type.slug)) {
     return (
       <CodeView
+        // A new item or saved edit starts without a stale explanation
+        key={`${item.id}:${item.updatedAt}`}
+        itemId={item.id}
         content={item.content}
         language={item.language}
         typeSlug={item.type.slug}

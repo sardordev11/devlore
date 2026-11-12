@@ -11,11 +11,19 @@ import {
   parseDescriptionResponse,
 } from "@/lib/ai/description";
 import {
+  buildExplainInput,
+  canExplainType,
+  EXPLAIN_INSTRUCTIONS,
+  explainCodeSchema,
+  parseExplainResponse,
+} from "@/lib/ai/explain";
+import {
   buildTagInput,
   generateAutoTagsSchema,
   parseTagResponse,
   TAG_INSTRUCTIONS,
 } from "@/lib/ai/tags";
+import { getItemDetail } from "@/lib/db/items";
 import { checkAiAccess } from "@/lib/plan-gate";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
@@ -32,6 +40,9 @@ const AI_ERRORS = {
   generic: "Couldn't suggest tags. Please try again.",
   noDescription: "Couldn't write a description for this item. Try adding more content.",
   genericDescription: "Couldn't generate a description. Please try again.",
+  notExplainable: "Only snippets and commands can be explained.",
+  noExplanation: "Couldn't explain this item. Please try again.",
+  genericExplanation: "Couldn't explain this code. Please try again.",
 } as const;
 
 // 429s that won't clear by waiting (account out of credit or quota)
@@ -133,5 +144,52 @@ export async function generateDescription(
   } catch (error) {
     console.error("AI description failed:", error);
     return { success: false, error: toAiErrorMessage(error, AI_ERRORS.genericDescription) };
+  }
+}
+
+// Explains a saved snippet or command for the drawer. The item is loaded on the
+// server, scoped to the user. Nothing is saved: each click asks again.
+export async function explainCode(
+  input: unknown,
+): Promise<AiResult<{ explanation: string }>> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in" };
+  }
+  const userId = session.user.id;
+
+  const parsed = explainCodeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid item" };
+  }
+
+  try {
+    const item = await getItemDetail(userId, parsed.data.itemId);
+    if (!item) return { success: false, error: "Item not found" };
+    if (!canExplainType(item.type.slug) || !item.content?.trim()) {
+      return { success: false, error: AI_ERRORS.notExplainable };
+    }
+
+    const client = await getAiClient(userId);
+    if (!("openai" in client)) return client;
+
+    const response = await client.openai.responses.create({
+      model: AI_MODEL,
+      instructions: EXPLAIN_INSTRUCTIONS,
+      input: buildExplainInput({
+        title: item.title,
+        typeSlug: item.type.slug,
+        content: item.content,
+        language: item.language || parsed.data.language,
+      }),
+      store: false,
+    });
+
+    const explanation = parseExplainResponse(response.output_text);
+    if (!explanation) return { success: false, error: AI_ERRORS.noExplanation };
+    return { success: true, data: { explanation } };
+  } catch (error) {
+    console.error("AI code explanation failed:", error);
+    return { success: false, error: toAiErrorMessage(error, AI_ERRORS.genericExplanation) };
   }
 }
