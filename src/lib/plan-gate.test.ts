@@ -33,6 +33,7 @@ describe("with limits off", () => {
     expect(await gate.checkItemLimit("user-1", "snippets")).toBeNull();
     expect(await gate.checkCollectionLimit("user-1")).toBeNull();
     expect(await gate.checkUploadAccess("user-1")).toBeNull();
+    expect(await gate.checkAiAccess("user-1")).toBeNull();
     expect(await gate.canViewTypeSlug("user-1", "images")).toBe(true);
     expect(getUserPlan).not.toHaveBeenCalled();
   });
@@ -102,6 +103,16 @@ describe("with limits on", () => {
 
     ({ gate } = await loadWithFlag(true, plan({ isPro: true })));
     expect(await gate.checkUploadAccess("user-1")).toBeNull();
+  });
+
+  it("allows AI features for Pro users only", async () => {
+    let { gate } = await loadWithFlag(true, plan());
+    expect(await gate.checkAiAccess("user-1")).toBe(
+      "AI features are part of Pro. Upgrade to Pro to use them.",
+    );
+
+    ({ gate } = await loadWithFlag(true, plan({ isPro: true })));
+    expect(await gate.checkAiAccess("user-1")).toBeNull();
   });
 
   it("leaves Pro users unrestricted", async () => {

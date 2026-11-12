@@ -28,6 +28,7 @@ const LIMITERS = {
   changePassword: createLimiter("change-password", 5, "15 m"),
   upload: createLimiter("upload", 20, "10 m"),
   billing: createLimiter("billing", 5, "10 m"),
+  ai: createLimiter("ai", 20, "1 h"),
 };
 
 export type RateLimitName = keyof typeof LIMITERS;

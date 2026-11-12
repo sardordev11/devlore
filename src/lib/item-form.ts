@@ -26,6 +26,22 @@ export interface ItemFieldFlags {
   url: boolean;
 }
 
+function hasTag(tagsValue: string, tag: string) {
+  const lower = tag.toLowerCase();
+  return parseTags(tagsValue).some((existing) => existing.toLowerCase() === lower);
+}
+
+// Suggested tags that aren't already in the comma-separated tags field.
+export function getNewTags(tagsValue: string, suggestions: string[]) {
+  return suggestions.filter((tag) => !hasTag(tagsValue, tag));
+}
+
+// Appends a tag to the comma-separated tags field, skipping duplicates.
+export function appendTag(tagsValue: string, tag: string) {
+  if (hasTag(tagsValue, tag)) return tagsValue;
+  return [...parseTags(tagsValue), tag].join(", ");
+}
+
 // Fields the type doesn't show are omitted, so an update leaves them unchanged.
 export function buildItemPayload(values: ItemFieldValues, fields: ItemFieldFlags) {
   return {

@@ -38,4 +38,5 @@ export const UPGRADE_MESSAGES = {
   items: `Free accounts can have up to ${FREE_LIMITS.items} items. Upgrade to Pro for unlimited items.`,
   collections: `Free accounts can have up to ${FREE_LIMITS.collections} collections. Upgrade to Pro for unlimited collections.`,
   fileTypes: "File and image uploads are a Pro feature. Upgrade to Pro to upload files.",
+  ai: "AI features are part of Pro. Upgrade to Pro to use them.",
 } as const;

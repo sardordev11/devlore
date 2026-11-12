@@ -12,6 +12,7 @@ import { ContentField } from "@/components/items/ContentField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { EditField } from "@/components/items/EditField";
 import { FileUpload } from "@/components/items/FileUpload";
+import { TagsField } from "@/components/items/TagsField";
 import { TYPE_OPTIONS, TypeSelector } from "@/components/items/TypeSelector";
 import { Button } from "@/components/ui/button";
 import {
@@ -252,9 +253,13 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
             </EditField>
           )}
 
-          <EditField id="new-item-tags" label="Tags" error={fieldErrors.tags?.[0]}>
-            <Input {...fieldProps("tags")} placeholder="react, hooks, auth" />
-          </EditField>
+          <TagsField
+            field={fieldProps("tags")}
+            error={fieldErrors.tags?.[0]}
+            onValueChange={(tags) => setValue("tags", tags)}
+            title={values.title}
+            content={fields.url ? values.url : fields.content ? values.content : ""}
+          />
 
           <EditField
             id="new-item-collections"
