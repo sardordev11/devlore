@@ -18,6 +18,14 @@ import {
   parseExplainResponse,
 } from "@/lib/ai/explain";
 import {
+  AI_OPTIMIZE_CONTENT_MAX,
+  buildOptimizeInput,
+  canOptimizeType,
+  OPTIMIZE_INSTRUCTIONS,
+  optimizePromptSchema,
+  parseOptimizeResponse,
+} from "@/lib/ai/optimize";
+import {
   buildTagInput,
   generateAutoTagsSchema,
   parseTagResponse,
@@ -43,6 +51,9 @@ const AI_ERRORS = {
   notExplainable: "Only snippets and commands can be explained.",
   noExplanation: "Couldn't explain this item. Please try again.",
   genericExplanation: "Couldn't explain this code. Please try again.",
+  notOptimizable: "Only prompts can be optimized.",
+  promptTooLong: "This prompt is too long to optimize.",
+  noOptimization: "Couldn't optimize this prompt. Please try again.",
 } as const;
 
 // 429s that won't clear by waiting (account out of credit or quota)
@@ -191,5 +202,55 @@ export async function explainCode(
   } catch (error) {
     console.error("AI code explanation failed:", error);
     return { success: false, error: toAiErrorMessage(error, AI_ERRORS.genericExplanation) };
+  }
+}
+
+// Reviews a saved prompt for the drawer and returns a refined version, or
+// optimized: null when it's already good. Nothing is saved: accepting opens
+// the edit form with the new text, which goes through the normal updateItem save.
+export async function optimizePrompt(
+  input: unknown,
+): Promise<AiResult<{ optimized: string | null; changes: string[] }>> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in" };
+  }
+  const userId = session.user.id;
+
+  const parsed = optimizePromptSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid item" };
+  }
+
+  try {
+    const item = await getItemDetail(userId, parsed.data.itemId);
+    if (!item) return { success: false, error: "Item not found" };
+    const content = item.content?.trim() ?? "";
+    if (!canOptimizeType(item.type.slug) || !content) {
+      return { success: false, error: AI_ERRORS.notOptimizable };
+    }
+    if (content.length > AI_OPTIMIZE_CONTENT_MAX) {
+      return { success: false, error: AI_ERRORS.promptTooLong };
+    }
+
+    const client = await getAiClient(userId);
+    if (!("openai" in client)) return client;
+
+    const source = { title: item.title, content };
+    const response = await client.openai.responses.create({
+      model: AI_MODEL,
+      instructions: OPTIMIZE_INSTRUCTIONS,
+      input: buildOptimizeInput(source),
+      text: { format: { type: "json_object" } },
+      store: false,
+    });
+
+    const outcome = parseOptimizeResponse(response.output_text, source);
+    if (!outcome) return { success: false, error: AI_ERRORS.noOptimization };
+    if (!outcome.improved) return { success: true, data: { optimized: null, changes: [] } };
+    return { success: true, data: { optimized: outcome.optimized, changes: outcome.changes } };
+  } catch (error) {
+    console.error("AI prompt optimization failed:", error);
+    return { success: false, error: toAiErrorMessage(error, AI_ERRORS.noOptimization) };
   }
 }

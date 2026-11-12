@@ -27,11 +27,19 @@ import type { ItemDetailJson } from "@/types/items";
 
 interface ItemEditFormProps {
   item: ItemDetailJson;
+  // Starts the Content field with this instead of the saved content (an
+  // accepted AI rewrite); nothing changes until Save.
+  initialContent?: string;
   onCancel: () => void;
   onSaved: (item: ItemDetailJson) => void;
 }
 
-export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
+export function ItemEditForm({
+  item,
+  initialContent,
+  onCancel,
+  onSaved,
+}: ItemEditFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const { values, setValue, fieldErrors, setFieldErrors, fieldProps } =
@@ -40,7 +48,7 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
       {
         title: item.title,
         description: item.description ?? "",
-        content: item.content ?? "",
+        content: initialContent ?? item.content ?? "",
         language: item.language ?? "",
         url: item.url ?? "",
         tags: item.tags.join(", "),

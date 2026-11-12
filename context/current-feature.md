@@ -1,18 +1,29 @@
-# Current Feature
-
-<!-- Feature Name -->
+# Current Feature: AI Prompt Optimizer
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- Pro-only "Optimize" button (Sparkles icon, Loader2 spinner while pending) in the prompt editor header in the item drawer's read view, next to Copy, mirroring the "Explain" button on snippets and commands
+- `optimizePrompt` server action in `src/actions/ai.ts`: session check, Zod, item loaded by id via `getItemDetail` scoped to the user (only prompts with content, "Item not found" / "Only prompts can be optimized."), shared Pro gate, `ai` rate limit and client via `getAiClient`, Responses API with `store: false`, fixed error messages, nothing saved by the action
+- The model reviews the current prompt and refines it only if needed: returns the optimized prompt plus a short list of changes, or says it's already good (no changes) so the user isn't offered an identical copy
+- After optimizing, the editor shows Original / Optimized tabs (like Code / Explain), the optimized prompt rendered as Markdown with the list of changes, and asks the user whether to use it: "Use this prompt" and "Keep original"
+- "Use this prompt" switches the drawer into edit mode (`ItemEditForm`) with the optimized text filled into the Content field, still editable; nothing is saved until the user clicks Save, which goes through the existing `updateItem` action, and Cancel leaves the item unchanged; "Keep original" discards the suggestion and returns to the original view
+- When the prompt is already good, a toast says so and nothing changes
+- Free users with limits enforced see a Crown with an "AI features require Pro subscription" tooltip; clicking shows the upgrade toast
+- Error, rate limit and upgrade toasts like the other AI features
+- Pure helpers in `src/lib/ai/optimize.ts` (schema, `canOptimizeType`, instructions treating the `<item>`-wrapped prompt as data, input builder with a content cap, response parser) with unit tests, plus unit tests for the action
 
 ## Notes
 
-<!-- Any extra notes -->
+- Inline description: "Implement prompt optimization for the prompt types. It should look at the current prompt and refine if needed, then ask the user if they want to use that updated prompt. Put the Optimize button in the header, much like the Explain button in the snippets and command header."
+- Follow the AI Explain Code pattern: `ExplainCodeButton`, `useCodeExplanation`, `src/lib/ai/explain.ts`, `EditorTabs` in `EditorFrame`, `MarkdownPreview`; prompts use `MarkdownEditor` (Preview-only in the drawer), so it needs the same `headerActions` / tabs support `CodeEditor` got
+- Output as JSON (`{ optimized, changes }`, empty/unchanged meaning "already good"); the input must mention JSON for `json_object`
+- Drawer read view only, not in the create/edit forms
+- Accepting opens edit mode with the optimized content prefilled, as `docs/ai-integration-plan.md` suggests, so `ItemEditForm` needs a way to start with an overridden content value; the suggestion resets when the item's `updatedAt` changes, like the explanation
+- See `docs/ai-integration-plan.md` for the broader AI architecture
 
 ## History
 

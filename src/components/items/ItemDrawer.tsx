@@ -1,6 +1,7 @@
 "use client";
 
 import { createElement, useState } from "react";
+import { toast } from "sonner";
 
 import { ItemDrawerActions } from "@/components/items/ItemDrawerActions";
 import { ItemDrawerDetails } from "@/components/items/ItemDrawerDetails";
@@ -71,10 +72,22 @@ function ItemDrawerBody({
   onItemDeleted: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  // Content to start the edit form with instead of the saved one (an accepted AI rewrite).
+  const [editContent, setEditContent] = useState<string | undefined>();
+
+  function startEditing(content?: string) {
+    setEditContent(content);
+    setIsEditing(true);
+  }
 
   function handleSaved(updated: ItemDetailJson) {
     onItemUpdated(updated);
     setIsEditing(false);
+  }
+
+  function handleUseContent(content: string) {
+    startEditing(content);
+    toast.success("Optimized prompt added. Review it and save.");
   }
 
   return (
@@ -83,6 +96,7 @@ function ItemDrawerBody({
       {isEditing ? (
         <ItemEditForm
           item={item}
+          initialContent={editContent}
           onCancel={() => setIsEditing(false)}
           onSaved={handleSaved}
         />
@@ -90,11 +104,11 @@ function ItemDrawerBody({
         <>
           <ItemDrawerActions
             item={item}
-            onEdit={() => setIsEditing(true)}
+            onEdit={() => startEditing()}
             onDeleted={onItemDeleted}
             onUpdated={onItemUpdated}
           />
-          <ItemDrawerDetails item={item} />
+          <ItemDrawerDetails item={item} onEditWithContent={handleUseContent} />
         </>
       )}
     </>
