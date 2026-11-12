@@ -8,13 +8,13 @@ import { toast } from "sonner";
 import { updateItem } from "@/actions/items";
 import { CollectionPicker } from "@/components/items/CollectionPicker";
 import { ContentField } from "@/components/items/ContentField";
+import { DescriptionField } from "@/components/items/DescriptionField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { EditField } from "@/components/items/EditField";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
 import { TagsField } from "@/components/items/TagsField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useDetectedLanguage } from "@/hooks/use-detected-language";
 import { useItemFields } from "@/hooks/use-item-fields";
 import {
@@ -106,13 +106,21 @@ export function ItemEditForm({ item, onCancel, onSaved }: ItemEditFormProps) {
           <Input {...fieldProps("title")} required autoFocus />
         </EditField>
 
-        <EditField
-          id="item-description"
-          label="Description"
+        <DescriptionField
+          field={fieldProps("description")}
           error={fieldErrors.description?.[0]}
-        >
-          <Textarea {...fieldProps("description")} rows={2} />
-        </EditField>
+          onValueChange={(description) => setValue("description", description)}
+          source={{
+            title: values.title,
+            type: item.type.name,
+            content: fields.content ? values.content : "",
+            language: fields.language ? values.language || (detectedLanguage ?? "") : "",
+            url: fields.url ? values.url : "",
+            fileName: item.fileName ?? "",
+            mimeType: item.mimeType ?? "",
+            tags: values.tags,
+          }}
+        />
 
         {fields.language && (
           <EditField
