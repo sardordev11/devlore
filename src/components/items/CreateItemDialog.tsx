@@ -1,13 +1,13 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { Suspense, useState, useTransition, type SubmitEvent } from "react";
-import { toast } from "sonner";
+import { Suspense, useState, type SubmitEvent } from "react";
 
-import { createItem } from "@/actions/items";
 import { usePlanAccess } from "@/components/billing/PlanAccessContext";
-import { toastUpgradeError } from "@/components/billing/UpgradePrompt";
+import {
+  CreateItemTrigger,
+  CreateItemTriggerFallback,
+} from "@/components/items/CreateItemTrigger";
 import { EditField } from "@/components/items/EditField";
 import { FileUpload } from "@/components/items/FileUpload";
 import { ItemFormFields } from "@/components/items/ItemFormFields";
@@ -21,9 +21,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { useFileUpload } from "@/hooks/use-file-upload";
+import { useCreateItem } from "@/hooks/use-create-item";
 import { useItemFields } from "@/hooks/use-item-fields";
 import { isFileTypeSlug } from "@/lib/file-constraints";
 import {
@@ -32,7 +31,6 @@ import {
   getTypeSlugFromPathname,
 } from "@/lib/item-form";
 import { isProOnlyTypeSlug } from "@/lib/usage-limits";
-import { cn } from "@/lib/utils";
 import {
   getCreateFields,
   type CreatableTypeSlug,
@@ -43,34 +41,10 @@ interface CreateItemDialogProps {
   defaultType?: CreatableTypeSlug;
 }
 
-function getTriggerLabel(defaultType: CreatableTypeSlug | undefined) {
-  return defaultType
-    ? `New ${TYPE_OPTIONS.find((option) => option.slug === defaultType)?.label}`
-    : "New Item";
-}
-
-function TriggerContent({ defaultType }: CreateItemDialogProps) {
-  return (
-    <>
-      <Plus data-icon="inline-start" />
-      {/* The top bar is tight on mobile, so only the type pages always show the label. */}
-      <span className={cn(!defaultType && "hidden sm:inline")}>
-        {getTriggerLabel(defaultType)}
-      </span>
-    </>
-  );
-}
-
 // The plan streams in after the shell; until then the button waits disabled
 export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
   return (
-    <Suspense
-      fallback={
-        <Button aria-label={getTriggerLabel(defaultType)} disabled>
-          <TriggerContent defaultType={defaultType} />
-        </Button>
-      }
-    >
+    <Suspense fallback={<CreateItemTriggerFallback defaultType={defaultType} />}>
       <CreateItemDialogContent defaultType={defaultType} />
     </Suspense>
   );
@@ -79,18 +53,16 @@ export function CreateItemDialog({ defaultType }: CreateItemDialogProps) {
 function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
   const { proLocked } = usePlanAccess();
   const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const pathname = usePathname();
   // The top bar's New Item follows the /items/[type] page it's opened from
   const initialType = defaultType ?? getTypeSlugFromPathname(pathname) ?? "snippets";
   const [type, setType] = useState<CreatableTypeSlug>(initialType);
   const typeLocked = proLocked && isProOnlyTypeSlug(type);
-  const triggerLabel = getTriggerLabel(defaultType);
+  const { submit, isPending, progress } = useCreateItem();
   const itemFields = useItemFields("new-item", EMPTY_ITEM_FIELD_VALUES, isPending);
   const { values, fieldErrors, setFieldErrors, reset: resetFields } = itemFields;
   const [file, setFile] = useState<File | null>(null);
   const [collectionIds, setCollectionIds] = useState<string[]>([]);
-  const { upload, progress } = useFileUpload();
 
   const fields = getCreateFields(type);
 
@@ -111,55 +83,21 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const payload = { type, ...buildItemPayload(values, fields), collectionIds };
-
-    startTransition(async () => {
-      // Files go to R2 first; the item then references the stored key.
-      let uploaded = null;
-      if (isFileTypeSlug(type)) {
-        if (!file) return;
-        const uploadResult = await upload(file, type);
-        if (!uploadResult.success) {
-          if (uploadResult.upgrade) {
-            toastUpgradeError(uploadResult.error);
-            return;
-          }
-          setFieldErrors({ file: [uploadResult.error] });
-          toast.error(uploadResult.error);
-          return;
-        }
-        uploaded = uploadResult.data;
-      }
-
-      const result = await createItem({ ...payload, file: uploaded });
-      if (!result.success) {
-        if ("upgrade" in result) {
-          toastUpgradeError(result.error);
-          return;
-        }
-        setFieldErrors("fieldErrors" in result ? result.fieldErrors : {});
-        toast.error(result.error);
-        return;
-      }
-      toast.success("Item created");
-      setOpen(false);
-      reset();
-    });
+    submit(
+      { type, fields: buildItemPayload(values, fields), collectionIds, file },
+      {
+        onFieldErrors: setFieldErrors,
+        onSuccess: () => {
+          setOpen(false);
+          reset();
+        },
+      },
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <Button
-            aria-label={triggerLabel}
-            title={triggerLabel}
-            className="pointer-coarse:h-10"
-          />
-        }
-      >
-        <TriggerContent defaultType={defaultType} />
-      </DialogTrigger>
+      <CreateItemTrigger defaultType={defaultType} />
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New item</DialogTitle>
