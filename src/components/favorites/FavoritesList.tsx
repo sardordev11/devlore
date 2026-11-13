@@ -41,7 +41,7 @@ interface SortSelectProps {
 
 function SortSelect({ value, onChange }: SortSelectProps) {
   return (
-    <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <span id="favorites-sort-label">Sort by</span>
       <Select
         items={FAVORITE_SORT_OPTIONS}
@@ -53,7 +53,7 @@ function SortSelect({ value, onChange }: SortSelectProps) {
         <SelectTrigger
           size="sm"
           aria-labelledby="favorites-sort-label"
-          className="w-24 font-mono text-xs"
+          className="w-24 text-xs"
         >
           <SelectValue />
         </SelectTrigger>
@@ -62,7 +62,7 @@ function SortSelect({ value, onChange }: SortSelectProps) {
             <SelectItem
               key={option.value}
               value={option.value}
-              className="font-mono text-xs"
+              className="text-xs"
             >
               {option.label}
             </SelectItem>

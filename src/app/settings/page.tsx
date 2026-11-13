@@ -33,7 +33,7 @@ export default async function SettingsPage() {
   if (!settings) redirect("/sign-in");
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 *:max-w-4xl">
       <header>
         <h1 className="text-2xl font-semibold">Settings</h1>
         <p className="mt-1 text-muted-foreground">

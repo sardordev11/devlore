@@ -45,3 +45,7 @@ export function AuthField({
     </div>
   );
 }
+
+// Blue primary action, matching the homepage "Get Started" buttons.
+export const AUTH_SUBMIT_CLASS_NAME =
+  "w-full bg-home-accent text-white hover:bg-home-accent-hover";

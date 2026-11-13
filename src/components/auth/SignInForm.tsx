@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { signInWithCredentials } from "@/actions/auth";
-import { AuthField } from "@/components/auth/AuthField";
+import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
 import { GitHubSignInButton } from "@/components/auth/GitHubSignInButton";
 import { ResendVerificationButton } from "@/components/auth/ResendVerificationButton";
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,7 @@ export function SignInForm() {
             Forgot password?
           </Link>
         </div>
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <Button type="submit" className={AUTH_SUBMIT_CLASS_NAME} disabled={isPending}>
           {isPending ? "Signing in…" : "Sign in"}
         </Button>
       </form>

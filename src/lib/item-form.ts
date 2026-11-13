@@ -1,4 +1,14 @@
-import { parseTags } from "@/lib/validations/items";
+import {
+  isCreatableTypeSlug,
+  parseTags,
+  type CreatableTypeSlug,
+} from "@/lib/validations/items";
+
+// "/items/commands" → "commands", so the top bar's New Item matches the page
+export function getTypeSlugFromPathname(pathname: string): CreatableTypeSlug | null {
+  const match = /^\/items\/([^/]+)\/?$/.exec(pathname);
+  return match && isCreatableTypeSlug(match[1]) ? match[1] : null;
+}
 
 export type ItemFieldName =
   | "title"

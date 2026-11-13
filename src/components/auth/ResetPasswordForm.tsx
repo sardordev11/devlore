@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { resetPassword } from "@/actions/auth";
-import { AuthField } from "@/components/auth/AuthField";
+import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
 import { Button } from "@/components/ui/button";
 import { resetPasswordSchema } from "@/lib/validations/auth";
 
@@ -84,7 +84,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           autoComplete="new-password"
           errors={fieldErrors.confirmPassword}
         />
-        <Button type="submit" className="w-full" disabled={isPending || invalidToken}>
+        <Button type="submit" className={AUTH_SUBMIT_CLASS_NAME} disabled={isPending || invalidToken}>
           {isPending ? "Updating…" : "Update password"}
         </Button>
       </form>

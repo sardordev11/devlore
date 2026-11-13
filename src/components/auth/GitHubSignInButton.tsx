@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface GitHubSignInButtonProps {
   callbackUrl?: string;
+  label?: string;
 }
 
 // Lucide no longer ships brand icons, so the GitHub mark is inlined
@@ -18,21 +19,24 @@ function GitHubIcon() {
   );
 }
 
-function SubmitButton() {
+function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
 
   return (
     <Button type="submit" variant="outline" className="w-full" disabled={pending}>
       <GitHubIcon />
-      {pending ? "Redirecting…" : "Sign in with GitHub"}
+      {pending ? "Redirecting…" : label}
     </Button>
   );
 }
 
-export function GitHubSignInButton({ callbackUrl }: GitHubSignInButtonProps) {
+export function GitHubSignInButton({
+  callbackUrl,
+  label = "Sign in with GitHub",
+}: GitHubSignInButtonProps) {
   return (
     <form action={signInWithGitHub.bind(null, callbackUrl)}>
-      <SubmitButton />
+      <SubmitButton label={label} />
     </form>
   );
 }

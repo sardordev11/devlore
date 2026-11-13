@@ -15,7 +15,7 @@ interface FavoriteRowProps {
 // One dense, monospace row shared by favorite items and collections.
 export function FavoriteRow({ icon, color, title, badge, date }: FavoriteRowProps) {
   return (
-    <div className="flex items-center gap-3 px-2 py-1.5 font-mono text-sm transition-colors hover:bg-muted/50">
+    <div className="flex items-center gap-3 px-2 py-1.5 text-sm transition-colors hover:bg-muted/50">
       {createElement(icon, {
         className: "size-4 shrink-0",
         // Type colors are dynamic hex values from the database.

@@ -1,9 +1,9 @@
 import { ChevronDownIcon, FolderIcon, StarIcon } from "lucide-react";
-import Link from "next/link";
 import { connection } from "next/server";
 
 import { auth } from "@/auth";
 import { SidebarNavItem } from "@/components/dashboard/SidebarNavItem";
+import { SidebarViewAllLink } from "@/components/dashboard/SidebarViewAllLink";
 import {
   Collapsible,
   CollapsibleContent,
@@ -21,7 +21,7 @@ import { getSidebarItemTypes } from "@/lib/db/items";
 import { getTypeIcon } from "@/lib/type-icons";
 
 const SUBHEADING_CLASS =
-  "px-2 pt-2 pb-1 text-xs font-medium text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden";
+  "px-2 pt-2 pb-1 text-xs font-medium text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden";
 
 const GROUP_LABEL_CLASS = "tracking-wide uppercase";
 
@@ -130,12 +130,7 @@ export async function SidebarNav() {
                 </>
               )}
 
-              <Link
-                href="/collections"
-                className={`${SUBHEADING_CLASS} block transition-colors hover:text-sidebar-foreground`}
-              >
-                View all collections
-              </Link>
+              <SidebarViewAllLink href="/collections" label="View all collections" />
             </SidebarGroupContent>
           </CollapsibleContent>
         </SidebarGroup>

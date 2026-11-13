@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  formatCardNumber,
   formatKrw,
   getBillingMessage,
+  getCardCompanyName,
   getBillingView,
   PLAN_LABELS,
   PLAN_PERIODS,
@@ -104,16 +106,19 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
   const paid = view === "free" ? null : details;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 *:max-w-4xl">
       <header>
-        <Link
-          href="/settings"
-          className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeftIcon className="size-3.5" aria-hidden />
-          Settings
-        </Link>
-        <h1 className="text-2xl font-semibold">Billing</h1>
+        {/* Back link sits beside the title so the heading lines up with other pages */}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/settings"
+            aria-label="Back to settings"
+            className="-ml-2 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground pointer-coarse:size-10"
+          >
+            <ArrowLeftIcon className="size-4" aria-hidden />
+          </Link>
+          <h1 className="text-2xl font-semibold">Billing</h1>
+        </div>
         <p className="mt-1 text-muted-foreground">Manage your plan and payment card</p>
       </header>
 
@@ -140,7 +145,12 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
               <div className="text-sm">
                 <p className="font-medium">Payment card</p>
                 <p className="text-muted-foreground">
-                  {[paid.cardCompany, paid.cardNumber].filter(Boolean).join(" · ")}
+                  {[
+                    paid.cardCompany && getCardCompanyName(paid.cardCompany),
+                    formatCardNumber(paid.cardNumber),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
               </div>
             )}

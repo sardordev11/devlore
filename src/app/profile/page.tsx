@@ -21,7 +21,7 @@ export default async function ProfilePage() {
   if (!profile) redirect("/sign-in");
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 *:max-w-4xl">
       <header>
         <h1 className="text-2xl font-semibold">Profile</h1>
         <p className="mt-1 text-muted-foreground">Your account and usage</p>

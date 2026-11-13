@@ -50,7 +50,9 @@ export function CollectionPicker({
         ? options.error
         : selectedNames.length > 0
           ? selectedNames.join(", ")
-          : "No collections";
+          : collections.length > 0
+            ? "Select collections"
+            : "No collections";
 
   return (
     <DropdownMenu>

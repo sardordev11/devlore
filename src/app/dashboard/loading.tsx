@@ -8,7 +8,7 @@ export default function DashboardLoading() {
         <Skeleton className="h-5 w-64" />
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-24 rounded-xl" />
         ))}

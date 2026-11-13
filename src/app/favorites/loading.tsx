@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function FavoritesLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 *:max-w-5xl">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <header className="flex flex-col gap-2">
           <Skeleton className="h-8 w-36" />

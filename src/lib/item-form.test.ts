@@ -4,6 +4,7 @@ import {
   appendTag,
   buildItemPayload,
   getNewTags,
+  getTypeSlugFromPathname,
   type ItemFieldValues,
 } from "@/lib/item-form";
 
@@ -72,5 +73,18 @@ describe("appendTag", () => {
 
   it("leaves the field unchanged for a duplicate", () => {
     expect(appendTag("React, hooks", "react")).toBe("React, hooks");
+  });
+});
+
+describe("getTypeSlugFromPathname", () => {
+  it("returns the type of an /items/[type] page", () => {
+    expect(getTypeSlugFromPathname("/items/commands")).toBe("commands");
+    expect(getTypeSlugFromPathname("/items/images/")).toBe("images");
+  });
+
+  it("returns null for other pages and unknown types", () => {
+    expect(getTypeSlugFromPathname("/dashboard")).toBeNull();
+    expect(getTypeSlugFromPathname("/items/unknown")).toBeNull();
+    expect(getTypeSlugFromPathname("/items/snippets/extra")).toBeNull();
   });
 });
