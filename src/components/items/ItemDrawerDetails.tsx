@@ -10,13 +10,10 @@ import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { PromptView } from "@/components/items/PromptView";
 import { Badge } from "@/components/ui/badge";
 import { useCodeExplanation } from "@/hooks/use-code-explanation";
-import { useDetectedLanguage } from "@/hooks/use-detected-language";
+import { useAutoLanguage } from "@/hooks/use-detected-language";
 import { canExplainType } from "@/lib/ai/explain";
 import { canOptimizeType } from "@/lib/ai/optimize";
-import {
-  getFallbackLanguage,
-  shouldDetectLanguage,
-} from "@/lib/code-language";
+import { getFallbackLanguage } from "@/lib/code-language";
 import { formatFileSize, isImageMimeType } from "@/lib/file-constraints";
 import { formatLocalDate } from "@/lib/format-date";
 import {
@@ -41,10 +38,7 @@ interface CodeViewProps {
 // Read-only code, with the language guessed for snippets saved without one,
 // and an AI explanation for snippets and commands.
 function CodeView({ itemId, content, language, typeSlug }: CodeViewProps) {
-  const detectedLanguage = useDetectedLanguage(
-    content,
-    shouldDetectLanguage(typeSlug, language),
-  );
+  const { detectedLanguage } = useAutoLanguage(typeSlug, language, content);
   const { isPending, explanation, view, setView, explain } = useCodeExplanation(
     itemId,
     language || detectedLanguage,

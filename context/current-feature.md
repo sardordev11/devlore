@@ -1,18 +1,29 @@
 # Current Feature
 
-<!-- Feature Name -->
+Components Refactor
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+Refactor duplicated component code found by the `refactor-scanner` run on `src/components` (items 1–3). No behavior changes except the item form decisions below.
+
+1. **Shared item form fields** — extract `ItemFormFields` (`src/components/items/ItemFormFields.tsx`) used by both `CreateItemDialog` and `ItemEditForm`: Description (with the AI `source` object), Language (auto-detect label), Content, URL, Tags (AI content from URL or content) and Collections. Create-only parts (type selector, file upload) stay in the dialog.
+   - One field order in both forms: Title, (File), URL, Description, Language, Content, Tags, Collections. The edit form's URL moves up for links.
+   - URL required in both: the edit form disables Save for links without a URL (today a blank URL saves as `null`).
+   - Each form keeps its own spacing (`gap-4` in the dialog, `gap-6` in the drawer) via `className`.
+   - Share the detected-language setup (`shouldDetectLanguage` + `useDetectedLanguage`, also used by the drawer's `CodeView`) through a small hook.
+2. **`FormAlert`** — `src/components/auth/FormAlert.tsx` with `error` (`role="alert"`) and `success` (`role="status"`) variants, replacing the inline banners in `SignInForm`, `SignUpForm`, `ForgotPasswordForm`, `ResetPasswordForm` and `ChangePasswordDialog`. Same classes as today; `BillingBanner` left unchanged so its colors don't shift.
+3. **`ConfirmDialog`** — shared `AlertDialog` shell for `DeleteItemDialog`, `DeleteCollectionDialog` and `CancelSubscriptionDialog`: blocks closing while pending, runs the action in a transition, error toast, success toast, close, then an `onSuccess` callback for per-dialog extras (`onDeleted`, redirect, `router.refresh()`). Supports a trigger or controlled `open`. Labels and copy unchanged. `DeleteAccountDialog` stays as is (typed confirmation form).
 
 ## Notes
 
-<!-- Any extra notes -->
+- Only client-side URL enforcement on edit; `updateItemSchema` doesn't know the item type, so a server-side "URL is required" for links would need `updateItem` to look up the type first. Not in scope unless asked.
+- Collection placeholder decision (create dialog only) applies to the collection form fields refactor (scan item 4), which isn't in this feature.
+- Out of scope from the scan: collection form fields, `TypeIconTile`, `copyWithToast`/`getDownloadHref`, `parseFormData`, `getTypeLabel`/`formatItemCount`, splitting `ItemDrawerDetails`/`CodeEditor`.
+- Existing action tests should pass unchanged; add unit tests only if a new `src/lib` utility is introduced. Check in the browser: New Item dialog (snippet, link, image), drawer edit (snippet, link with blank URL), auth banners, delete item/collection and cancel subscription dialogs.
 
 ## History
 

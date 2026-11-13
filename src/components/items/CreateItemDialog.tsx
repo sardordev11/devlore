@@ -8,13 +8,9 @@ import { toast } from "sonner";
 import { createItem } from "@/actions/items";
 import { usePlanAccess } from "@/components/billing/PlanAccessContext";
 import { toastUpgradeError } from "@/components/billing/UpgradePrompt";
-import { CollectionPicker } from "@/components/items/CollectionPicker";
-import { ContentField } from "@/components/items/ContentField";
-import { DescriptionField } from "@/components/items/DescriptionField";
-import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { EditField } from "@/components/items/EditField";
 import { FileUpload } from "@/components/items/FileUpload";
-import { TagsField } from "@/components/items/TagsField";
+import { ItemFormFields } from "@/components/items/ItemFormFields";
 import { TYPE_OPTIONS, TypeSelector } from "@/components/items/TypeSelector";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,14 +23,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useDetectedLanguage } from "@/hooks/use-detected-language";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useItemFields } from "@/hooks/use-item-fields";
-import {
-  getAutoLanguageLabel,
-  shouldDetectLanguage,
-} from "@/lib/code-language";
 import { isFileTypeSlug } from "@/lib/file-constraints";
 import {
   buildItemPayload,
@@ -96,15 +86,13 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
   const [type, setType] = useState<CreatableTypeSlug>(initialType);
   const typeLocked = proLocked && isProOnlyTypeSlug(type);
   const triggerLabel = getTriggerLabel(defaultType);
-  const { values, setValue, fieldErrors, setFieldErrors, fieldProps, reset: resetFields } =
-    useItemFields("new-item", EMPTY_ITEM_FIELD_VALUES, isPending);
+  const itemFields = useItemFields("new-item", EMPTY_ITEM_FIELD_VALUES, isPending);
+  const { values, fieldErrors, setFieldErrors, reset: resetFields } = itemFields;
   const [file, setFile] = useState<File | null>(null);
   const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const { upload, progress } = useFileUpload();
 
   const fields = getCreateFields(type);
-  const autoDetect = shouldDetectLanguage(type, values.language);
-  const detectedLanguage = useDetectedLanguage(values.content, autoDetect);
 
   function reset() {
     setType(initialType);
@@ -192,113 +180,39 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
             proLocked={proLocked}
           />
 
-          <EditField id="new-item-title" label="Title" error={fieldErrors.title?.[0]}>
-            <Input {...fieldProps("title")} required autoFocus />
-          </EditField>
-
-          {isFileTypeSlug(type) && (
-            <EditField
-              id="new-item-file"
-              label={type === "images" ? "Image" : "File"}
-            >
-              <FileUpload
-                key={type}
-                id="new-item-file"
-                type={type}
-                file={file}
-                onChange={(selected) => {
-                  setFile(selected);
-                  setFieldErrors((current) => ({ ...current, file: undefined }));
-                }}
-                progress={progress}
-                disabled={isPending}
-                error={fieldErrors.file?.[0]}
-              />
-            </EditField>
-          )}
-
-          {fields.url && (
-            <EditField id="new-item-url" label="URL" error={fieldErrors.url?.[0]}>
-              <Input
-                {...fieldProps("url")}
-                type="url"
-                required
-                placeholder="https://example.com"
-              />
-            </EditField>
-          )}
-
-          <DescriptionField
-            field={fieldProps("description")}
-            error={fieldErrors.description?.[0]}
-            onValueChange={(description) => setValue("description", description)}
-            source={{
-              title: values.title,
-              type: TYPE_OPTIONS.find((option) => option.slug === type)?.label,
-              content: fields.content ? values.content : "",
-              language: fields.language ? values.language || (detectedLanguage ?? "") : "",
-              url: fields.url ? values.url : "",
-              fileName: file?.name,
-              mimeType: file?.type,
-              tags: values.tags,
-            }}
+          <ItemFormFields
+            idPrefix="new-item"
+            typeSlug={type}
+            typeLabel={TYPE_OPTIONS.find((option) => option.slug === type)?.label}
+            fields={fields}
+            form={itemFields}
+            collectionIds={collectionIds}
+            onCollectionIdsChange={setCollectionIds}
+            disabled={isPending}
+            file={file ? { name: file.name, mimeType: file.type } : undefined}
+            afterTitle={
+              isFileTypeSlug(type) && (
+                <EditField
+                  id="new-item-file"
+                  label={type === "images" ? "Image" : "File"}
+                >
+                  <FileUpload
+                    key={type}
+                    id="new-item-file"
+                    type={type}
+                    file={file}
+                    onChange={(selected) => {
+                      setFile(selected);
+                      setFieldErrors((current) => ({ ...current, file: undefined }));
+                    }}
+                    progress={progress}
+                    disabled={isPending}
+                    error={fieldErrors.file?.[0]}
+                  />
+                </EditField>
+              )
+            }
           />
-
-          {fields.language && (
-            <EditField
-              id="new-item-language"
-              label="Language"
-              error={fieldErrors.language?.[0]}
-            >
-              <LanguageSelect
-                field={fieldProps("language")}
-                onValueChange={(language) => setValue("language", language)}
-                noneLabel={
-                  autoDetect ? getAutoLanguageLabel(detectedLanguage) : undefined
-                }
-              />
-            </EditField>
-          )}
-
-          {fields.content && (
-            <EditField
-              id="new-item-content"
-              label="Content"
-              error={fieldErrors.content?.[0]}
-            >
-              <ContentField
-                key={type}
-                typeSlug={type}
-                field={fieldProps("content")}
-                onValueChange={(content) => setValue("content", content)}
-                language={values.language}
-                detectedLanguage={detectedLanguage}
-                invalid={Boolean(fieldErrors.content)}
-              />
-            </EditField>
-          )}
-
-          <TagsField
-            field={fieldProps("tags")}
-            error={fieldErrors.tags?.[0]}
-            onValueChange={(tags) => setValue("tags", tags)}
-            title={values.title}
-            content={fields.url ? values.url : fields.content ? values.content : ""}
-          />
-
-          <EditField
-            id="new-item-collections"
-            label="Collections"
-            error={fieldErrors.collectionIds?.[0]}
-          >
-            <CollectionPicker
-              id="new-item-collections"
-              value={collectionIds}
-              onChange={setCollectionIds}
-              disabled={isPending}
-              error={fieldErrors.collectionIds?.[0]}
-            />
-          </EditField>
 
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />} disabled={isPending}>

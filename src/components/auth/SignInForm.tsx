@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { signInWithCredentials } from "@/actions/auth";
 import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
+import { FormAlert } from "@/components/auth/FormAlert";
 import { GitHubSignInButton } from "@/components/auth/GitHubSignInButton";
 import { ResendVerificationButton } from "@/components/auth/ResendVerificationButton";
 import { Button } from "@/components/ui/button";
@@ -65,24 +66,14 @@ export function SignInForm() {
   return (
     <div className="grid gap-6">
       {(justVerified || justReset) && !formError && (
-        <p
-          role="status"
-          className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400"
-        >
+        <FormAlert variant="success">
           {justReset
             ? "Password updated. You can sign in now."
             : "Email verified. You can sign in now."}
-        </p>
+        </FormAlert>
       )}
 
-      {formError && (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {formError}
-        </p>
-      )}
+      {formError && <FormAlert variant="error">{formError}</FormAlert>}
 
       {unverifiedEmail && <ResendVerificationButton email={unverifiedEmail} />}
 

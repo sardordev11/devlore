@@ -51,3 +51,5 @@ export function useItemFields(
 
   return { values, setValue, fieldErrors, setFieldErrors, fieldProps, reset };
 }
+
+export type ItemFieldsState = ReturnType<typeof useItemFields>;

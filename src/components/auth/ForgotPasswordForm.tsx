@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { requestPasswordReset } from "@/actions/auth";
 import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
+import { FormAlert } from "@/components/auth/FormAlert";
 import { Button } from "@/components/ui/button";
 import { forgotPasswordSchema } from "@/lib/validations/auth";
 
@@ -43,22 +44,12 @@ export function ForgotPasswordForm() {
   return (
     <div className="grid gap-6">
       {sent && (
-        <p
-          role="status"
-          className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400"
-        >
+        <FormAlert variant="success">
           If an account exists for that email, we&apos;ve sent a reset link.
-        </p>
+        </FormAlert>
       )}
 
-      {formError && (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {formError}
-        </p>
-      )}
+      {formError && <FormAlert variant="error">{formError}</FormAlert>}
 
       <form onSubmit={handleSubmit} noValidate className="grid gap-4">
         <AuthField

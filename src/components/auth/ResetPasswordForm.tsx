@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { resetPassword } from "@/actions/auth";
 import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
+import { FormAlert } from "@/components/auth/FormAlert";
 import { Button } from "@/components/ui/button";
 import { resetPasswordSchema } from "@/lib/validations/auth";
 
@@ -56,17 +57,14 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   return (
     <div className="grid gap-6">
       {formError && (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
+        <FormAlert variant="error">
           {formError}{" "}
           {invalidToken && (
             <Link href="/forgot-password" className="font-medium underline underline-offset-4">
               Request a new link
             </Link>
           )}
-        </p>
+        </FormAlert>
       )}
 
       <form onSubmit={handleSubmit} noValidate className="grid gap-4">
