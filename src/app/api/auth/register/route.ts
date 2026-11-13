@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { apiError, rateLimitedResponse } from "@/lib/api-response";
 import { isPrismaError, PRISMA_ERROR } from "@/lib/db/prisma-errors";
 import { prisma } from "@/lib/prisma";
-import {
-  checkRateLimit,
-  getClientIp,
-  rateLimitMessage,
-  retryAfterSeconds,
-} from "@/lib/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { registerSchema } from "@/lib/validations/auth";
 import {
   EMAIL_VERIFICATION_ENABLED,
@@ -16,39 +12,22 @@ import {
 
 export async function POST(request: Request) {
   const limit = await checkRateLimit("register", getClientIp(request.headers));
-  if (!limit.success) {
-    return NextResponse.json(
-      { success: false, error: rateLimitMessage(limit.reset) },
-      {
-        status: 429,
-        headers: { "Retry-After": String(retryAfterSeconds(limit.reset)) },
-      },
-    );
-  }
+  if (!limit.success) return rateLimitedResponse(limit.reset);
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    return apiError("Invalid JSON body", 400);
   }
 
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { success: false, error: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return apiError(parsed.error.issues[0].message, 400);
   }
 
   const { name, email, password } = parsed.data;
-  const emailTaken = NextResponse.json(
-    { success: false, error: "A user with this email already exists" },
-    { status: 409 },
-  );
+  const emailTaken = apiError("A user with this email already exists", 409);
 
   try {
     const existing = await prisma.user.findUnique({
@@ -90,9 +69,6 @@ export async function POST(request: Request) {
     if (isPrismaError(error, PRISMA_ERROR.uniqueConstraint)) return emailTaken;
 
     console.error("Registration failed:", error);
-    return NextResponse.json(
-      { success: false, error: "Registration failed" },
-      { status: 500 },
-    );
+    return apiError("Registration failed", 500);
   }
 }

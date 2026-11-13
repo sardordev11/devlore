@@ -2,10 +2,11 @@
 
 import bcrypt from "bcryptjs";
 
-import { auth, signOut } from "@/auth";
+import { signOut } from "@/auth";
+import { getSessionUserId, SIGNED_OUT_ERROR } from "@/lib/action-helpers";
 import { decryptBillingKey } from "@/lib/billing-key-crypto";
+import { deleteFilesByUrl } from "@/lib/file-cleanup";
 import { prisma } from "@/lib/prisma";
-import { deleteFile, getFileKey } from "@/lib/r2";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 import { deleteBillingKey } from "@/lib/toss";
 import { PASSWORD_RESET_PREFIX } from "@/lib/tokens";
@@ -21,20 +22,6 @@ interface ActionResult {
   wrongPassword?: boolean;
 }
 
-// Best effort: the account is already gone, so a failed delete only leaves an orphaned object.
-async function removeFiles(fileUrls: (string | null)[]) {
-  const keys = fileUrls.flatMap((url) => {
-    const key = url ? getFileKey(url) : null;
-    return key ? [key] : [];
-  });
-  const results = await Promise.allSettled(keys.map((key) => deleteFile(key)));
-  for (const result of results) {
-    if (result.status === "rejected") {
-      console.error("R2 delete failed:", result.reason);
-    }
-  }
-}
-
 // Best effort, like the files: a key left at Toss can't be charged without
 // our secret key, and Toss failing mustn't block the account deletion.
 async function removeBillingKey(encrypted: string | null | undefined) {
@@ -47,10 +34,8 @@ async function removeBillingKey(encrypted: string | null | undefined) {
 }
 
 export async function changePassword(input: unknown): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = changePasswordSchema.safeParse(input);
   if (!parsed.success) {
@@ -58,14 +43,14 @@ export async function changePassword(input: unknown): Promise<ActionResult> {
   }
 
   // Keyed by user so a hijacked session can't brute-force the current password
-  const limit = await checkRateLimit("changePassword", session.user.id);
+  const limit = await checkRateLimit("changePassword", userId);
   if (!limit.success) {
     return { success: false, error: rateLimitMessage(limit.reset) };
   }
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { passwordHash: true },
     });
     if (!user?.passwordHash) {
@@ -85,7 +70,7 @@ export async function changePassword(input: unknown): Promise<ActionResult> {
     }
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { passwordHash: await bcrypt.hash(parsed.data.password, 12) },
     });
     return { success: true };
@@ -96,10 +81,8 @@ export async function changePassword(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteAccount(confirmation: unknown): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   if (!isDeleteConfirmed(confirmation)) {
     return { success: false, error: `Type "${DELETE_CONFIRMATION}" to confirm` };
@@ -108,19 +91,19 @@ export async function deleteAccount(confirmation: unknown): Promise<ActionResult
   try {
     // Uploaded files live in R2, so collect their keys before the items cascade away
     const files = await prisma.item.findMany({
-      where: { userId: session.user.id, fileUrl: { not: null } },
+      where: { userId: userId, fileUrl: { not: null } },
       select: { fileUrl: true },
     });
     // The subscription cascades too, so read its billing key first
     const subscription = await prisma.subscription.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: userId },
       select: { billingKey: true },
     });
 
     // Items, collections, tags, accounts and sessions cascade with the user.
     // Verification and reset tokens are keyed by email, so they go separately.
     const user = await prisma.user.delete({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { email: true },
     });
     await prisma.verificationToken.deleteMany({
@@ -129,7 +112,8 @@ export async function deleteAccount(confirmation: unknown): Promise<ActionResult
       },
     });
 
-    await removeFiles(files.map((file) => file.fileUrl));
+    // Best effort: the account is already gone, so a failed delete only leaves an orphaned object
+    await deleteFilesByUrl(files.map((file) => file.fileUrl));
     await removeBillingKey(subscription?.billingKey);
   } catch (error) {
     console.error("Delete account failed:", error);

@@ -3,7 +3,12 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 
-import { auth } from "@/auth";
+import {
+  COLLECTION_NOT_FOUND,
+  getSessionUserId,
+  SIGNED_OUT_ERROR,
+  toValidationFailure,
+} from "@/lib/action-helpers";
 import {
   createCollection as createCollectionQuery,
   deleteCollection as deleteCollectionQuery,
@@ -19,9 +24,8 @@ import {
   createCollectionSchema,
   updateCollectionSchema,
 } from "@/lib/validations/collections";
+import type { ActionResult, FieldErrors } from "@/types/actions";
 import type { FavoriteResult } from "@/types/favorites";
-
-const NOT_FOUND = "Collection not found";
 
 type CreateCollectionResult =
   | { success: true; data: CreatedCollection }
@@ -30,9 +34,7 @@ type CreateCollectionResult =
   | {
       success: false;
       error: string;
-      fieldErrors?: Partial<
-        Record<keyof z.input<typeof createCollectionSchema>, string[]>
-      >;
+      fieldErrors?: FieldErrors<typeof createCollectionSchema>;
     };
 
 type UpdateCollectionResult =
@@ -40,28 +42,20 @@ type UpdateCollectionResult =
   | {
       success: false;
       error: string;
-      fieldErrors?: Partial<
-        Record<keyof z.input<typeof updateCollectionSchema>, string[]>
-      >;
+      fieldErrors?: FieldErrors<typeof updateCollectionSchema>;
     };
 
-type DeleteCollectionResult =
-  | { success: true; data: { id: string } }
-  | { success: false; error: string };
+type DeleteCollectionResult = ActionResult<{ id: string }>;
 
-type CollectionOptionsResult =
-  | { success: true; data: CollectionOption[] }
-  | { success: false; error: string };
+type CollectionOptionsResult = ActionResult<CollectionOption[]>;
 
 // The signed-in user's collections, for the item form's collection picker.
 export async function getCollectionOptions(): Promise<CollectionOptionsResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   try {
-    const collections = await getCollectionOptionsQuery(session.user.id);
+    const collections = await getCollectionOptionsQuery(userId);
     return { success: true, data: collections };
   } catch (error) {
     console.error("Load collections failed:", error);
@@ -72,27 +66,21 @@ export async function getCollectionOptions(): Promise<CollectionOptionsResult> {
 export async function createCollection(
   data: unknown,
 ): Promise<CreateCollectionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = createCollectionSchema.safeParse(data);
   if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid collection",
-      fieldErrors: z.flattenError(parsed.error).fieldErrors,
-    };
+    return toValidationFailure(parsed.error, "Invalid collection");
   }
 
   try {
-    const upgradeMessage = await checkCollectionLimit(session.user.id);
+    const upgradeMessage = await checkCollectionLimit(userId);
     if (upgradeMessage) {
       return { success: false, error: upgradeMessage, upgrade: true };
     }
 
-    const collection = await createCollectionQuery(session.user.id, parsed.data);
+    const collection = await createCollectionQuery(userId, parsed.data);
     return { success: true, data: collection };
   } catch (error) {
     console.error("Create collection failed:", error);
@@ -107,30 +95,20 @@ export async function updateCollection(
   collectionId: unknown,
   data: unknown,
 ): Promise<UpdateCollectionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const id = collectionIdSchema.safeParse(collectionId);
-  if (!id.success) return { success: false, error: NOT_FOUND };
+  if (!id.success) return { success: false, error: COLLECTION_NOT_FOUND };
 
   const parsed = updateCollectionSchema.safeParse(data);
   if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid collection",
-      fieldErrors: z.flattenError(parsed.error).fieldErrors,
-    };
+    return toValidationFailure(parsed.error, "Invalid collection");
   }
 
   try {
-    const collection = await updateCollectionQuery(
-      session.user.id,
-      id.data,
-      parsed.data,
-    );
-    if (!collection) return { success: false, error: NOT_FOUND };
+    const collection = await updateCollectionQuery(userId, id.data, parsed.data);
+    if (!collection) return { success: false, error: COLLECTION_NOT_FOUND };
     return { success: true, data: collection };
   } catch (error) {
     console.error("Update collection failed:", error);
@@ -147,23 +125,17 @@ export async function toggleCollectionFavorite(
   collectionId: unknown,
   isFavorite: unknown,
 ): Promise<FavoriteResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const id = collectionIdSchema.safeParse(collectionId);
-  if (!id.success) return { success: false, error: NOT_FOUND };
+  if (!id.success) return { success: false, error: COLLECTION_NOT_FOUND };
   const value = z.boolean().safeParse(isFavorite);
   if (!value.success) return { success: false, error: "Invalid favorite value" };
 
   try {
-    const collection = await setCollectionFavorite(
-      session.user.id,
-      id.data,
-      value.data,
-    );
-    if (!collection) return { success: false, error: NOT_FOUND };
+    const collection = await setCollectionFavorite(userId, id.data, value.data);
+    if (!collection) return { success: false, error: COLLECTION_NOT_FOUND };
 
     refresh();
     return { success: true, data: collection };
@@ -180,17 +152,15 @@ export async function toggleCollectionFavorite(
 export async function deleteCollection(
   collectionId: unknown,
 ): Promise<DeleteCollectionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const id = collectionIdSchema.safeParse(collectionId);
-  if (!id.success) return { success: false, error: NOT_FOUND };
+  if (!id.success) return { success: false, error: COLLECTION_NOT_FOUND };
 
   try {
-    const deleted = await deleteCollectionQuery(session.user.id, id.data);
-    if (!deleted) return { success: false, error: NOT_FOUND };
+    const deleted = await deleteCollectionQuery(userId, id.data);
+    if (!deleted) return { success: false, error: COLLECTION_NOT_FOUND };
     return { success: true, data: deleted };
   } catch (error) {
     console.error("Delete collection failed:", error);

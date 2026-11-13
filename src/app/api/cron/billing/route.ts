@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { apiError } from "@/lib/api-response";
 import { runBillingCycle } from "@/lib/billing-cycle";
 
 // Charges run one at a time and Toss can take up to 60s per charge
@@ -14,10 +15,7 @@ function isAuthorized(request: Request) {
 
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
-    );
+    return apiError("Unauthorized", 401);
   }
 
   try {
@@ -25,9 +23,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, data: summary });
   } catch (error) {
     console.error("Billing cycle failed:", error);
-    return NextResponse.json(
-      { success: false, error: "Billing cycle failed" },
-      { status: 500 },
-    );
+    return apiError("Billing cycle failed", 500);
   }
 }
