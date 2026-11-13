@@ -6,8 +6,8 @@ import { useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { updateItem } from "@/actions/items";
-import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
 import { ItemFormFields } from "@/components/items/ItemFormFields";
+import { ItemMetaSections } from "@/components/items/ItemMetaSections";
 import { Button } from "@/components/ui/button";
 import { useItemFields } from "@/hooks/use-item-fields";
 import { buildItemPayload } from "@/lib/item-form";
