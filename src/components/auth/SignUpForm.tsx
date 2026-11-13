@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
+import { FormAlert } from "@/components/auth/FormAlert";
 import { GitHubSignInButton } from "@/components/auth/GitHubSignInButton";
 import { Button } from "@/components/ui/button";
 import { registerSchema } from "@/lib/validations/auth";
@@ -70,14 +71,7 @@ export function SignUpForm() {
 
   return (
     <div className="grid gap-6">
-      {formError && (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {formError}
-        </p>
-      )}
+      {formError && <FormAlert variant="error">{formError}</FormAlert>}
 
       <form onSubmit={handleSubmit} noValidate className="grid gap-4">
         <AuthField

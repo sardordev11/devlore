@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { shouldDetectLanguage } from "@/lib/code-language";
+
 // Wait for a pause in typing before re-running detection.
 const DETECT_DELAY_MS = 300;
 
@@ -27,4 +29,16 @@ export function useDetectedLanguage(
   }, [code, enabled]);
 
   return enabled ? detected : null;
+}
+
+// Detects the language only for types that guess it (snippets) and only
+// while no language is set. autoDetect tells the Language select to show "Auto".
+export function useAutoLanguage(
+  typeSlug: string,
+  language: string | null | undefined,
+  code: string,
+) {
+  const autoDetect = shouldDetectLanguage(typeSlug, language);
+  const detectedLanguage = useDetectedLanguage(code, autoDetect);
+  return { autoDetect, detectedLanguage };
 }

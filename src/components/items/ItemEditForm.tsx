@@ -6,21 +6,10 @@ import { useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { updateItem } from "@/actions/items";
-import { CollectionPicker } from "@/components/items/CollectionPicker";
-import { ContentField } from "@/components/items/ContentField";
-import { DescriptionField } from "@/components/items/DescriptionField";
-import { LanguageSelect } from "@/components/items/LanguageSelect";
-import { EditField } from "@/components/items/EditField";
 import { ItemMetaSections } from "@/components/items/ItemDrawerDetails";
-import { TagsField } from "@/components/items/TagsField";
+import { ItemFormFields } from "@/components/items/ItemFormFields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useDetectedLanguage } from "@/hooks/use-detected-language";
 import { useItemFields } from "@/hooks/use-item-fields";
-import {
-  getAutoLanguageLabel,
-  shouldDetectLanguage,
-} from "@/lib/code-language";
 import { buildItemPayload } from "@/lib/item-form";
 import { LANGUAGE_TYPE_SLUGS } from "@/lib/validations/items";
 import type { ItemDetailJson } from "@/types/items";
@@ -42,19 +31,19 @@ export function ItemEditForm({
 }: ItemEditFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const { values, setValue, fieldErrors, setFieldErrors, fieldProps } =
-    useItemFields(
-      "item",
-      {
-        title: item.title,
-        description: item.description ?? "",
-        content: initialContent ?? item.content ?? "",
-        language: item.language ?? "",
-        url: item.url ?? "",
-        tags: item.tags.join(", "),
-      },
-      isPending,
-    );
+  const itemFields = useItemFields(
+    "item",
+    {
+      title: item.title,
+      description: item.description ?? "",
+      content: initialContent ?? item.content ?? "",
+      language: item.language ?? "",
+      url: item.url ?? "",
+      tags: item.tags.join(", "),
+    },
+    isPending,
+  );
+  const { values, setFieldErrors } = itemFields;
 
   const [collectionIds, setCollectionIds] = useState(() =>
     item.collections.map((collection) => collection.id),
@@ -66,11 +55,13 @@ export function ItemEditForm({
     url: item.contentType === "URL",
   };
 
-  const autoDetect = shouldDetectLanguage(item.type.slug, values.language);
-  const detectedLanguage = useDetectedLanguage(values.content, autoDetect);
+  // Links need a URL, as when creating (a blank one would be saved as null)
+  const canSave =
+    Boolean(values.title.trim()) && (!fields.url || Boolean(values.url.trim()));
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canSave) return;
     const payload = { ...buildItemPayload(values, fields), collectionIds };
 
     startTransition(async () => {
@@ -99,102 +90,24 @@ export function ItemEditForm({
           <XIcon />
           Cancel
         </Button>
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isPending || !values.title.trim()}
-        >
+        <Button type="submit" size="sm" disabled={isPending || !canSave}>
           <CheckIcon />
           {isPending ? "Saving…" : "Save"}
         </Button>
       </div>
 
       <div className="flex flex-col gap-6 p-6">
-        <EditField id="item-title" label="Title" error={fieldErrors.title?.[0]}>
-          <Input {...fieldProps("title")} required autoFocus />
-        </EditField>
-
-        <DescriptionField
-          field={fieldProps("description")}
-          error={fieldErrors.description?.[0]}
-          onValueChange={(description) => setValue("description", description)}
-          source={{
-            title: values.title,
-            type: item.type.name,
-            content: fields.content ? values.content : "",
-            language: fields.language ? values.language || (detectedLanguage ?? "") : "",
-            url: fields.url ? values.url : "",
-            fileName: item.fileName ?? "",
-            mimeType: item.mimeType ?? "",
-            tags: values.tags,
-          }}
+        <ItemFormFields
+          idPrefix="item"
+          typeSlug={item.type.slug}
+          typeLabel={item.type.name}
+          fields={fields}
+          form={itemFields}
+          collectionIds={collectionIds}
+          onCollectionIdsChange={setCollectionIds}
+          disabled={isPending}
+          file={{ name: item.fileName, mimeType: item.mimeType }}
         />
-
-        {fields.language && (
-          <EditField
-            id="item-language"
-            label="Language"
-            error={fieldErrors.language?.[0]}
-          >
-            <LanguageSelect
-              field={fieldProps("language")}
-              onValueChange={(language) => setValue("language", language)}
-              noneLabel={
-                autoDetect ? getAutoLanguageLabel(detectedLanguage) : undefined
-              }
-            />
-          </EditField>
-        )}
-
-        {fields.content && (
-          <EditField
-            id="item-content"
-            label="Content"
-            error={fieldErrors.content?.[0]}
-          >
-            <ContentField
-              typeSlug={item.type.slug}
-              field={fieldProps("content")}
-              onValueChange={(content) => setValue("content", content)}
-              language={values.language}
-              detectedLanguage={detectedLanguage}
-              invalid={Boolean(fieldErrors.content)}
-            />
-          </EditField>
-        )}
-
-
-        {fields.url && (
-          <EditField id="item-url" label="URL" error={fieldErrors.url?.[0]}>
-            <Input
-              {...fieldProps("url")}
-              type="url"
-              placeholder="https://example.com"
-            />
-          </EditField>
-        )}
-
-        <TagsField
-          field={fieldProps("tags")}
-          error={fieldErrors.tags?.[0]}
-          onValueChange={(tags) => setValue("tags", tags)}
-          title={values.title}
-          content={fields.url ? values.url : fields.content ? values.content : ""}
-        />
-
-        <EditField
-          id="item-collections"
-          label="Collections"
-          error={fieldErrors.collectionIds?.[0]}
-        >
-          <CollectionPicker
-            id="item-collections"
-            value={collectionIds}
-            onChange={setCollectionIds}
-            disabled={isPending}
-            error={fieldErrors.collectionIds?.[0]}
-          />
-        </EditField>
 
         <ItemMetaSections item={item} showCollections={false} />
       </div>
