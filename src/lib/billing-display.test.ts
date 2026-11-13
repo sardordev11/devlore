@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatCardNumber,
   formatKrw,
+  getCardCompanyName,
   getBillingMessage,
   getBillingView,
   isCardWindowClosed,
@@ -78,5 +80,32 @@ describe("getBillingMessage", () => {
     expect(getBillingMessage("toString").text).toBe(
       "Something went wrong with the payment. Please try again.",
     );
+  });
+});
+
+describe("getCardCompanyName", () => {
+  it("maps Toss issuer codes to names", () => {
+    expect(getCardCompanyName("24")).toBe("Toss Bank");
+    expect(getCardCompanyName("4V")).toBe("Visa");
+    expect(getCardCompanyName("W1")).toBe("Woori");
+  });
+
+  it("passes unknown codes through", () => {
+    expect(getCardCompanyName("ZZ")).toBe("ZZ");
+    expect(getCardCompanyName("Shinhan")).toBe("Shinhan");
+  });
+});
+
+describe("formatCardNumber", () => {
+  it("groups the masked number in fours", () => {
+    expect(formatCardNumber("53275011****697*")).toBe("5327 5011 **** 697*");
+  });
+
+  it("normalizes existing spaces and dashes", () => {
+    expect(formatCardNumber("4330-12** **** 1234")).toBe("4330 12** **** 1234");
+  });
+
+  it("keeps a short remainder group", () => {
+    expect(formatCardNumber("1234567")).toBe("1234 567");
   });
 });

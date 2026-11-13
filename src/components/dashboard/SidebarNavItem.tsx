@@ -19,6 +19,11 @@ interface SidebarNavItemProps {
   isPro?: boolean;
 }
 
+// The shadcn default (accent background only) is barely visible on the dark
+// sidebar, so the current page also gets a blue tint and a left accent bar.
+const ACTIVE_CLASS =
+  "data-active:bg-sidebar-primary/15 data-active:font-semibold data-active:text-sidebar-foreground data-active:shadow-[inset_2px_0_0_var(--sidebar-primary)] data-active:hover:bg-sidebar-primary/20";
+
 export function SidebarNavItem({
   href,
   label,
@@ -34,6 +39,7 @@ export function SidebarNavItem({
       <SidebarMenuButton
         render={<Link href={href} />}
         isActive={pathname === href}
+        className={ACTIVE_CLASS}
         tooltip={label}
         onClick={() => setOpenMobile(false)}
       >

@@ -98,9 +98,23 @@ export default async function ItemsByTypePage({
           )}
         </div>
       ) : (
-        <p className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
-          No {type.slug} yet.
-        </p>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
+          <div
+            className="flex size-12 items-center justify-center rounded-xl"
+            style={getTypeTint(type.color)}
+          >
+            {createElement(getTypeIcon(type.icon), { className: "size-6" })}
+          </div>
+          <div>
+            <p className="font-medium">No {type.slug} yet</p>
+            <p className="text-sm text-muted-foreground">
+              Your {type.slug} will show up here.
+            </p>
+          </div>
+          {isCreatableTypeSlug(type.slug) && (
+            <CreateItemDialog defaultType={type.slug} />
+          )}
+        </div>
       )}
 
       <PaginationControls pathname={pathname} page={page} pageCount={pageCount} />

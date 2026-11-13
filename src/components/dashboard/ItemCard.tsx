@@ -36,10 +36,11 @@ export function ItemCard({ item }: ItemCardProps) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <h3 className="truncate font-medium">{item.title}</h3>
+            <div className="flex items-start gap-1.5">
+              {/* Two lines before truncating, so narrow cards still show most of the title */}
+              <h3 className="line-clamp-2 font-medium wrap-anywhere">{item.title}</h3>
               {item.isPinned && (
-                <PinIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                <PinIcon className="mt-1 size-3.5 shrink-0 text-muted-foreground" />
               )}
             </div>
             {item.description && (

@@ -56,6 +56,51 @@ export function formatKrw(amount: number) {
   return KRW.format(amount);
 }
 
+// Toss card issuer codes (docs.tosspayments.com/codes/org-codes)
+const CARD_COMPANY_NAMES: Record<string, string> = {
+  "3K": "IBK BC",
+  "46": "Gwangju Bank",
+  "71": "Lotte",
+  "30": "KDB",
+  "31": "BC",
+  "51": "Samsung",
+  "38": "Saemaul",
+  "41": "Shinhan",
+  "62": "Shinhyup",
+  "36": "Citi",
+  "33": "Woori",
+  W1: "Woori",
+  "37": "Post Office",
+  "39": "Savings Bank",
+  "35": "Jeonbuk Bank",
+  "42": "Jeju Bank",
+  "15": "KakaoBank",
+  "3A": "K Bank",
+  "24": "Toss Bank",
+  "21": "Hana",
+  "61": "Hyundai",
+  "11": "KB Kookmin",
+  "91": "NH Nonghyup",
+  "34": "Suhyup",
+  "6D": "Diners",
+  "4M": "Mastercard",
+  "3C": "UnionPay",
+  "7A": "Amex",
+  "4J": "JCB",
+  "4V": "Visa",
+};
+
+// "24" → "Toss Bank"; unknown codes and names pass through unchanged
+export function getCardCompanyName(code: string) {
+  return CARD_COMPANY_NAMES[code] ?? code;
+}
+
+// "53275011****697*" → "5327 5011 **** 697*"
+export function formatCardNumber(cardNumber: string) {
+  const compact = cardNumber.replace(/[\s-]/g, "");
+  return compact.match(/.{1,4}/g)?.join(" ") ?? compact;
+}
+
 // Toss sends this to the fail URL when the card window is closed
 export const CARD_WINDOW_CLOSED_CODES = ["PAY_PROCESS_CANCELED", "USER_CANCEL"];
 

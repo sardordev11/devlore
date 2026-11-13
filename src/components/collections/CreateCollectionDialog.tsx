@@ -85,7 +85,16 @@ export function CreateCollectionDialog() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="outline" aria-label="New Collection" />}>
+      <DialogTrigger
+        render={
+          <Button
+            variant="outline"
+            aria-label="New Collection"
+            title="New Collection"
+            className="pointer-coarse:h-10"
+          />
+        }
+      >
         <FolderPlus data-icon="inline-start" />
         <span className="hidden lg:inline">New Collection</span>
       </DialogTrigger>

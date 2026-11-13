@@ -87,11 +87,11 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 *:max-w-5xl">
       {isEmpty ? (
         <>
           {header}
-          <div className="flex flex-col items-center gap-2 border-y border-border/60 py-12 text-center font-mono text-sm text-muted-foreground">
+          <div className="flex flex-col items-center gap-2 border-y border-border/60 py-12 text-center text-sm text-muted-foreground">
             <StarIcon className="size-5" />
             <p>No favorites yet.</p>
             <p className="text-xs">Star items and collections to see them here.</p>

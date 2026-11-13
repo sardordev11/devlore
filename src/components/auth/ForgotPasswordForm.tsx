@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { requestPasswordReset } from "@/actions/auth";
-import { AuthField } from "@/components/auth/AuthField";
+import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
 import { Button } from "@/components/ui/button";
 import { forgotPasswordSchema } from "@/lib/validations/auth";
 
@@ -69,7 +69,7 @@ export function ForgotPasswordForm() {
           placeholder="you@example.com"
           errors={emailErrors}
         />
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <Button type="submit" className={AUTH_SUBMIT_CLASS_NAME} disabled={isPending}>
           {isPending ? "Sending…" : "Send reset link"}
         </Button>
       </form>

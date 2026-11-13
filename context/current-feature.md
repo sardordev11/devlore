@@ -1,18 +1,38 @@
 # Current Feature
 
-<!-- Feature Name -->
+UI Layout Review Fixes
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+Fixes from a Playwright UI review at 1440px and 390px, signed in as the demo user.
+
+### Requested
+
+1. **Sidebar active link highlighting** — `SidebarNavItem.tsx` already sets `isActive={pathname === href}`, but the active style is only a faint gray background with no text change, so it reads as missing. Make it clearly visible (brighter text, `font-medium`, stronger background or a left accent bar). The "View all collections" link is a plain link and never highlights on `/collections`.
+2. **GitHub button on `/sign-up`** — `/sign-in` has an "or" divider and a GitHub button, `/sign-up` has neither. Add both to `SignUpForm.tsx`, give `GitHubSignInButton.tsx` a `label` prop ("Continue with GitHub" on sign-up), reuse the `signInWithGitHub` action.
+
+### Other findings
+
+3. **High-med: page widths differ** — `/favorites`, `/profile` and `/settings*` use different max widths and left edges than the dashboard and lists, so the heading jumps between pages. Use one shared page container in `AppShell`.
+4. **Med: item card titles truncated** — titles cut off at about 20 characters on every list, even one column on mobile. Move the date and buttons to a second row or let titles wrap to 2 lines (`ItemCard.tsx`).
+5. **Med: dashboard stats on mobile** — the 4 stat cards stack about 400px tall at 390px and push Collections below the fold. Use `grid-cols-2` on mobile.
+6. **Med: top bar on mobile** — New Collection and New Item are unlabeled icons at 390px. Add tooltips or merge them into one "+" menu.
+7. **Med: `/settings/billing`** — heading sits lower than other pages because of the back link; the card shows as raw text like "24 · 53275011****697*". Line up the header and show the card company name with a cleaner masked number (`src/lib/billing-display.ts`).
+8. **Low-med: Files/Images empty state** — a bare dashed box reading "No files yet." Add an icon and a "New File" / "New Image" button.
+9. **Low: New Item dialog** — top-bar "New Item" opens on Snippet even from `/items/commands` (preselect the current page's type); the collections picker placeholder says "No collections" when collections exist (use "Select collections" in `CollectionPicker.tsx`); the dialog is about 785px tall and scrolls on laptops.
+10. **Low: auth submit buttons** — "Sign in" / "Create account" are gray and look weaker than the blue "Get Started" in the nav. Make them blue.
+11. **Low: small muted text** — sidebar labels, "View all collections" and card dates are 11–12px muted gray, hard to read on the dark background. Raise the opacity or size.
+12. **Low: consistency** — `/favorites` uses a monospace font unlike other pages; the drawer backdrop has no blur while the dialogs do. Pick one style for each.
 
 ## Notes
 
-<!-- Any extra notes -->
+- Looked fine: item drawer, Cmd+K palette, profile, settings, mobile sidebar drawer, collection cards. No page scrolls sideways at 390px.
+- Not checked: `/upgrade` (redirects the demo user, who is still in a paid period); touch targets measured 28px in the browser, but the 40px `pointer-coarse` size only applies on real touch devices.
+- Screenshots from the review are in `.playwright-mcp/`.
 
 ## History
 

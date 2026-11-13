@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { Suspense, useState, useTransition, type SubmitEvent } from "react";
 import { toast } from "sonner";
 
@@ -35,7 +36,11 @@ import {
   shouldDetectLanguage,
 } from "@/lib/code-language";
 import { isFileTypeSlug } from "@/lib/file-constraints";
-import { buildItemPayload, EMPTY_ITEM_FIELD_VALUES } from "@/lib/item-form";
+import {
+  buildItemPayload,
+  EMPTY_ITEM_FIELD_VALUES,
+  getTypeSlugFromPathname,
+} from "@/lib/item-form";
 import { isProOnlyTypeSlug } from "@/lib/usage-limits";
 import { cn } from "@/lib/utils";
 import {
@@ -85,7 +90,9 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
   const { proLocked } = usePlanAccess();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const initialType = defaultType ?? "snippets";
+  const pathname = usePathname();
+  // The top bar's New Item follows the /items/[type] page it's opened from
+  const initialType = defaultType ?? getTypeSlugFromPathname(pathname) ?? "snippets";
   const [type, setType] = useState<CreatableTypeSlug>(initialType);
   const typeLocked = proLocked && isProOnlyTypeSlug(type);
   const triggerLabel = getTriggerLabel(defaultType);
@@ -108,6 +115,8 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
 
   function handleOpenChange(nextOpen: boolean) {
     if (isPending) return;
+    // The shell stays mounted across navigations, so pick the type on open
+    if (nextOpen) setType(initialType);
     setOpen(nextOpen);
     if (!nextOpen) reset();
   }
@@ -152,7 +161,15 @@ function CreateItemDialogContent({ defaultType }: CreateItemDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button aria-label={triggerLabel} />}>
+      <DialogTrigger
+        render={
+          <Button
+            aria-label={triggerLabel}
+            title={triggerLabel}
+            className="pointer-coarse:h-10"
+          />
+        }
+      >
         <TriggerContent defaultType={defaultType} />
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">

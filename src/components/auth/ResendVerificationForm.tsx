@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { resendVerificationEmail } from "@/actions/auth";
-import { AuthField } from "@/components/auth/AuthField";
+import { AUTH_SUBMIT_CLASS_NAME, AuthField } from "@/components/auth/AuthField";
 import { Button } from "@/components/ui/button";
 import { resendVerificationSchema } from "@/lib/validations/auth";
 
@@ -46,7 +46,7 @@ export function ResendVerificationForm() {
           placeholder="you@example.com"
           errors={emailErrors}
         />
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <Button type="submit" className={AUTH_SUBMIT_CLASS_NAME} disabled={isPending}>
           {isPending ? "Sending…" : "Send a new link"}
         </Button>
       </form>
