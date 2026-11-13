@@ -1,23 +1,20 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getSessionUserId, SIGNED_OUT_ERROR } from "@/lib/action-helpers";
 import { updateEditorPreferences as updateEditorPreferencesQuery } from "@/lib/db/settings";
 import {
   editorPreferencesSchema,
   type EditorPreferences,
 } from "@/lib/editor-preferences";
+import type { ActionResult } from "@/types/actions";
 
-type UpdateEditorPreferencesResult =
-  | { success: true; data: EditorPreferences }
-  | { success: false; error: string };
+type UpdateEditorPreferencesResult = ActionResult<EditorPreferences>;
 
 export async function updateEditorPreferences(
   input: unknown,
 ): Promise<UpdateEditorPreferencesResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = editorPreferencesSchema.safeParse(input);
   if (!parsed.success) {
@@ -25,10 +22,7 @@ export async function updateEditorPreferences(
   }
 
   try {
-    const preferences = await updateEditorPreferencesQuery(
-      session.user.id,
-      parsed.data,
-    );
+    const preferences = await updateEditorPreferencesQuery(userId, parsed.data);
     if (!preferences) {
       return { success: false, error: "User not found" };
     }

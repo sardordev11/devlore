@@ -1,6 +1,6 @@
-export type FavoriteResult =
-  | { success: true; data: { id: string; isFavorite: boolean } }
-  | { success: false; error: string };
+import type { ActionResult } from "@/types/actions";
+
+export type FavoriteResult = ActionResult<{ id: string; isFavorite: boolean }>;
 
 // A serializable favorite row, sorted on the client by `sortFavorites`.
 export interface FavoriteEntry {

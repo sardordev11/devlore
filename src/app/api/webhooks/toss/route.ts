@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { apiError } from "@/lib/api-response";
 import { handleBillingDeleted } from "@/lib/db/billing";
 
 const webhookSchema = z.object({
@@ -27,9 +28,6 @@ export async function POST(request: Request) {
   } catch (error) {
     // A 500 makes Toss retry later
     console.error("Toss webhook failed:", error);
-    return NextResponse.json(
-      { success: false, error: "Webhook failed" },
-      { status: 500 },
-    );
+    return apiError("Webhook failed", 500);
   }
 }

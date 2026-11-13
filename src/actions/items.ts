@@ -3,7 +3,13 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 
-import { auth } from "@/auth";
+import {
+  COLLECTION_NOT_FOUND,
+  getSessionUserId,
+  ITEM_NOT_FOUND,
+  SIGNED_OUT_ERROR,
+  toValidationFailure,
+} from "@/lib/action-helpers";
 import { ownsCollections } from "@/lib/db/collections";
 import {
   createItem as createItemQuery,
@@ -14,13 +20,15 @@ import {
   updateItem as updateItemQuery,
   type ItemDetail,
 } from "@/lib/db/items";
+import { deleteFilesByUrl, deleteFilesQuietly } from "@/lib/file-cleanup";
 import { checkItemLimit } from "@/lib/plan-gate";
-import { deleteFile, getFileKey, isOwnedFileKey } from "@/lib/r2";
+import { isOwnedFileKey } from "@/lib/r2";
 import {
   createItemSchema,
   itemIdSchema,
   updateItemSchema,
 } from "@/lib/validations/items";
+import type { ActionResult, FieldErrors } from "@/types/actions";
 import type { FavoriteResult } from "@/types/favorites";
 import type {
   ItemDetailJson,
@@ -35,7 +43,7 @@ type CreateItemResult =
   | {
       success: false;
       error: string;
-      fieldErrors: Partial<Record<keyof z.input<typeof createItemSchema>, string[]>>;
+      fieldErrors: FieldErrors<typeof createItemSchema>;
     };
 
 type UpdateItemResult =
@@ -43,14 +51,10 @@ type UpdateItemResult =
   | {
       success: false;
       error: string;
-      fieldErrors: Partial<Record<keyof z.input<typeof updateItemSchema>, string[]>>;
+      fieldErrors: FieldErrors<typeof updateItemSchema>;
     };
 
-const COLLECTION_NOT_FOUND = "Collection not found";
-
-type DeleteItemResult =
-  | { success: true; data: { id: string } }
-  | { success: false; error: string };
+type DeleteItemResult = ActionResult<{ id: string }>;
 
 function toItemDetailJson(item: ItemDetail): ItemDetailJson {
   return {
@@ -60,42 +64,26 @@ function toItemDetailJson(item: ItemDetail): ItemDetailJson {
   };
 }
 
-// Best effort: a failed delete only leaves an orphaned object behind.
-async function removeFile(key: string) {
-  try {
-    await deleteFile(key);
-  } catch (error) {
-    console.error("R2 delete failed:", error);
-  }
-}
-
 function getUploadedKey(data: unknown): string | null {
   const file = (data as { file?: { key?: unknown } } | null)?.file;
   return typeof file?.key === "string" ? file.key : null;
 }
 
 export async function createItem(data: unknown): Promise<CreateItemResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
-  const userId = session.user.id;
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   // The client uploads before creating; an upload that doesn't become an item is removed.
   const uploadedKey = getUploadedKey(data);
   const ownsUpload = uploadedKey !== null && isOwnedFileKey(userId, uploadedKey);
   async function fail(result: CreateItemResult): Promise<CreateItemResult> {
-    if (ownsUpload && uploadedKey) await removeFile(uploadedKey);
+    if (ownsUpload && uploadedKey) await deleteFilesQuietly([uploadedKey]);
     return result;
   }
 
   const parsed = createItemSchema.safeParse(data);
   if (!parsed.success) {
-    return fail({
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid item",
-      fieldErrors: z.flattenError(parsed.error).fieldErrors,
-    });
+    return fail(toValidationFailure(parsed.error, "Invalid item"));
   }
   if (parsed.data.file && !ownsUpload) {
     return { success: false, error: "File not found", fieldErrors: {} };
@@ -141,23 +129,15 @@ export async function updateItem(
   itemId: string,
   data: unknown,
 ): Promise<UpdateItemResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = updateItemSchema.safeParse(data);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid item",
-      fieldErrors: z.flattenError(parsed.error).fieldErrors,
-    };
-  }
+  if (!parsed.success) return toValidationFailure(parsed.error, "Invalid item");
 
   try {
     const { collectionIds } = parsed.data;
-    if (collectionIds && !(await ownsCollections(session.user.id, collectionIds))) {
+    if (collectionIds && !(await ownsCollections(userId, collectionIds))) {
       return {
         success: false,
         error: COLLECTION_NOT_FOUND,
@@ -165,8 +145,8 @@ export async function updateItem(
       };
     }
 
-    const item = await updateItemQuery(session.user.id, itemId, parsed.data);
-    if (!item) return { success: false, error: "Item not found" };
+    const item = await updateItemQuery(userId, itemId, parsed.data);
+    if (!item) return { success: false, error: ITEM_NOT_FOUND };
 
     return { success: true, data: toItemDetailJson(item) };
   } catch (error) {
@@ -181,19 +161,17 @@ export async function toggleItemFavorite(
   itemId: unknown,
   isFavorite: unknown,
 ): Promise<FavoriteResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const id = itemIdSchema.safeParse(itemId);
-  if (!id.success) return { success: false, error: "Item not found" };
+  if (!id.success) return { success: false, error: ITEM_NOT_FOUND };
   const value = z.boolean().safeParse(isFavorite);
   if (!value.success) return { success: false, error: "Invalid favorite value" };
 
   try {
-    const item = await setItemFavorite(session.user.id, id.data, value.data);
-    if (!item) return { success: false, error: "Item not found" };
+    const item = await setItemFavorite(userId, id.data, value.data);
+    if (!item) return { success: false, error: ITEM_NOT_FOUND };
 
     refresh();
     return { success: true, data: item };
@@ -211,19 +189,17 @@ export async function toggleItemPin(
   itemId: unknown,
   isPinned: unknown,
 ): Promise<PinResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const id = itemIdSchema.safeParse(itemId);
-  if (!id.success) return { success: false, error: "Item not found" };
+  if (!id.success) return { success: false, error: ITEM_NOT_FOUND };
   const value = z.boolean().safeParse(isPinned);
   if (!value.success) return { success: false, error: "Invalid pin value" };
 
   try {
-    const item = await setItemPinned(session.user.id, id.data, value.data);
-    if (!item) return { success: false, error: "Item not found" };
+    const item = await setItemPinned(userId, id.data, value.data);
+    if (!item) return { success: false, error: ITEM_NOT_FOUND };
 
     refresh();
     return { success: true, data: item };
@@ -237,22 +213,17 @@ export async function toggleItemPin(
 }
 
 export async function deleteItem(itemId: unknown): Promise<DeleteItemResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = itemIdSchema.safeParse(itemId);
-  if (!parsed.success) {
-    return { success: false, error: "Item not found" };
-  }
+  if (!parsed.success) return { success: false, error: ITEM_NOT_FOUND };
 
   try {
-    const deleted = await deleteItemQuery(session.user.id, parsed.data);
-    if (!deleted) return { success: false, error: "Item not found" };
+    const deleted = await deleteItemQuery(userId, parsed.data);
+    if (!deleted) return { success: false, error: ITEM_NOT_FOUND };
 
-    const fileKey = deleted.fileUrl ? getFileKey(deleted.fileUrl) : null;
-    if (fileKey) await removeFile(fileKey);
+    await deleteFilesByUrl([deleted.fileUrl]);
 
     return { success: true, data: { id: parsed.data } };
   } catch (error) {

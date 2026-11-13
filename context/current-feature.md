@@ -1,18 +1,38 @@
 # Current Feature
 
-<!-- Feature Name -->
+Actions & API Refactor
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+Remove duplicated boilerplate in `src/actions/` and `src/app/api/`, found by two `refactor-scanner` runs. No behavior changes: same messages, status codes, headers and result shapes.
+
+**Server actions**
+
+- **Session check** — `getSessionUserId()` and `SIGNED_OUT_ERROR` in a new `src/lib/action-helpers.ts` (server only, calls `auth()` from `@/auth` so the existing `vi.mock("@/auth")` keeps working), replacing the repeated `auth()` + "You must be signed in" block in the 20 actions across `items`, `collections`, `ai`, `billing`, `settings` and `profile` (billing's local `SIGNED_OUT` removed); the early return stays at each call site since result types differ
+- **Validation failures** — `toValidationFailure(error, fallback)` returning `{ success: false, error, fieldErrors }` plus a `FieldErrors<typeof schema>` type, replacing the 4 copies in `createItem`, `updateItem`, `createCollection` and `updateCollection` and the hand-written `Partial<Record<keyof z.input<...>, string[]>>` types
+- **Result type** — one `ActionResult<T>` (and `ActionFailure`) in a new `src/types/actions.ts`; `AiResult`, billing's local `ActionResult`, `DeleteItemResult`, `DeleteCollectionResult`, `CollectionOptionsResult`, `UpdateEditorPreferencesResult`, `FavoriteResult`, `PinResult` and `ItemDetailResponse` built from it (exported names kept so callers don't change)
+- **R2 cleanup** — best-effort `deleteFilesQuietly(keys)` and `deleteFilesByUrl(urls)` in a new `src/lib/file-cleanup.ts` (`Promise.allSettled`, same "R2 delete failed:" log; a separate file rather than `src/lib/r2.ts` so the action tests' `@/lib/r2` mocks of `deleteFile`/`getFileKey` still apply) replacing `removeFile` in `src/actions/items.ts` and `removeFiles` in `src/actions/profile.ts`
+- **Not-found messages** — shared `ITEM_NOT_FOUND` and `COLLECTION_NOT_FOUND` constants replacing `items.ts`'s `COLLECTION_NOT_FOUND`, `collections.ts`'s `NOT_FOUND` and the 7 inline "Item not found" strings in `items.ts` and `ai.ts`
+
+**API routes**
+
+- New `src/lib/api-response.ts` with `apiError(error, status, extra?)` replacing the ~15 inline `NextResponse.json({ success: false, error }, { status })` calls and the local `errorResponse` helpers in `upload` and `items/[id]/download`
+- `rateLimitedResponse(reset)` in the same file (429, `rateLimitMessage` body, `Retry-After` from `retryAfterSeconds`) replacing the hand-built responses in `auth/register` and `upload`
+
+**Tests**
+
+- Unit tests for `getSessionUserId`, `toValidationFailure`, the R2 delete helpers, `apiError` and `rateLimitedResponse`
+- Existing action tests pass, adjusting `@/lib/r2` mocks where needed
 
 ## Notes
 
-<!-- Any extra notes -->
+- Skipped on purpose: a shared toggle helper for `toggleItemFavorite`/`toggleItemPin`/`toggleCollectionFavorite` (about 6 options, harder to read than three short functions), a `failWith` catch-block helper (small saving), an API route session helper (would need an `instanceof NextResponse` check at each call site), an AI `responses.create` wrapper, and `auth.ts`'s and `profile.ts`'s own `ActionResult` interfaces (different flags)
+- `billing/confirm` keeps its rate-limit redirect (`?error=rate_limited`) and the Toss webhook keeps returning 200 for malformed bodies
+- Refactor only: no schema, UI or copy changes
 
 ## History
 

@@ -1,12 +1,7 @@
-import { NextResponse } from "next/server";
-
 import { auth } from "@/auth";
+import { apiError } from "@/lib/api-response";
 import { getItemFile } from "@/lib/db/items";
 import { getFileKey, getFileStream } from "@/lib/r2";
-
-function errorResponse(error: string, status: number) {
-  return NextResponse.json({ success: false, error }, { status });
-}
 
 // Both forms, so browsers without RFC 5987 support still get an ASCII name.
 function contentDisposition(fileName: string): string {
@@ -20,16 +15,16 @@ export async function GET(
   { params }: RouteContext<"/api/items/[id]/download">,
 ) {
   const session = await auth();
-  if (!session?.user?.id) return errorResponse("Unauthorized", 401);
+  if (!session?.user?.id) return apiError("Unauthorized", 401);
 
   const { id } = await params;
   try {
     const file = await getItemFile(session.user.id, id);
     const key = file && getFileKey(file.fileUrl);
-    if (!file || !key) return errorResponse("File not found", 404);
+    if (!file || !key) return apiError("File not found", 404);
 
     const stream = await getFileStream(key);
-    if (!stream) return errorResponse("File not found", 404);
+    if (!stream) return apiError("File not found", 404);
 
     return new Response(stream, {
       headers: {
@@ -41,6 +36,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("File download failed:", error);
-    return errorResponse("Couldn't download the file", 500);
+    return apiError("Couldn't download the file", 500);
   }
 }

@@ -2,7 +2,7 @@
 
 import OpenAI from "openai";
 
-import { auth } from "@/auth";
+import { getSessionUserId, ITEM_NOT_FOUND, SIGNED_OUT_ERROR } from "@/lib/action-helpers";
 import { AI_MODEL, getOpenAI } from "@/lib/ai/client";
 import {
   buildDescriptionInput,
@@ -34,11 +34,12 @@ import {
 import { getItemDetail } from "@/lib/db/items";
 import { checkAiAccess } from "@/lib/plan-gate";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rate-limit";
+import type { ActionFailure } from "@/types/actions";
 
 export type AiResult<T> =
   | { success: true; data: T }
   // upgrade: Pro-only, so the client offers the upgrade link
-  | { success: false; error: string; upgrade?: true };
+  | (ActionFailure & { upgrade?: true });
 
 const AI_ERRORS = {
   unavailable: "AI features aren't available right now.",
@@ -88,11 +89,8 @@ async function getAiClient(userId: string): Promise<{ openai: OpenAI } | AiFailu
 export async function generateAutoTags(
   input: unknown,
 ): Promise<AiResult<{ tags: string[] }>> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
-  const userId = session.user.id;
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = generateAutoTagsSchema.safeParse(input);
   if (!parsed.success) {
@@ -127,11 +125,8 @@ export async function generateAutoTags(
 export async function generateDescription(
   input: unknown,
 ): Promise<AiResult<{ description: string }>> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
-  const userId = session.user.id;
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = generateDescriptionSchema.safeParse(input);
   if (!parsed.success) {
@@ -163,11 +158,8 @@ export async function generateDescription(
 export async function explainCode(
   input: unknown,
 ): Promise<AiResult<{ explanation: string }>> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
-  const userId = session.user.id;
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = explainCodeSchema.safeParse(input);
   if (!parsed.success) {
@@ -176,7 +168,7 @@ export async function explainCode(
 
   try {
     const item = await getItemDetail(userId, parsed.data.itemId);
-    if (!item) return { success: false, error: "Item not found" };
+    if (!item) return { success: false, error: ITEM_NOT_FOUND };
     if (!canExplainType(item.type.slug) || !item.content?.trim()) {
       return { success: false, error: AI_ERRORS.notExplainable };
     }
@@ -211,11 +203,8 @@ export async function explainCode(
 export async function optimizePrompt(
   input: unknown,
 ): Promise<AiResult<{ optimized: string | null; changes: string[] }>> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You must be signed in" };
-  }
-  const userId = session.user.id;
+  const userId = await getSessionUserId();
+  if (!userId) return { success: false, error: SIGNED_OUT_ERROR };
 
   const parsed = optimizePromptSchema.safeParse(input);
   if (!parsed.success) {
@@ -224,7 +213,7 @@ export async function optimizePrompt(
 
   try {
     const item = await getItemDetail(userId, parsed.data.itemId);
-    if (!item) return { success: false, error: "Item not found" };
+    if (!item) return { success: false, error: ITEM_NOT_FOUND };
     const content = item.content?.trim() ?? "";
     if (!canOptimizeType(item.type.slug) || !content) {
       return { success: false, error: AI_ERRORS.notOptimizable };
