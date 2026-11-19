@@ -1,18 +1,21 @@
 # Current Feature
 
-<!-- Feature Name -->
+Logo Icon
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- Replace the Lucide `FolderIcon` in `LogoMark` (it clashed with the collection icon) with a custom brackets-around-an-open-book mark ("dev" + "lore")
+- Strokes in the accent blue (`text-home-accent`, `#3b82f6`, same as the "Get Started" button), book filled with the accent blue at 20%, `small` size kept
+- Matching `src/app/icon.svg` favicon in the same blue
 
 ## Notes
 
-<!-- Any extra notes -->
+- Picked from a temporary TopBar comparison (folder, `LibraryBig`, brackets + book, stacked type-colored cards)
+- `src/app/favicon.ico` (Next.js default) deleted on request so `icon.svg` is the only favicon
 
 ## History
 
