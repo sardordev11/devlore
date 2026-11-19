@@ -1,18 +1,20 @@
 # Current Feature
 
-<!-- Feature Name -->
+Next.js Security Upgrade
 
 ## Status
 
-<!-- Not Started|In Progress|Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals & requirements -->
+- Upgrade `next` and `eslint-config-next` from 16.4.2 to 16.4.6 to fix GHSA-mfr8-8qww-v76h and GHSA-vc7v-qv4w-wrv8 (`'use cache'` leaks across root params)
+- Tests, lint and build pass; app works in the browser
 
 ## Notes
 
-<!-- Any extra notes -->
+- Patch bump within 16.4.x, React 19.3.0 unchanged
+- On request, `data-scroll-behavior="smooth"` added to `<html>` in `src/app/layout.tsx` to clear Next's dev warning about `scroll-smooth`, so route transitions no longer smooth-scroll
 
 ## History
 
