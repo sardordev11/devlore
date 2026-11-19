@@ -1,21 +1,18 @@
 # Current Feature
 
-Logo Icon
+<!-- Feature Name -->
 
 ## Status
 
-In Progress
+<!-- Not Started|In Progress|Completed -->
 
 ## Goals
 
-- Replace the Lucide `FolderIcon` in `LogoMark` (it clashed with the collection icon) with a custom brackets-around-an-open-book mark ("dev" + "lore")
-- Strokes in the accent blue (`text-home-accent`, `#3b82f6`, same as the "Get Started" button), book filled with the accent blue at 20%, `small` size kept
-- Matching `src/app/icon.svg` favicon in the same blue
+<!-- Goals & requirements -->
 
 ## Notes
 
-- Picked from a temporary TopBar comparison (folder, `LibraryBig`, brackets + book, stacked type-colored cards)
-- `src/app/favicon.ico` (Next.js default) deleted on request so `icon.svg` is the only favicon
+<!-- Any extra notes -->
 
 ## History
 
@@ -87,3 +84,4 @@ In Progress
 - **Components Refactor** — duplicated component code from a `refactor-scanner` run on `src/components` moved into shared pieces: `ItemFormFields` (`src/components/items/`) renders Title, an `afterTitle` slot (the New Item file upload), URL, Description (AI source), Language (auto label), Content, Tags and Collections for both `CreateItemDialog` and `ItemEditForm` as siblings so each form keeps its spacing, with one field order (URL right after Title, so it moved up in the drawer edit form for links) and Save disabled when editing a link with a blank URL (it used to save as `null`; client side only, no server check since `updateItemSchema` doesn't know the type); `useAutoLanguage` in `src/hooks/use-detected-language.ts` shared with the drawer's `CodeView`; `ItemFieldsState` type from `useItemFields`; `ItemEditForm` 203 → 116 lines; `FormAlert` (`src/components/auth/`, `error`/`success` variants, same classes) replacing the inline banners in `SignInForm`, `SignUpForm`, `ForgotPasswordForm`, `ResetPasswordForm` and `ChangePasswordDialog`, `BillingBanner` unchanged; `ConfirmDialog` (`src/components/dialogs/`, trigger or controlled `open`, blocks closing while pending, error toast keeps it open, success closes, runs `onSuccess`, then toasts) behind `DeleteItemDialog`, `DeleteCollectionDialog` and `CancelSubscriptionDialog` with unchanged copy, `DeleteAccountDialog` left as is; the rest of the scan (collection form fields, type icon tile, copy/download helpers, `parseFormData`, small helpers, file splits) not done; existing tests pass unchanged; checked in the browser (sign-in error and success banners, New Item link/image/snippet with Auto (Python), snippet create/edit/save/delete, link URL blank disables Save, collection delete with redirect; test data removed); the cancel subscription dialog wasn't seen since the demo subscription is already cancelled (Completed)
 - **Split Large Components** — refactor with no behavior changes for the three largest item components left by the components refactor scan: `ItemDrawerDetails` (250 → 109 lines) with `CodeView`, `FilePreview`, `DetailSection` and `ItemMetaSections` in their own files in `src/components/items/` (`ItemEditForm` now imports `ItemMetaSections` from its own file instead of the drawer view, `ItemContent` stays with `ItemDrawerDetails`); `CreateItemDialog` (238 → 176 lines) with the upload-then-create logic in a `useCreateItem` hook (`src/hooks/use-create-item.ts`, owns the transition since `useItemFields` needs `isPending` first, upload/upgrade/field-error/success handling via `onFieldErrors`/`onSuccess` callbacks, returns `submit`, `isPending`, `progress`) and the trigger plus its disabled Suspense fallback in `CreateItemTrigger`/`CreateItemTriggerFallback`; `CodeEditor` (196 → 159 lines) with `useOverflowWidgetsNode` in `src/hooks/use-overflow-widgets-node.ts`, `getLineHeight`/`clampEditorHeight`/`estimateEditorHeight` and the height constants in `src/lib/editor-height.ts`, a local `WindowDots` and the mis-indented `<Editor>` JSX fixed; `SidebarNav`, `FavoritesList` and `FileUpload` left out; unit tests for the height helpers; History's `ItemEditForm` line count corrected to 116; checked in the browser (drawer for snippet with Explain and TypeScript label, prompt with Optimize, link; image created through the new hook with preview and file card, edit form Details, test image deleted; code editor growing 80 → 156px and autocomplete under the cursor in the New Item dialog); notes and non-image files not seen since the demo user has none (Completed)
 - **Next.js Security Upgrade** — `next` and `eslint-config-next` 16.4.2 → 16.4.6 after Next's dev overlay flagged a vulnerable version, fixing GHSA-mfr8-8qww-v76h and GHSA-vc7v-qv4w-wrv8 (moderate, `'use cache'` leaks across root params), with React 19.3.0 unchanged and `npm audit` reporting no Next.js advisories afterwards; on request `data-scroll-behavior="smooth"` added to `<html>` in `src/app/layout.tsx`, clearing Next 16's dev warning about `scroll-smooth` so route transitions jump to the top while same-page anchors still scroll smoothly; the old 16.4.2 dev server was restarted; tests, lint and build pass; checked in the browser (sign-in, dashboard, snippet drawer, `/items/snippets`, `/collections`, `/settings`, homepage Pricing anchor landing below the nav, no console errors or warnings) (Completed)
+- **Logo Icon** — Lucide `FolderIcon` in `LogoMark` (`src/components/home/Logo.tsx`) replaced by a custom inline SVG of code brackets around an open book ("dev" + "lore"), since the folder clashed with the collection icon; strokes in the accent blue via `text-home-accent` (`#3b82f6`, same as the "Get Started" button) with the book filled at 20%, `small` size kept, so the homepage nav and footer, dashboard preview, plain auth layout and dashboard `TopBar` all update; picked from a temporary TopBar comparison (folder, `LibraryBig`, brackets + book, stacked type-colored cards) that was removed afterwards; matching `src/app/icon.svg` favicon in the same blue and the default `src/app/favicon.ico` deleted on request; tests, lint and build pass; not checked in the browser by Claude (Playwright browser was in use) (Completed)
